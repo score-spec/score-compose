@@ -1,2 +1,13 @@
 # score-compose
-Reference implementation for docker-compose target platform support
+
+This tool produces a `docker-compose` configuration file from the `SCORE` specification.
+
+## Usage
+```
+    score-compose run
+```
+
+## Help
+```
+    score-compose --help
+```
