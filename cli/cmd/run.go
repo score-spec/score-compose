@@ -58,28 +58,30 @@ func run(cmd *cobra.Command, args []string) error {
 	//
 	log.Printf("Reading '%s'...\n", scoreFile)
 	var err error
-	var src []byte
-	if src, err = os.ReadFile(scoreFile); err != nil {
+	var src *os.File
+	if src, err = os.Open(scoreFile); err != nil {
 		return err
 	}
+	defer src.Close()
 
 	// Parse SCORE spec
 	//
 	log.Print("Parsing SCORE spec...\n")
 	var srcMap map[string]interface{}
-	if err = loader.ParseYAML(src, &srcMap); err != nil {
+	if err = loader.ParseYAML(&srcMap, src); err != nil {
 		return err
 	}
 
 	// Apply overrides (optional)
 	//
 	if overridesFile != "" {
-		var ovr []byte
 		log.Printf("Checking '%s'...\n", overridesFile)
-		if ovr, err = os.ReadFile(overridesFile); err == nil {
+		if ovr, err := os.Open(overridesFile); err == nil {
+			defer ovr.Close()
+
 			log.Print("Applying SCORE overrides...\n")
 			var ovrMap map[string]interface{}
-			if err = loader.ParseYAML(ovr, &ovrMap); err != nil {
+			if err = loader.ParseYAML(&ovrMap, ovr); err != nil {
 				return err
 			}
 			if err := mergo.MergeWithOverwrite(&srcMap, ovrMap); err != nil {
@@ -94,7 +96,7 @@ func run(cmd *cobra.Command, args []string) error {
 	//
 	log.Print("Validating SCORE spec...\n")
 	var spec score.WorkloadSpec
-	if err = loader.MapSpec(srcMap, &spec); err != nil {
+	if err = loader.MapSpec(&spec, srcMap); err != nil {
 		return fmt.Errorf("validating workload spec: %w", err)
 	}
 
@@ -135,7 +137,7 @@ func run(cmd *cobra.Command, args []string) error {
 	// Write docker-compose spec
 	//
 	log.Print("Writing docker-compose configuration...\n")
-	if err = compose.WriteYAML(proj, dest); err != nil {
+	if err = compose.WriteYAML(dest, proj); err != nil {
 		return err
 	}
 

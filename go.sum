@@ -22,8 +22,8 @@ github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3I
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
-github.com/score-spec/score-go v0.0.0-20221017023139-9c41abd6e1ee h1:3NnLILMT7goeA3nZ5oxuA5wPW1SALPK+EhzElslyQG8=
-github.com/score-spec/score-go v0.0.0-20221017023139-9c41abd6e1ee/go.mod h1:eNU0evgibNfV6ESUfRKjWcfGPmd92dI8dsUN/GBouZs=
+github.com/score-spec/score-go v0.0.0-20221019054335-3510902b5f8b h1:Ws6TNwu+OuoR+K7C3fKLCuaeyAiGU0G7Xkaz9UUygWA=
+github.com/score-spec/score-go v0.0.0-20221019054335-3510902b5f8b/go.mod h1:eNU0evgibNfV6ESUfRKjWcfGPmd92dI8dsUN/GBouZs=
 github.com/spf13/cobra v1.6.0 h1:42a0n6jwCot1pUmomAp4T7DeMD+20LFv4Q54pxLf2LI=
 github.com/spf13/cobra v1.6.0/go.mod h1:IOw/AERYS7UzyrGinqmz6HLUo219MORXGxhbaJUqzrY=
 github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=

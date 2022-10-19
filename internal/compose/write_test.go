@@ -47,7 +47,7 @@ func TestYamlEncode(t *testing.T) {
 			buf := bytes.Buffer{}
 			w := bufio.NewWriter(&buf)
 
-			err := WriteYAML(tt.Source, w)
+			err := WriteYAML(w, tt.Source)
 			w.Flush()
 
 			if tt.Error != nil {

@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/compose-spec/compose-go v1.6.0
 	github.com/imdario/mergo v0.3.13
-	github.com/score-spec/score-go v0.0.0-20221017023139-9c41abd6e1ee
+	github.com/score-spec/score-go v0.0.0-20221019054335-3510902b5f8b
 	github.com/spf13/cobra v1.6.0
 	github.com/stretchr/testify v1.8.0
 	gopkg.in/yaml.v3 v3.0.1

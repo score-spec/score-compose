@@ -8,7 +8,7 @@ import (
 )
 
 // WriteYAML exports docker-compose specification in YAML.
-func WriteYAML(proj *compose.Project, w io.Writer) error {
+func WriteYAML(w io.Writer, proj *compose.Project) error {
 	var enc = yaml.NewEncoder(w)
 	enc.SetIndent(2)
 	return enc.Encode(proj)
