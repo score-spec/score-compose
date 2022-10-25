@@ -1,0 +1,36 @@
+apiVersion: score.sh/v1b1
+
+metadata:
+  name: service-a
+
+containers:
+  service-a:
+    image: busybox
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do echo service-a: Hello $${FRIEND}! Connecting to $${CONNECTION_STRING}...; sleep 10; done"]
+    variables:
+      FRIEND: ${resources.env.NAME}
+      CONNECTION_STRING: postgresql://${resources.db.user}:${resources.db.password}@${resources.db.host}:${resources.db.port}/${resources.db.name}
+
+resources:
+  env:
+    type: environment
+    properties:
+      NAME:
+        type: string
+        default: World
+  db:
+    type: postgres
+    properties:
+      host:
+        default: localhost
+      port:
+        default: 5432
+      name:
+        default: postgres
+      user:
+        secret: true
+      password:
+        secret: true
+  service-b:
+    type: workload

@@ -1,4 +1,4 @@
-# 01 - Environment Variables
+# 02 - Environment Variables
 
 When `docker-compose` spins-up the service, it is possible to pass some information from the host to the container via the environment variables.
 
@@ -14,7 +14,7 @@ containers:
   hello:
     image: busybox
     command: ["/bin/sh"]
-    args: ["-c", "echo Hello $${FRIEND}!"]
+    args: ["-c", "while true; do echo Hello $${FRIEND}!; sleep 5; done"]
     variables:
       FRIEND: ${resources.env.NAME}
 
@@ -40,7 +40,7 @@ services:
   hello-world:
     command:
       - -c
-      - echo Hello $${FRIEND}!
+      - 'while true; do echo Hello $${FRIEND}!; sleep 5; done'
     entrypoint:
       - /bin/sh
     environment:
@@ -58,7 +58,7 @@ $ NAME=John docker-compose -f ./compose.yaml up hello-world
  ⠿ Container compose-hello-world-1  Created                                                                                                                                               0.1s
 Attaching to compose-hello-world-1
 compose-hello-world-1  | Hello John!
-compose-hello-world-1 exited with code 0
+compose-hello-world-1  | Hello John!
 ```
 
 ## Using `.env` files

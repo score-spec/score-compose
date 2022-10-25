@@ -4,13 +4,15 @@ In this basic example there is a simple compose service based on `busybox` Docke
 
 ```yaml
 apiVersion: score.sh/v1b1
+
 metadata:
   name: hello-world
+
 containers:
   hello:
     image: busybox
-    command: ["/bin/echo"]
-    args: ["Hello World!"]
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do echo Hello World!; sleep 5; done"]
 ```
 
 To convert `score.yaml` file into runnable `compose.yaml` use a `score-compose` CLI tool:
@@ -25,9 +27,10 @@ Output `compose.yaml` file would contain a single service definition:
 services:
   hello-world:
     command:
-      - Hello World!
+      - -c
+      - 'while true; do echo Hello World!; sleep 5; done'
     entrypoint:
-      - /bin/echo
+      - /bin/sh
     image: busybox
 ```
 
@@ -41,5 +44,5 @@ $ docker-compose -f ./compose.yaml up hello-world
  ⠿ Container compose-hello-world-1  Created                                                                                                                                               0.1s
 Attaching to compose-hello-world-1
 compose-hello-world-1  | Hello World!
-compose-hello-world-1 exited with code 0
+compose-hello-world-1  | Hello World!
 ```
