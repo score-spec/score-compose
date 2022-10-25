@@ -1,0 +1,17 @@
+apiVersion: score.sh/v1b1
+metadata:
+  name: hello-world
+containers:
+  hello:
+    image: busybox
+    command: ["/bin/sh"]
+    args: ["-c", "echo Hello $${FRIEND}!"]
+    variables:
+      FRIEND: ${resources.env.NAME}
+resources:
+  env:
+    type: environment
+    properties:
+      NAME:
+        type: string
+        default: World
