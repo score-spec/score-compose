@@ -1,0 +1,8 @@
+apiVersion: score.sh/v1b1
+metadata:
+  name: hello-world
+containers:
+  hello:
+    image: busybox
+    command: ["/bin/echo"]
+    args: ["Hello World!"]
