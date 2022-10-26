@@ -1,10 +1,12 @@
-# ![Score](docs/images/logo.png) Score
+![Score banner](docs/images/banner.png)
+
+# ![Score](docs/images/logo.svg) Score overview
 
 _Score_ provides a developer-centric and platform-agnostic workload specification to improve developer productivity and experience. Score eliminates configuration inconsistencies between local and remote environments.
 
 The _Platform CLI_ is a conversion tool for application developers to generate an environment specific configuration. In combination with environment specific parameters, The Platform CLI tool can run your Workload in the target environment by generating the target platform's configuration file.
 
-## ![Installation](docs/images/installation.png) Installation
+## ![Installation](docs/images/install.svg) Installation
 
 ### Step 1. Download
 
@@ -64,7 +66,7 @@ score-compose x.y.z
 
 **Results** You've successfully installed the Platform CLI.
 
-## ![Overview](docs/images/overview.png) Overview
+## ![Overview](docs/images/overview.svg) Overview
 
 The Score specification file resolves configuration inconsistencies between environments. Compose a `score.yaml` file that describes how to run your Workload. As a platform-agnostic declaration file, `score.yaml` creates a single source of truth on Workload profiles and works to integrate with any platform or tooling.
 
@@ -78,7 +80,7 @@ score-compose run -f /tmp/score.yaml -o /tmp/compose.yaml
 docker-compose -f /tmp/compose.yaml up backend
 ```
 
-## ![Manifesto](docs/images/manifesto.png) Score manifesto
+## ![Manifesto](docs/images/manifesto.svg) Score manifesto
 
 - Enable local development without risk of configuration inconsistencies in remote environments.
 - Offer default configuration while allowing for a large degree of customization.
@@ -90,7 +92,7 @@ docker-compose -f /tmp/compose.yaml up backend
 
 For more information, see the [Score manifesto](https://score.dev/).
 
-## ![Get involved](docs/images/get-involved.png) Get involved
+## ![Get involved](docs/images/get-involved.svg) Get involved
 
 - Give the project a star!
 - Contact us via Email:
@@ -98,7 +100,7 @@ For more information, see the [Score manifesto](https://score.dev/).
   - abuse@score.dev
 - See our [documentation](https://docs.score.dev).
 
-## ![Contributing](docs/images/contributing.png) Contributing
+## ![Contributing](docs/images/contributing.svg) Contributing
 
 - Write a [blog](score.dev/blog).
 - Provide feedback on our [road map and releases board](https://github.com/orgs/score-spec/projects).
@@ -116,10 +118,10 @@ If you have a suggestion that would make this better, please fork the repo and c
 
 Read [CONTRIBUTING](CONTRIBUTING.md) for more information.
 
-## ![License](docs/images/license.png) License
+## ![License](docs/images/license.svg) License
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-## ![Code of conduct](docs/images/code-of-conduct.png) Code of conduct
+## ![Code of conduct](docs/images/code-of-conduct.svg) Code of conduct
 
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md)
