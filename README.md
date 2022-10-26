@@ -14,8 +14,7 @@ The _Platform CLI_ is a conversion tool for application developers to generate a
 
 3. Download the latest compressed Tar file for your operating system.
    1. The name will be something like `score-compose_x.y_osx-amd64.tar.gz`, where `x.y` is the release number, `osx` is the operating system.
-
-4. By default, the tarball will be saved to your `~/Downloads` directory. If you choose to use a different location, you'll need to change that in the following steps.
+   2. By default, the tarball will be saved to your `~/Downloads` directory. If you choose to use a different location, you'll need to change that in the following steps.
 
 **Results** You should see something similar to the following output.
 
