@@ -80,5 +80,5 @@ NAME=World
 Once the `.env` is populated with all the values (usually such file is generated automatically by the configuration managements system or with the CI/CD automation scripts), it can be fed to `docker-compose`:
 
 ```console
-$ NAME=John docker-compose -f ./compose.yaml --env-file ./.env up hello-world
+$ docker-compose -f ./compose.yaml --env-file ./.env up hello-world
 ```
