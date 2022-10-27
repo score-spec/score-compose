@@ -1,0 +1,22 @@
+apiVersion: score.sh/v1b1
+
+metadata:
+  name: web-app
+
+service:
+  ports:
+    www:
+      port: 8000
+      targetPort: 80
+
+containers:
+  hello:
+    image: nginx
+    volumes:
+      - source: ${resources.data}
+        target: /usr/share/nginx/html
+        readOnly: true
+
+resources:
+  data:
+    type: volume
