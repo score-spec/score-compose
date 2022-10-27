@@ -98,7 +98,7 @@ docker-compose -f /tmp/compose.yaml up backend
 - Enable application centric rather than infrastructure centric development.
 - Abstract away infrastructural complexity without sacrificing transparency.
 
-For more information, see the [Score manifesto](https://score.dev/).
+For more information, see the [Score manifesto](https://score.dev/manifesto).
 
 ## ![Get involved](docs/images/get-involved.svg) Get involved
 
