@@ -16,3 +16,7 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# DS-Store files
+.DS_Store
+docs/.DS_Store
