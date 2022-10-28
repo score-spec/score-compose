@@ -21,7 +21,7 @@ var (
 		Short: "SCORE to docker-compose translator",
 		Long: `SCORE is a specification for defining environment agnostic configuration for cloud based workloads.
 This tool produces a docker-compose configuration file from the SCORE specification.
-Complete documentation is available at https://score.sh.`,
+Complete documentation is available at https://score.dev`,
 		Version: fmt.Sprintf("%s (build: %s; sha: %s)", version.Version, version.BuildTime, version.GitSHA),
 	}
 )
