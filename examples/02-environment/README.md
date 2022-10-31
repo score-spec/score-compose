@@ -5,7 +5,7 @@ When `docker-compose` spins-up the service, it is possible to pass some informat
 Compose specification uses a special `environment` resource type to support such cases:
 
 ```yaml
-apiVersion: score.sh/v1b1
+apiVersion: score.dev/v1b1
 
 metadata:
   name: hello-world
