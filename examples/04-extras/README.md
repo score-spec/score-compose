@@ -5,7 +5,7 @@ In advanced setups the workload might need to use volumes or serve incoming requ
 Such requirements can be expressed in `score.yaml` file:
 
 ```yaml
-apiVersion: score.sh/v1b1
+apiVersion: score.dev/v1b1
 
 metadata:
   name: web-app

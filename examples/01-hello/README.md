@@ -3,7 +3,7 @@
 In this basic example there is a simple compose service based on `busybox` Docker image described in a `score.yaml` file:
 
 ```yaml
-apiVersion: score.sh/v1b1
+apiVersion: score.dev/v1b1
 
 metadata:
   name: hello-world
