@@ -110,7 +110,7 @@ For more information, see the [Score manifesto](https://score.dev/manifesto).
 
 ## ![Contributing](docs/images/contributing.svg) Contributing
 
-- Write a [blog](score.dev/blog).
+<!-- - Write a [blog](score.dev/blog). -->
 - Provide feedback on our [road map and releases board](https://github.com/orgs/score-spec/projects).
 - Contribute.
 
