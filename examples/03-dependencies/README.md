@@ -132,7 +132,7 @@ DB_PASSWORD=postgres
 Now all files can be combined together to spin-up the whole application with `docker-compose`:
 
 ```console
-$ docker-compose -f ./compose.yaml -f ./service-a.yaml -f ./service-b.yaml --env-file ./.env up
+$ docker-compose -f ./compose.yaml -f ./service-a.compose.yaml -f ./service-b.compose.yaml --env-file ./.env up
 
 [+] Running 4/4
  ⠿ Network compose_default        Created                                                                                                                          0.0s
