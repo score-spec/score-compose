@@ -88,18 +88,6 @@ score-compose run -f /tmp/score.yaml -o /tmp/compose.yaml
 docker-compose -f /tmp/compose.yaml up backend
 ```
 
-## ![Manifesto](docs/images/manifesto.svg) Score manifesto
-
-- Enable local development without risk of configuration inconsistencies in remote environments.
-- Offer default configuration while allowing for a large degree of customization.
-- Establish a single source of truth for application configuration.
-- Separate environment specific from environment agnostic configuration.
-- Enable environment agnostic declaration of infrastructure dependencies.
-- Enable application centric rather than infrastructure centric development.
-- Abstract away infrastructural complexity without sacrificing transparency.
-
-For more information, see the [Score manifesto](https://score.dev/manifesto).
-
 ## ![Get involved](docs/images/get-involved.svg) Get involved
 
 - Give the project a star!
