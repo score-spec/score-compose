@@ -1,34 +1,32 @@
-# Check the documentation at https://goreleaser.com
-before:
-  hooks:
-    - go mod tidy
 builds:
-  - id: score-compose
-    binary: score-compose
-    main: ./cli
-    ldflags:
-      - -X github.com/score-spec/score-compose/internal/version.Version={{ .Version }}
-      - -X github.com/score-spec/score-compose/internal/version.BuildTime={{ .CommitDate }}
-      - -X github.com/score-spec/score-compose/internal/version.GitSHA={{ .FullCommit }}
+  - binary: score-compose
+    main: ./cli/
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
     env:
       - CGO_ENABLED=0
-    targets:
-      - linux_amd64_v1
-      - linux_arm64
-      - windows_amd64_v1
-      - darwin_amd64_v1
-      - darwin_arm64
-archives:
-  - format_overrides:
-    - goos: windows
-      format: zip
+    flags:
+      - -mod=vendor
+
+release:
+  prerelease: auto
+
+universal_binaries:
+  - replace: true
+
+brews:
+  - name: score-compose
+    homepage: "https://score.dev"
+    tap:
+      owner: score-spec
+      name: homebrew-tap
+    commit_author:
+      name: rachfop
+      email: prachford@icloud.com
+
 checksum:
-  name_template: 'checksums.txt'
-snapshot:
-  name_template: "{{ incpatch .Version }}-next"
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
+  name_template: "checksums.txt"
