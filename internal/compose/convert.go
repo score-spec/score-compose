@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 
 	compose "github.com/compose-spec/compose-go/types"
@@ -52,6 +53,11 @@ func ConvertSpec(spec *score.WorkloadSpec) (*compose.Project, ExternalVariables,
 				})
 			}
 		}
+		// NOTE: Sorting is necessary for DeepEqual call within our Unit Tests to work reliably
+		sort.Slice(ports, func(i, j int) bool {
+			return ports[i].Published < ports[j].Published
+		})
+		// END (NOTE)
 
 		var volumes []compose.ServiceVolumeConfig
 		if len(cSpec.Volumes) > 0 {
@@ -68,6 +74,11 @@ func ConvertSpec(spec *score.WorkloadSpec) (*compose.Project, ExternalVariables,
 				}
 			}
 		}
+		// NOTE: Sorting is necessary for DeepEqual call within our Unit Tests to work reliably
+		sort.Slice(volumes, func(i, j int) bool {
+			return volumes[i].Source < volumes[j].Source
+		})
+		// END (NOTE)
 
 		var svc = compose.ServiceConfig{
 			Name:        spec.Metadata.Name,
