@@ -32,3 +32,12 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+brews:
+  - name: score-compose
+    homepage: "https://score.dev"
+    tap:
+      owner: score-spec
+      name: homebrew-tap
+    commit_author:
+      name: rachfop
+      email: prachford@icloud.com
