@@ -12,6 +12,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"sort"
 
 	"github.com/compose-spec/compose-go/types"
 	"github.com/imdario/mergo"
@@ -161,11 +162,18 @@ func run(cmd *cobra.Command, args []string) error {
 		// Write .env file
 		//
 		log.Print("Writing .env file template...\n")
+
+		envVars := make([]string, 0, len(vars))
 		for key, val := range vars {
 			if val == nil {
 				val = ""
 			}
 			var envVar = fmt.Sprintf("%s=%v\n", key, val)
+			envVars = append(envVars, envVar)
+		}
+		sort.Strings(envVars)
+
+		for _, envVar := range envVars {
 			if _, err := dest.WriteString(envVar); err != nil {
 				return err
 			}
