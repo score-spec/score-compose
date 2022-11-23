@@ -29,7 +29,7 @@ jobs:
 
       -
         name: Build executable
-        run: go build -buildmode exe -o /github/workspace/dist/score-compose-linux-amd64 ./cli
+        run: go build -buildmode exe -o ./dist/score-compose-linux-amd64 ./cli
 
       -
         name: Set up python 3.10
