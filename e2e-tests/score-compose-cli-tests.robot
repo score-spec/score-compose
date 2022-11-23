@@ -7,13 +7,13 @@ ${SCORE_COMPOSE_EXEC}    go run ./cli
 *** Test Cases ***
 Where am I?
     ${output}    Run    pwd
-    Log    ${output}
+    Log    ${output}    console=True
 
 Where is score-compose?
-    ${output}    Run    ls -la /home
-    Log    ${output}
-    ${output}    Run    ls -la /home/runner/work/score-compose/score-compose/dist/
-    Log    ${output}
+    ${output}    Run    ls -la
+    Log    ${output}    console=True
+    ${output}    Run    ls -la ./e2e-tests/
+    Log    ${output}    console=True
 
 Verify score-compose --help
     ${output}    Run    ${SCORE_COMPOSE_EXEC} --help
