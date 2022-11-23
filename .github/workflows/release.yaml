@@ -32,10 +32,23 @@ jobs:
         run: go build -buildmode exe -o ./dist/score-compose-linux-amd64 ./cli
 
       -
+        name: debugging CI
+        run: pwd && ls -la ./dist/
+
+      -
         name: Set up python 3.10
         uses: actions/setup-python@v2
         with:
           python-version: '3.10'
+
+      -
+        name: debugging CI 2
+        run: pwd && ls -la
+
+      -
+        name: debugging CI 3
+        run: pwd && ls -la ./dist/
+
       -
         name: Install dependencies
         run: |
