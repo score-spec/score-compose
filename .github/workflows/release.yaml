@@ -35,6 +35,7 @@ jobs:
             package: 'cli'
             name: 'score-compose'
             compress: 'false'
+            dest: 'dist'
 
       -
         name: Set up python 3.10
