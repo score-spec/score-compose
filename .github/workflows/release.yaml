@@ -28,26 +28,14 @@ jobs:
         run: go test ./... -cover -race
 
       -
-        name: Build executable
-        run: go build -buildmode exe -o ./e2e-tests/score-compose-linux-amd64 ./cli
-
-      -
-        name: debugging CI
-        run: pwd && ls -la ./e2e-tests/
+        name: Build executable for e2e tests
+        run: go build -buildmode exe -o ./e2e-tests/score-compose ./cli
 
       -
         name: Set up python 3.10
         uses: actions/setup-python@v2
         with:
           python-version: '3.10'
-
-      -
-        name: debugging CI 2
-        run: pwd && ls -la
-
-      -
-        name: debugging CI 3
-        run: pwd && ls -la ./e2e-tests/
 
       -
         name: Install dependencies
@@ -59,7 +47,7 @@ jobs:
         uses: joonvena/robotframework-docker-action@v1.0
         with:
           robot_tests_dir: e2e-tests
-          robot_options: "-v SCORE_COMPOSE_EXEC:../tests/score-compose-linux-amd64"
+          robot_options: "-v SCORE_COMPOSE_EXEC:../tests/score-compose"
       -
         name: Upload test results
         uses: actions/upload-artifact@v1
