@@ -26,6 +26,16 @@ jobs:
       -
         name: Run Go Tests
         run: go test ./... -cover -race
+
+      -
+        name: Build executable
+        uses: thatisuday/go-cross-build@v1
+        with:
+            platforms: 'linux/amd64'
+            package: 'cli'
+            name: 'score-compose'
+            compress: 'false'
+
       -
         name: Set up python 3.10
         uses: actions/setup-python@v2
@@ -41,6 +51,7 @@ jobs:
         uses: joonvena/robotframework-docker-action@v1.0
         with:
           robot_tests_dir: e2e-tests
+          robot_options: "-v SCORE_COMPOSE_EXEC:score-compose-linux-amd64"
       -
         name: Upload test results
         uses: actions/upload-artifact@v1
