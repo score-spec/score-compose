@@ -10,9 +10,9 @@ Where am I?
     Log    ${output}
 
 Where is score-compose?
-    ${output}    Run    ls -la
+    ${output}    Run    ls -la /home
     Log    ${output}
-    ${output}    Run    ls -la ../
+    ${output}    Run    ls -la /home/runner/work/score-compose/score-compose/dist/
     Log    ${output}
 
 Verify score-compose --help
