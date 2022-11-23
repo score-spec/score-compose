@@ -20,3 +20,8 @@
 # DS-Store files
 .DS_Store
 docs/.DS_Store
+
+# robot reports
+*log.html
+*report.html
+*output.xml

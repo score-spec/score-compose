@@ -26,6 +26,28 @@ jobs:
       -
         name: Run Go Tests
         run: go test ./... -cover -race
+      -
+        name: Set up python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.10
+      -
+        name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r e2e-tests/requirements.txt
+      -
+        name: Run e2e tests
+        uses: joonvena/robotframework-docker-action@v1.0
+        with:
+          robot_tests_dir: e2e-tests
+      -
+        name: Upload test results
+        uses: actions/upload-artifact@v1
+        if: always()
+        with:
+          name: reports
+          path: ${{ github.workspace }}/reports
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
