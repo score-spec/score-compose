@@ -10,9 +10,11 @@ Where am I?
     Log    ${output}    console=True
 
 Where is score-compose?
-    ${output}    Run    ls -la
+    ${output}    Run    ls -la ../
     Log    ${output}    console=True
-    ${output}    Run    ls -la ./e2e-tests/
+    ${output}    Run    ls -la ../tests/
+    Log    ${output}    console=True
+    ${output}    Run    ls -la ../tests/e2e-tests/
     Log    ${output}    console=True
 
 Verify score-compose --help
