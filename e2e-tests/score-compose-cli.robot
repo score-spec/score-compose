@@ -1,9 +1,8 @@
 *** Settings ***
-Library    OperatingSystem
+Documentation    Verification for all CLI commands of score-compose. The test suite
+...    exercises the cli and verifies its output to stored expected outputs.
+Resource    resources/score-compose-shared.resource
 
-*** Variables ***
-${SCORE_COMPOSE_EXEC}    go run ./cli
-${RESOURCES}    e2e-tests/resources/
 
 *** Test Cases ***
 Verify score-compose --help
@@ -18,13 +17,3 @@ Verify score-compose completion
     Execute score-compose with completion bash --help and verify output
     Execute score-compose with completion bash -h and verify output to be same as completion bash --help
 
-*** Keywords ***
-Execute score-compose with ${argument} and verify output
-    ${output}    Run    ${SCORE_COMPOSE_EXEC} ${argument}
-    ${expected_output}    Get File    ${RESOURCES}${argument}-output.txt
-    Should be equal    ${output}    ${expected_output}
-
-Execute score-compose with ${argument} and verify output to be same as ${other_argument}
-    ${output}    Run    ${SCORE_COMPOSE_EXEC} ${argument}
-    ${expected_output}    Get File    ${RESOURCES}${other_argument}-output.txt
-    Should be equal    ${output}    ${expected_output}

@@ -32,6 +32,10 @@ jobs:
         run: go build -buildmode exe -o ./e2e-tests/score-compose ./cli
 
       -
+        name: Copy examples into e2e-tests
+        run: cp -r ./examples ./e2e-tests
+
+      -
         name: Set up python 3.10
         uses: actions/setup-python@v2
         with:
@@ -44,10 +48,13 @@ jobs:
           pip install -r e2e-tests/requirements.txt
       -
         name: Run e2e tests
-        uses: nilsty/robotframework-docker-action@master
+        uses: joonvena/robotframework-docker-action@v1.1
         with:
           robot_tests_dir: e2e-tests
-          robot_options: "-v SCORE_COMPOSE_EXEC:../tests/score-compose -v RESOURCES:../tests/resources/"
+          robot_options: |
+            -v SCORE_COMPOSE_EXEC:../tests/score-compose
+            -v RESOURCES_DIR:../tests/resources/
+            -v EXAMPLES_DIR:../tests/examples/
           robot_runner_image: registry.humanitec.io/qa-public/score-test-runner:latest
       -
         name: Upload test results
