@@ -9,6 +9,7 @@ Library    OperatingSystem  # http://robotframework.org/robotframework/latest/li
 *** Variables ***
 ${SCORE_COMPOSE_EXEC}    go run ./cli
 ${RESOURCES_DIR}    e2e-tests/resources/
+${OUTPUTS_DIR}    ${RESOURCES_DIR}outputs/
 
 
 *** Keywords ***
@@ -27,38 +28,38 @@ Vaildate output
     IF    "${RESOURCES_DIR}" in "${ARGUMENT}"
         ${ARGUMENT}    Remove String    ${ARGUMENT}    ${RESOURCES_DIR}
     END
-    ${expected_output}    Get File    ${RESOURCES_DIR}${ARGUMENT}-output.txt
+    ${expected_output}    Get File    ${OUTPUTS_DIR}${ARGUMENT}-output.txt
     Should be equal    ${OUTPUT.stdout}    ${expected_output}
 
 Vaildate output to be same as ${other_argument}
-    ${expected_output}    Get File    ${RESOURCES_DIR}${other_argument}-output.txt
+    ${expected_output}    Get File    ${OUTPUTS_DIR}${other_argument}-output.txt
     Should be equal    ${OUTPUT.stdout}    ${expected_output}
 
 Vaildate error
-    ${expected_output}    Get File    ${RESOURCES_DIR}${ARGUMENT}-output.txt
+    ${expected_output}    Get File    ${OUTPUTS_DIR}${ARGUMENT}-output.txt
     Should Contain    ${OUTPUT.stderr}    ${expected_output}
 
 Execute score-compose run for ${example} example
     Execute score-compose with run -f ${EXAMPLES_DIR}${example}/score.yaml -o ${EXAMPLES_DIR}${example}/compose.yaml
-    ${expected_output}    Get File    ${RESOURCES_DIR}example-${example}-output.txt
+    ${expected_output}    Get File    ${OUTPUTS_DIR}example-${example}-output.txt
     Should be equal    ${OUTPUT.stdout}    ${expected_output}
 
 Execute score-compose run for 03-dependencies example for service-b
     Set Test Variable    ${PATH}    ${EXAMPLES_DIR}03-dependencies/
     Execute score-compose with run -f ${PATH}service-b.yaml -o ${PATH}service-b.compose.yaml
-    ${expected_output}    Get File    ${RESOURCES_DIR}example-03-dependencies-service-b-output.txt
+    ${expected_output}    Get File    ${OUTPUTS_DIR}example-03-dependencies-service-b-output.txt
     Should be equal    ${OUTPUT.stdout}    ${expected_output}
 
 Execute score-compose run for 03-dependencies example for service-a
     Set Test Variable    ${PATH}    ${EXAMPLES_DIR}03-dependencies/
     Execute score-compose with run -f ${PATH}service-a.yaml -o ${PATH}service-a.compose.yaml --env-file ${PATH}.env
-    ${expected_output}    Get File    ${RESOURCES_DIR}example-03-dependencies-service-a-output.txt
+    ${expected_output}    Get File    ${OUTPUTS_DIR}example-03-dependencies-service-a-output.txt
     Should be equal    ${OUTPUT.stdout}    ${expected_output}
 
 Execute score-compose run for 04-extras example for web-app
     Set Test Variable    ${PATH}    ${EXAMPLES_DIR}04-extras/
     Execute score-compose with run -f ${PATH}score.yaml -o ${PATH}web-app.compose.yaml
-    ${expected_output}    Get File    ${RESOURCES_DIR}example-04-extras-output.txt
+    ${expected_output}    Get File    ${OUTPUTS_DIR}example-04-extras-output.txt
     Should be equal    ${OUTPUT.stdout}    ${expected_output}
 
 Verify output of ${example} via docker compose convert
