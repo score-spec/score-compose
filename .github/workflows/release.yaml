@@ -56,6 +56,7 @@ jobs:
             -v RESOURCES_DIR:../tests/resources/
             -v EXAMPLES_DIR:../tests/examples/
           robot_runner_image: registry.humanitec.io/qa-public/score-test-runner:latest
+          # The test runner image is maintained here: https://github.com/score-spec/docker-robot-framework
       -
         name: Upload test results
         uses: actions/upload-artifact@v1
