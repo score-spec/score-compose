@@ -78,7 +78,7 @@ Verify score-compose completion zsh
     Execute score-compose with completion zsh -h
     Exit code is 0
     Vaildate output to be same as completion zsh --help
-    
+
 Verify score-compose run
     Execute score-compose with run --help
     Exit code is 0

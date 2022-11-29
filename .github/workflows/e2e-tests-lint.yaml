@@ -20,4 +20,4 @@ jobs:
           python -m pip install --upgrade pip
           pip install robotframework robotframework-robocop
       - name: Run robocop
-        run: robocop -e 0302,0202,0201 --report all
+        run: robocop -e 0302,0202,0201,0505,0508 --report all

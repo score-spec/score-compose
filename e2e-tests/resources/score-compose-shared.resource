@@ -1,7 +1,10 @@
 *** Settings ***
+Documentation    Shared resources for all test suites.
+
 Library    Process  # http://robotframework.org/robotframework/latest/libraries/Process.html
 Library    String  # http://robotframework.org/robotframework/latest/libraries/String.html
 Library    OperatingSystem  # http://robotframework.org/robotframework/latest/libraries/OperatingSystem.html
+
 
 *** Variables ***
 ${SCORE_COMPOSE_EXEC}    go run ./cli
@@ -41,39 +44,39 @@ Execute score-compose run for ${example} example
     Should be equal    ${OUTPUT.stdout}    ${expected_output}
 
 Execute score-compose run for 03-dependencies example for service-b
-    Set Test Variable    ${path}    ${EXAMPLES_DIR}03-dependencies/
-    Execute score-compose with run -f ${path}service-b.yaml -o ${path}service-b.compose.yaml
+    Set Test Variable    ${PATH}    ${EXAMPLES_DIR}03-dependencies/
+    Execute score-compose with run -f ${PATH}service-b.yaml -o ${PATH}service-b.compose.yaml
     ${expected_output}    Get File    ${RESOURCES_DIR}example-03-dependencies-service-b-output.txt
     Should be equal    ${OUTPUT.stdout}    ${expected_output}
 
 Execute score-compose run for 03-dependencies example for service-a
-    Set Test Variable    ${path}    ${EXAMPLES_DIR}03-dependencies/
-    Execute score-compose with run -f ${path}service-a.yaml -o ${path}service-a.compose.yaml --env-file ${path}.env
+    Set Test Variable    ${PATH}    ${EXAMPLES_DIR}03-dependencies/
+    Execute score-compose with run -f ${PATH}service-a.yaml -o ${PATH}service-a.compose.yaml --env-file ${PATH}.env
     ${expected_output}    Get File    ${RESOURCES_DIR}example-03-dependencies-service-a-output.txt
     Should be equal    ${OUTPUT.stdout}    ${expected_output}
 
 Execute score-compose run for 04-extras example for web-app
-    Set Test Variable    ${path}    ${EXAMPLES_DIR}04-extras/
-    Execute score-compose with run -f ${path}score.yaml -o ${path}web-app.compose.yaml
+    Set Test Variable    ${PATH}    ${EXAMPLES_DIR}04-extras/
+    Execute score-compose with run -f ${PATH}score.yaml -o ${PATH}web-app.compose.yaml
     ${expected_output}    Get File    ${RESOURCES_DIR}example-04-extras-output.txt
     Should be equal    ${OUTPUT.stdout}    ${expected_output}
 
 Verify output of ${example} via docker compose convert
-    ${docker-compose-output}    Run
+    ${docker_compose_output}    Run
     ...    docker compose -f ${EXAMPLES_DIR}${example}/compose.yaml convert -q
-    Should Be Empty    ${docker-compose-output}
+    Should Be Empty    ${docker_compose_output}
     Remove File    ${EXAMPLES_DIR}${example}/compose.yaml
 
 Verify output of 03-dependencies example via docker compose convert
-    Set Test Variable    ${path}    ${EXAMPLES_DIR}03-dependencies/
-    ${docker-compose-output}    Run
-    ...    docker compose -f ${path}compose.yaml -f ${path}service-a.compose.yaml -f ${path}service-b.compose.yaml --env-file ${path}.env convert -q
-    Should Be Empty    ${docker-compose-output}
-    Remove Files    ${path}service-a.compose.yaml    ${path}service-b.compose.yaml    ${path}.env
+    Set Test Variable    ${PATH}    ${EXAMPLES_DIR}03-dependencies/
+    ${docker_compose_output}    Run
+    ...    docker compose -f ${PATH}compose.yaml -f ${PATH}service-a.compose.yaml -f ${PATH}service-b.compose.yaml --env-file ${PATH}.env convert -q
+    Should Be Empty    ${docker_compose_output}
+    Remove Files    ${PATH}service-a.compose.yaml    ${PATH}service-b.compose.yaml    ${PATH}.env
 
 Verify output of 04-extras example via docker compose convert
-    Set Test Variable    ${path}    ${EXAMPLES_DIR}04-extras/
-    ${docker-compose-output}    Run
-    ...    docker compose -f ${path}compose.yaml -f ${path}web-app.compose.yaml convert -q
-    Should Be Empty    ${docker-compose-output}
-    Remove File    ${path}web-app.compose.yaml
+    Set Test Variable    ${PATH}    ${EXAMPLES_DIR}04-extras/
+    ${docker_compose_output}    Run
+    ...    docker compose -f ${PATH}compose.yaml -f ${PATH}web-app.compose.yaml convert -q
+    Should Be Empty    ${docker_compose_output}
+    Remove File    ${PATH}web-app.compose.yaml
