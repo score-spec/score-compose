@@ -1,0 +1,18 @@
+Generate the autocompletion script for the fish shell.
+
+To load completions in your current shell session:
+
+	score-compose completion fish | source
+
+To load completions for every new session, execute once:
+
+	score-compose completion fish > ~/.config/fish/completions/score-compose.fish
+
+You will need to start a new shell for this setup to take effect.
+
+Usage:
+  score-compose completion fish [flags]
+
+Flags:
+  -h, --help              help for fish
+      --no-descriptions   disable completion descriptions
