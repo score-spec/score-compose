@@ -5,7 +5,7 @@ before:
 builds:
   - id: score-compose
     binary: score-compose
-    main: ./cli
+    main: ./cmd/score-compose
     ldflags:
       - -X github.com/score-spec/score-compose/internal/version.Version={{ .Version }}
       - -X github.com/score-spec/score-compose/internal/version.BuildTime={{ .CommitDate }}
