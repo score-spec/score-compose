@@ -11,12 +11,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/score-spec/score-compose/cli/cmd"
+	"github.com/score-spec/score-compose/internal/command"
 )
 
 func main() {
-
-	if err := cmd.Execute(); err != nil {
+	if err := command.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
