@@ -28,6 +28,7 @@ Expected outputs can be found under `resources/outputs`. These outputs can be re
 Robotframework is a Python based generic testing framework. It is recommended to use a [Python virtual environment](https://docs.python.org/3/library/venv.html) to have a clean local setup.
 
 ### Environment setup
+
 1. Clone the repository [score-compose](https://github.com/score-spec/score-compose) from Github.
 2. Install Python 3.10 on your machine and then install `pip`.
 3. Start a new virtual environment on the root folder of this project, using Python 3.10, and activate it.
