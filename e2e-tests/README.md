@@ -1,4 +1,4 @@
-# score-compose end to end test suite
+# score-compose end-to-end test suite
 
 This end to end test suite is there to ensure the continuous functionality of the score-compose CLI as well as the functionality of the included examples. 
 
