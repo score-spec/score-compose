@@ -24,7 +24,8 @@ All shared resources are located in the `resources` folder.
 Expected outputs can be found under `resources/outputs`. These outputs can be re-generated via a utility script [utility/generate-expected-outputs.py](utility/generate-expected-outputs.py)
 
 ## Running the tests locally
-Robotframework is a python based generic testing framework. Therefor it's recommended to use a [python virtual environment](https://docs.python.org/3/library/venv.html) to have a clean local setup.
+
+Robotframework is a Python based generic testing framework. It is recommended to use a [Python virtual environment](https://docs.python.org/3/library/venv.html) to have a clean local setup.
 
 ### Environment setup
 1. Clone the repository [score-compose](https://github.com/score-spec/score-compose) from Github.
