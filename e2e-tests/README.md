@@ -3,7 +3,9 @@
 This end-to-end test suite ensures continuous functionality of the score-compose CLI as well as the functionality of the included examples. 
 
 ## Contribution
-Contribution to this test suite requires basic understanding of the [RobotFramework](www.robotframework.org). As well as the used libraries
+
+Contribution to this test suite requires basic understanding of the [RobotFramework](www.robotframework.org). As well as the used libraries.
+
 - [Process Library](https://robotframework.org/robotframework/latest/libraries/Process.html)
 - [OperatingSystem Library](http://robotframework.org/robotframework/latest/libraries/OperatingSystem.html)
 - [String Library](http://robotframework.org/robotframework/latest/libraries/String.html)
