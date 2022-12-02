@@ -40,9 +40,7 @@ Robotframework is a Python based generic testing framework. It is recommended to
 4. First tool to install would be the [`pip-tools`](https://github.com/jazzband/pip-tools).
    A set of command line tools to help you keep your pip-based packages fresh, even when you've pinned them.
 
-   This way we can have the essential packages for this project pinned in the `requirements.in` and with that we can construct the
-   `requirements.txt` file that should be used when installing packages. When you want to update some packages,
-   all you need to do is update the `requirements.in` file and the re-compile the `requirements.txt` one.
+   This way we can have the essential packages for this project pinned in the `requirements.in` and with that you can construct the `requirements.txt` file that should be used when installing packages. When you want to update some packages, all you need to do is update the `requirements.in` file and the re-compile the `requirements.txt` one.
    
    So do `python -m pip install pip-tools` inside your activated pip environment.
    When you need to compile a new version of the requirements.txt, do `pip-compile --output-file=- > requirements.txt`
