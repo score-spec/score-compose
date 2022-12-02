@@ -51,6 +51,7 @@ Robotframework is a Python based generic testing framework. It is recommended to
    ```
 
 ### Running the tests
-The tests require the score-compose CLI to be executed via `go run ./cli`. Therefor [go](https://go.dev/) needs to be installed.
+
+The tests require the score-compose CLI to be executed by `go run ./cli`. Therefore [go](https://go.dev/) needs to be installed.
 
 The tests can be run via `robot e2e-tests`.
