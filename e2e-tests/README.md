@@ -11,7 +11,7 @@ Contribution to this test suite requires basic understanding of the [RobotFramew
 - [String Library](http://robotframework.org/robotframework/latest/libraries/String.html)
 
 Which are extending the list of Robotframework's [build-in keywords](http://robotframework.org/robotframework/latest/libraries/BuiltIn.html). 
-See the [RobotFramework user guide](http://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html) for in-depth documentation.
+For more information, see the [RobotFramework user guide](http://robotframework.org/robotframework/latest/RobotFrameworkUserGuide.html).
 
 ## Structure and scope of tests
 
