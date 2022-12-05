@@ -47,7 +47,7 @@ Robotframework is a Python based generic testing framework. It is recommended to
    inside your terminal.
 5. Install the pip libraries required:
    ```bash
-   pip3 install -r requirements.txt
+    pip install -r e2e-tests/requirements.txt
    ```
 
 ### Running the tests
