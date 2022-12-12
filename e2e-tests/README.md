@@ -25,7 +25,7 @@ Expected outputs can be found under `resources/outputs`. These outputs can be re
 
 ## Running the tests locally
 
-Robotframework is a Python based generic testing framework. It is recommended to use a [Python virtual environment](https://docs.python.org/3/library/venv.html) to have a clean local setup.
+Robot Framework is a Python based generic testing framework. It is recommended to use a [Python virtual environment](https://docs.python.org/3/library/venv.html) to have a clean local setup.
 
 ### Environment setup
 
