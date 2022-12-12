@@ -15,6 +15,10 @@ RUN go build -o /usr/local/bin/score-compose ./cmd/score-compose
 # https://docs.docker.com/develop/develop-images/multistage-build/#use-multi-stage-builds
 FROM alpine:3
 
+# add missing dependencies to alpine image
+# https://stackoverflow.com/questions/36279253/go-compiled-binary-wont-run-in-an-alpine-docker-container-on-ubuntu-host
+RUN apk add --no-cache libc6-compat 
+
 # Set the current working directory inside the container.
 WORKDIR /score-compose
 
