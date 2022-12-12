@@ -1,0 +1,10 @@
+services:
+  hello-world:
+    command:
+      - -c
+      - while true; do echo Hello $${FRIEND}!; sleep 5; done
+    entrypoint:
+      - /bin/sh
+    environment:
+      FRIEND: ${NAME-World}
+    image: busybox

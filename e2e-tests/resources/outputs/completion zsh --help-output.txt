@@ -1,0 +1,29 @@
+Generate the autocompletion script for the zsh shell.
+
+If shell completion is not already enabled in your environment you will need
+to enable it.  You can execute the following once:
+
+	echo "autoload -U compinit; compinit" >> ~/.zshrc
+
+To load completions in your current shell session:
+
+	source <(score-compose completion zsh); compdef _score-compose score-compose
+
+To load completions for every new session, execute once:
+
+#### Linux:
+
+	score-compose completion zsh > "${fpath[1]}/_score-compose"
+
+#### macOS:
+
+	score-compose completion zsh > $(brew --prefix)/share/zsh/site-functions/_score-compose
+
+You will need to start a new shell for this setup to take effect.
+
+Usage:
+  score-compose completion zsh [flags]
+
+Flags:
+  -h, --help              help for zsh
+      --no-descriptions   disable completion descriptions

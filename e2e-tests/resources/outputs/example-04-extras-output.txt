@@ -1,0 +1,10 @@
+services:
+  web-app:
+    image: nginx
+    ports:
+      - target: 80
+        published: "8000"
+    volumes:
+      - type: volume
+        source: data
+        target: /usr/share/nginx/html

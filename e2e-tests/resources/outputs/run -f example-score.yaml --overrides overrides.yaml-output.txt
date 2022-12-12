@@ -1,0 +1,8 @@
+services:
+  hello-world:
+    command:
+      - -c
+      - while true; do echo Hello World!; sleep 5; done
+    entrypoint:
+      - /bin/sh
+    image: nginx

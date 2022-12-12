@@ -1,0 +1,15 @@
+'./score.yaml'...
+Error: open ./score.yaml: no such file or directory
+Usage:
+  score-compose run [flags]
+
+Flags:
+      --build string       Replaces 'image' name with compose 'build' instruction
+      --env-file string    Location to store sample .env file
+  -f, --file string        Source SCORE file (default "./score.yaml")
+  -h, --help               help for run
+  -o, --output string      Output file
+      --overrides string   Overrides SCORE file (default "./overrides.score.yaml")
+      --verbose            Enable diagnostic messages (written to STDERR)
+
+open ./score.yaml: no such file or directory

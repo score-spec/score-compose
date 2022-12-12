@@ -33,6 +33,10 @@ Never made an open-source contribution before? Wondering how contributions work 
 13. Introduce changes to the pull request if the reviewing maintainer recommends them.
 14. Celebrate your success after your pull request is merged!
 
+### Contributing to the end-to-end test suite
+
+Any change or update to the functionality will (most likely) require an update to the end-to-end tests. Refer to the [contribution guide of the test suite](e2e-tests/README.md) for more information.
+
 ## Feature requests
 
 ## Code reviews
