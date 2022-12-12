@@ -7,7 +7,7 @@ Library    OperatingSystem  # http://robotframework.org/robotframework/latest/li
 
 
 *** Variables ***
-${SCORE_COMPOSE_EXEC}    go run ./cli
+${SCORE_COMPOSE_EXEC}    go run ./cmd/score-compose
 ${RESOURCES_DIR}    e2e-tests/resources/
 ${OUTPUTS_DIR}    ${RESOURCES_DIR}outputs/
 

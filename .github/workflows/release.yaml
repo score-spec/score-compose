@@ -29,7 +29,7 @@ jobs:
 
       -
         name: Build executable for e2e tests
-        run: go build -buildmode exe -o ./e2e-tests/score-compose ./cli
+        run: go build -buildmode exe -o ./e2e-tests/score-compose ./cmd/score-compose
 
       -
         name: Copy examples into e2e-tests
