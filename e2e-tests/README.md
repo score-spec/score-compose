@@ -15,7 +15,7 @@ For more information, see the [Robot Framework user guide](http://robotframework
 
 ## Structure and scope of tests
 
-The end to end test suite consists of two main parts.
+The end-to-end test suite consists of two main parts.
 1. `score-compose-cli.robot` covering all cli commands and ensuring their outputs
 2. `score-compose-examples.robot` covering all examples from the examples folder in this repo.
 
