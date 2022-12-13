@@ -35,7 +35,7 @@ If you're just getting started, follow [this guide](https://docs.score.dev/docs/
 
 ## ![Contributing](docs/images/contributing.svg) Contributing
 
-- Write a [blog post](score.dev/blog).
+- Write a [blog post](https://score.dev/blog).
 - Provide feedback on our [road map and releases board](https://github.com/score-spec/spec/blob/main/roadmap.md#get-involved).
 - Contribute.
 
