@@ -18,13 +18,12 @@ import (
 
 // ConvertSpec converts SCORE specification into docker-compose configuration.
 func ConvertSpec(spec *score.WorkloadSpec) (*compose.Project, ExternalVariables, error) {
+	context, err := buildContext(spec.Metadata, spec.Resources)
+	if err != nil {
+		return nil, nil, fmt.Errorf("preparing context: %w", err)
+	}
 
 	for _, cSpec := range spec.Containers {
-		context, err := buildContext(spec.Metadata, spec.Resources)
-		if err != nil {
-			return nil, nil, fmt.Errorf("preparing context: %w", err)
-		}
-
 		var externalVars = ExternalVariables(context.ListEnvVars())
 		var env = make(compose.MappingWithEquals, len(cSpec.Variables))
 		for key, val := range cSpec.Variables {
