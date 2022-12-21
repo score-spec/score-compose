@@ -40,41 +40,29 @@ func TestBuildContext(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, templatesContext{
-		"metadata": map[string]interface{}{
-			"name": "test-name",
-		},
-		"resources": map[string]namedObjectMap{
-			"env": {
-				".name": "env",
-				"DEBUG": "${DEBUG-true}",
-			},
-			"db": {
-				".name": "db",
-				"host":  "${DB_HOST-.}",
-				"port":  "${DB_PORT-5342}",
-				"name":  "${DB_NAME?err}",
-			},
-		},
+		"metadata.name": "test-name",
+
+		"resources.env":       "env",
+		"resources.env.DEBUG": "${DEBUG-true}",
+
+		"resources.db":      "db",
+		"resources.db.host": "${DB_HOST-.}",
+		"resources.db.port": "${DB_PORT-5342}",
+		"resources.db.name": "${DB_NAME?err}",
 	}, context)
 }
 
 func TestMapVar(t *testing.T) {
 	var context = templatesContext{
-		"metadata": map[string]interface{}{
-			"name": "test-name",
-		},
-		"resources": map[string]namedObjectMap{
-			"env": {
-				".name": "env",
-				"DEBUG": "${DEBUG-true}",
-			},
-			"db": {
-				".name": "db",
-				"host":  "${DB_HOST-.}",
-				"port":  "${DB_PORT-5342}",
-				"name":  "${DB_NAME?err}",
-			},
-		},
+		"metadata.name": "test-name",
+
+		"resources.env":       "env",
+		"resources.env.DEBUG": "${DEBUG-true}",
+
+		"resources.db":      "db",
+		"resources.db.host": "${DB_HOST-.}",
+		"resources.db.port": "${DB_PORT-5342}",
+		"resources.db.name": "${DB_NAME?err}",
 	}
 
 	assert.Equal(t, "", context.mapVar(""))
@@ -98,21 +86,15 @@ func TestMapVar(t *testing.T) {
 
 func TestSubstitute(t *testing.T) {
 	var context = templatesContext{
-		"metadata": map[string]interface{}{
-			"name": "test-name",
-		},
-		"resources": map[string]namedObjectMap{
-			"env": {
-				".name": "env",
-				"DEBUG": "${DEBUG-true}",
-			},
-			"db": {
-				".name": "db",
-				"host":  "${DB_HOST-.}",
-				"port":  "${DB_PORT-5342}",
-				"name":  "${DB_NAME?err}",
-			},
-		},
+		"metadata.name": "test-name",
+
+		"resources.env":       "env",
+		"resources.env.DEBUG": "${DEBUG-true}",
+
+		"resources.db":      "db",
+		"resources.db.host": "${DB_HOST-.}",
+		"resources.db.port": "${DB_PORT-5342}",
+		"resources.db.name": "${DB_NAME?err}",
 	}
 
 	assert.Equal(t, "", context.Substitute(""))
@@ -143,21 +125,15 @@ func TestEnvVarPattern(t *testing.T) {
 
 func TestListEnvVars(t *testing.T) {
 	var context = templatesContext{
-		"metadata": map[string]interface{}{
-			"name": "test-name",
-		},
-		"resources": map[string]namedObjectMap{
-			"env": {
-				".name": "env",
-				"DEBUG": "${DEBUG-true}",
-			},
-			"db": {
-				".name": "db",
-				"host":  "${DB_HOST-.}",
-				"port":  "${DB_PORT-5342}",
-				"name":  "${DB_NAME?err}",
-			},
-		},
+		"metadata.name": "test-name",
+
+		"resources.env":       "env",
+		"resources.env.DEBUG": "${DEBUG-true}",
+
+		"resources.db":      "db",
+		"resources.db.host": "${DB_HOST-.}",
+		"resources.db.port": "${DB_PORT-5342}",
+		"resources.db.name": "${DB_NAME?err}",
 	}
 
 	assert.Equal(t, map[string]interface{}{

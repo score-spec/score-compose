@@ -9,8 +9,8 @@ package compose
 
 import (
 	"fmt"
+	"log"
 	"os"
-	"reflect"
 	"regexp"
 	"strings"
 
@@ -19,36 +19,36 @@ import (
 	score "github.com/score-spec/score-go/types"
 )
 
-// namedObjectMap ia an utility type that prints an object name when converted to string
-type namedObjectMap map[string]string
-
-// String converts object to string
-func (r namedObjectMap) String() string {
-	return fmt.Sprintf("%v", r[".name"])
-}
-
 // templatesContext ia an utility type that provides a context for '${...}' templates substitution
-type templatesContext map[string]interface{}
+type templatesContext map[string]string
 
 // buildContext initializes a new templatesContext instance
 func buildContext(metadata score.WorkloadMeta, resources score.ResourcesSpecs) (templatesContext, error) {
+	var ctx = make(map[string]string)
+
 	var metadataMap = make(map[string]interface{})
 	if decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		TagName: "json",
 		Result:  &metadataMap,
-	}); err == nil {
-		decoder.Decode(metadata)
-	} else {
+	}); err != nil {
 		return nil, err
+	} else {
+		decoder.Decode(metadata)
+		for key, val := range metadataMap {
+			var ref = fmt.Sprintf("metadata.%s", key)
+			if _, exists := ctx[ref]; exists {
+				return nil, fmt.Errorf("ambiguous property reference '%s'", ref)
+			}
+			ctx[ref] = fmt.Sprintf("%v", val)
+		}
 	}
 
-	var resourcesMap = make(map[string]namedObjectMap)
 	for resName, res := range resources {
-		var resProps = namedObjectMap{
-			".name": resName,
-		}
+		ctx[fmt.Sprintf("resources.%s", resName)] = resName
 
 		for propName, prop := range res.Properties {
+			var ref = fmt.Sprintf("resources.%s.%s", resName, propName)
+
 			var envVar string
 			switch res.Type {
 			case "environment":
@@ -66,16 +66,10 @@ func buildContext(metadata score.WorkloadMeta, resources score.ResourcesSpecs) (
 				envVar += "?err"
 			}
 
-			resProps[propName] = fmt.Sprintf("${%s}", envVar)
+			ctx[ref] = fmt.Sprintf("${%s}", envVar)
 		}
-
-		resourcesMap[resName] = resProps
 	}
 
-	var ctx = map[string]interface{}{
-		"metadata":  metadataMap,
-		"resources": resourcesMap,
-	}
 	return ctx, nil
 }
 
@@ -87,6 +81,9 @@ func (context templatesContext) Substitute(src string) string {
 // MapVar replaces objects and properties references with corresponding values
 // Returns an empty string if the reference can't be resolved
 func (context templatesContext) mapVar(ref string) string {
+	if ref == "" {
+		return ""
+	}
 
 	// NOTE: os.Expand(..) would invoke a callback function with "$" as an argument for escaped sequences.
 	//       "$${abc}" is treated as "$$" pattern and "{abc}" static text.
@@ -97,19 +94,12 @@ func (context templatesContext) mapVar(ref string) string {
 		return ref
 	}
 
-	var v reflect.Value
-	var val interface{} = context
-	for _, key := range strings.Split(ref, ".") {
-		if v = reflect.ValueOf(val); v.Kind() != reflect.Map {
-			return ""
-		}
-		if v = v.MapIndex(reflect.ValueOf(key)); !v.IsValid() {
-			return ""
-		}
-		val = v.Interface()
+	if res, ok := context[ref]; ok {
+		return res
 	}
 
-	return fmt.Sprintf("%v", val)
+	log.Printf("Warning: Can not resolve '%s'. Resource or property is not declared.", ref)
+	return ""
 }
 
 // composeEnvVarReferencePattern defines the rule for compose environment variable references
@@ -122,11 +112,9 @@ var envVarPattern = regexp.MustCompile(`\$\{(\w+)(?:\-(.+?)|\?.+)?\}$`)
 // ListEnvVars reports all environment variables used by templatesContext
 func (context templatesContext) ListEnvVars() map[string]interface{} {
 	var vars = make(map[string]interface{})
-	for _, objMap := range context["resources"].(map[string]namedObjectMap) {
-		for _, ref := range objMap {
-			if matches := envVarPattern.FindStringSubmatch(ref); len(matches) == 3 {
-				vars[matches[1]] = matches[2]
-			}
+	for _, ref := range context {
+		if matches := envVarPattern.FindStringSubmatch(ref); len(matches) == 3 {
+			vars[matches[1]] = matches[2]
 		}
 	}
 	return vars
