@@ -10,10 +10,7 @@ package compose
 import (
 	"errors"
 	"fmt"
-	"os"
-	"regexp"
 	"sort"
-	"strings"
 
 	compose "github.com/compose-spec/compose-go/types"
 	score "github.com/score-spec/score-go/types"
@@ -21,12 +18,16 @@ import (
 
 // ConvertSpec converts SCORE specification into docker-compose configuration.
 func ConvertSpec(spec *score.WorkloadSpec) (*compose.Project, ExternalVariables, error) {
+	context, err := buildContext(spec.Metadata, spec.Resources)
+	if err != nil {
+		return nil, nil, fmt.Errorf("preparing context: %w", err)
+	}
 
 	for _, cSpec := range spec.Containers {
-		var externalVars = ExternalVariables(resourcesMap(spec.Resources).listVars())
+		var externalVars = ExternalVariables(context.ListEnvVars())
 		var env = make(compose.MappingWithEquals, len(cSpec.Variables))
 		for key, val := range cSpec.Variables {
-			var envVarVal = os.Expand(val, resourcesMap(spec.Resources).mapVar)
+			var envVarVal = context.Substitute(val)
 			env[key] = &envVarVal
 		}
 
@@ -68,7 +69,7 @@ func ConvertSpec(spec *score.WorkloadSpec) (*compose.Project, ExternalVariables,
 				}
 				volumes[idx] = compose.ServiceVolumeConfig{
 					Type:     "volume",
-					Source:   resourceRefRegex.ReplaceAllString(vol.Source, "$1"),
+					Source:   context.Substitute(vol.Source),
 					Target:   vol.Target,
 					ReadOnly: vol.ReadOnly,
 				}
@@ -103,72 +104,4 @@ func ConvertSpec(spec *score.WorkloadSpec) (*compose.Project, ExternalVariables,
 	}
 
 	return nil, nil, errors.New("workload does not have any containers to convert into a compose service")
-}
-
-// resourceRefRegex extracts the resource ID from the resource reference: '${resources.RESOURCE_ID}'
-var resourceRefRegex = regexp.MustCompile(`\${resources\.(.+)}`)
-
-// resourcesMap is an internal utility type to group some helper methods.
-type resourcesMap map[string]score.ResourceSpec
-
-// listResourcesVars lists all available environment variables based on the declared resources properties.
-func (r resourcesMap) listVars() map[string]interface{} {
-	var vars = make(map[string]interface{})
-	for resName, res := range r {
-		for propName, prop := range res.Properties {
-			var envVar string
-			switch res.Type {
-			case "environment":
-				envVar = strings.ToUpper(propName)
-			default:
-				envVar = strings.ToUpper(fmt.Sprintf("%s_%s", resName, propName))
-			}
-
-			envVar = strings.Replace(envVar, "-", "_", -1)
-			envVar = strings.Replace(envVar, ".", "_", -1)
-
-			vars[envVar] = prop.Default
-		}
-	}
-	return vars
-}
-
-// mapResourceVar maps resources properties references.
-// Returns an empty string if the reference can't be resolved.
-func (r resourcesMap) mapVar(ref string) string {
-	if ref == "$" {
-		return ref
-	}
-
-	var segments = strings.SplitN(ref, ".", 3)
-	if segments[0] != "resources" || len(segments) != 3 {
-		return ""
-	}
-
-	var resName = segments[1]
-	var propName = segments[2]
-	if res, ok := r[resName]; ok {
-		if prop, ok := res.Properties[propName]; ok {
-			var envVar string
-			switch res.Type {
-			case "environment":
-				envVar = strings.ToUpper(propName)
-			default:
-				envVar = strings.ToUpper(fmt.Sprintf("%s_%s", resName, propName))
-			}
-
-			envVar = strings.Replace(envVar, "-", "_", -1)
-			envVar = strings.Replace(envVar, ".", "_", -1)
-
-			if prop.Default != nil {
-				envVar += fmt.Sprintf("-%v", prop.Default)
-			} else if prop.Required {
-				envVar += "?err"
-			}
-
-			return fmt.Sprintf("${%s}", envVar)
-		}
-	}
-
-	return ""
 }
