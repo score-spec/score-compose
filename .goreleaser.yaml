@@ -38,6 +38,7 @@ brews:
     tap:
       owner: score-spec
       name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
     commit_author:
       name: rachfop
       email: prachford@icloud.com
