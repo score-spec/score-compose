@@ -2,7 +2,7 @@
 
 Score uses `resources` section to describe workload's dependencies. This mechanism can be used to spin-up multi-service setups with `docker-compose`.
 
-For example, `service-a.yaml` score file describes a service that has two dependencies: `service-b` (another workload) and a PostgreSQL database instance:
+For example, `service-a.yaml` score file describes a service that has two dependencies: `service-b` (another workload), and a PostgreSQL database instance:
 
 ```yaml
 apiVersion: score.dev/v1b1
@@ -40,10 +40,10 @@ resources:
       password:
         secret: true
   service-b:
-    type: workload
+    type: service
 ```
 
-The second workload is described in `service-b.yaml` file and has no any additional dependencies:
+The second workload is described in `service-b.yaml` file and does not have dependencies:
 
 ```yaml
 apiVersion: score.dev/v1b1
@@ -75,33 +75,17 @@ $ score-compose run -f ./service-b.yaml -o ./service-b.compose.yaml
 $ score-compose run -f ./service-a.yaml -o ./service-a.compose.yaml --env-file ./.env
 ```
 
-Resulting output file  `service-a.compose.yaml` would include two dependencies on compose services `db` and `service-b`.
-Both should be up and running before `service-a` could start:
+One last step is to create a `db` service definition and enforce `service-a` dependencies in our target test environment.
+Common place to store non-score defined configuration and resources is a root `compose.yaml` file:
 
 ```yaml
 services:
   service-a:
-    command:
-      - -c
-      - 'while true; do echo service-a: Hello $${FRIEND}! Connecting to $${CONNECTION_STRING}...; sleep 10; done'
     depends_on:
       db:
         condition: service_started
       service-b:
         condition: service_started
-    entrypoint:
-      - /bin/sh
-    environment:
-      CONNECTION_STRING: postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST-localhost}:${DB_PORT-5432}/${DB_NAME-postgres}
-      NAME: ${NAME-World}
-    image: busybox
-```
-
-One last step is to ensure there is a compose `db` service definition.
-Common place to store non-score defined configuration and resources is a root `compose.yaml` file:
-
-```yaml
-services:
   db:
     image: postgres:alpine
     restart: always

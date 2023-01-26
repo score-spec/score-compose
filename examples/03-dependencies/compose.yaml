@@ -1,4 +1,10 @@
 services:
+  service-a:
+    depends_on:
+      db:
+        condition: service_started
+      service-b:
+        condition: service_started
   db:
     image: postgres:alpine
     restart: always
