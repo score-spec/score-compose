@@ -31,13 +31,6 @@ func ConvertSpec(spec *score.WorkloadSpec) (*compose.Project, ExternalVariables,
 			env[key] = &envVarVal
 		}
 
-		var dependsOn = make(compose.DependsOnConfig, len(spec.Resources))
-		for name, res := range spec.Resources {
-			if res.Type != "environment" && res.Type != "volume" {
-				dependsOn[name] = compose.ServiceDependency{Condition: "service_started"}
-			}
-		}
-
 		var ports []compose.ServicePortConfig
 		if len(spec.Service.Ports) > 0 {
 			ports = []compose.ServicePortConfig{}
@@ -87,7 +80,6 @@ func ConvertSpec(spec *score.WorkloadSpec) (*compose.Project, ExternalVariables,
 			Entrypoint:  cSpec.Command,
 			Command:     cSpec.Args,
 			Environment: env,
-			DependsOn:   dependsOn,
 			Ports:       ports,
 			Volumes:     volumes,
 		}
