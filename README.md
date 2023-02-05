@@ -2,7 +2,7 @@
 
 # ![Score](docs/images/logo.svg) Score overview
 
-Score aims to improve developer producticity and experience by reducing the risk of configurtaion inconsistencies between local and remote environments. It provides developer-centric workload specification (`score.yaml`) which captures a workloads runtime requirements in a platform-agnostic manner.
+Score aims to improve developer productivity and experience by reducing the risk of configurtaion inconsistencies between local and remote environments. It provides developer-centric workload specification (`score.yaml`) which captures a workloads runtime requirements in a platform-agnostic manner.
 
 The `score.yaml` specification file can be executed against a _Score Implementation CLI_, a conversion tool for application developers to generate environment specific configuration. In combination with environment specific parameters, the CLI tool can run your workload in the target environment by generating a platform-specific configuration file such as `docker-compose.yaml` or a Helm `values.yaml`. Learn more [here](https://github.com/score-spec/spec#-what-is-score).
 
