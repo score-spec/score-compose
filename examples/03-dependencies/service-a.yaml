@@ -33,4 +33,4 @@ resources:
       password:
         secret: true
   service-b:
-    type: workload
+    type: service

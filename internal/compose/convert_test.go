@@ -79,7 +79,6 @@ func TestScoreConvert(t *testing.T) {
 						Environment: compose.MappingWithEquals{
 							"CONNECTION_STRING": stringPtr("test connection string"),
 						},
-						DependsOn: make(compose.DependsOnConfig, 0),
 						Ports: []compose.ServicePortConfig{
 							{
 								Published: "80",
@@ -166,10 +165,6 @@ func TestScoreConvert(t *testing.T) {
 								Target:   "/mnt/data",
 								ReadOnly: true,
 							},
-						},
-						DependsOn: compose.DependsOnConfig{
-							"app-db": compose.ServiceDependency{Condition: "service_started"},
-							"dns":    compose.ServiceDependency{Condition: "service_started"},
 						},
 					},
 				},

@@ -3,11 +3,6 @@ services:
     command:
       - -c
       - 'while true; do echo service-a: Hello $${FRIEND}! Connecting to $${CONNECTION_STRING}...; sleep 10; done'
-    depends_on:
-      db:
-        condition: service_started
-      service-b:
-        condition: service_started
     entrypoint:
       - /bin/sh
     environment:
