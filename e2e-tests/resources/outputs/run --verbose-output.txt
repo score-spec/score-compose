@@ -10,6 +10,7 @@ Flags:
   -h, --help               help for run
   -o, --output string      Output file
       --overrides string   Overrides SCORE file (default "./overrides.score.yaml")
+      --skip-validation    DEPRECATED: Disables Score file schema validation
       --verbose            Enable diagnostic messages (written to STDERR)
 
 open ./score.yaml: no such file or directory
