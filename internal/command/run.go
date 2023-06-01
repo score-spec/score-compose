@@ -8,6 +8,7 @@ The Apache Software Foundation (http://www.apache.org/).
 package command
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -17,10 +18,12 @@ import (
 	"github.com/compose-spec/compose-go/types"
 	"github.com/imdario/mergo"
 	"github.com/spf13/cobra"
+	"github.com/xeipuuv/gojsonschema"
 
 	"github.com/score-spec/score-compose/internal/compose"
 
 	loader "github.com/score-spec/score-go/loader"
+	schema "github.com/score-spec/score-go/schema"
 	score "github.com/score-spec/score-go/types"
 )
 
@@ -36,7 +39,8 @@ var (
 	envFile       string
 	buildCtx      string
 
-	verbose bool
+	skipValidation bool
+	verbose        bool
 )
 
 func init() {
@@ -46,6 +50,7 @@ func init() {
 	runCmd.Flags().StringVar(&envFile, "env-file", "", "Location to store sample .env file")
 	runCmd.Flags().StringVar(&buildCtx, "build", "", "Replaces 'image' name with compose 'build' instruction")
 
+	runCmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "DEPRECATED: Disables Score file schema validation.")
 	runCmd.Flags().BoolVar(&verbose, "verbose", false, "Enable diagnostic messages (written to STDERR)")
 
 	rootCmd.AddCommand(runCmd)
@@ -102,7 +107,23 @@ func run(cmd *cobra.Command, args []string) error {
 
 	// Validate SCORE spec
 	//
-	log.Print("Validating SCORE spec...\n")
+	if !skipValidation {
+		log.Print("Validating SCORE spec...\n")
+		if res, err := schema.Validate(gojsonschema.NewGoLoader(srcMap)); err != nil {
+			return fmt.Errorf("validating workload spec: %w", err)
+		} else if !res.Valid() {
+			for _, valErr := range res.Errors() {
+				log.Println(valErr.String())
+				if err == nil {
+					err = errors.New(valErr.String())
+				}
+			}
+			return fmt.Errorf("validating workload spec: %w", err)
+		}
+	}
+
+	// Convert SCORE spec
+	//
 	var spec score.WorkloadSpec
 	if err = loader.MapSpec(&spec, srcMap); err != nil {
 		return fmt.Errorf("validating workload spec: %w", err)
