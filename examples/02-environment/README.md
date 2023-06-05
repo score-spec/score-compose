@@ -21,10 +21,6 @@ containers:
 resources:
   env:
     type: environment
-    properties:
-      NAME:
-        type: string
-        default: World
 ```
 
 To convert `score.yaml` file into runnable `compose.yaml` use a `score-compose` CLI tool:

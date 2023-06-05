@@ -22,23 +22,8 @@ containers:
 resources:
   env:
     type: environment
-    properties:
-      NAME:
-        type: string
-        default: World
   db:
     type: postgres
-    properties:
-      host:
-        default: localhost
-      port:
-        default: 5432
-      name:
-        default: postgres
-      user:
-        secret: true
-      password:
-        secret: true
   service-b:
     type: service
 ```
@@ -62,10 +47,6 @@ containers:
 resources:
   env:
     type: environment
-    properties:
-      NAME:
-        type: string
-        default: World
 ```
 
 To prepare executable `docker-compose` configuration files, convert both score files with `score-compose` CLI tool:
