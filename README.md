@@ -21,7 +21,7 @@ score-compose run -f /tmp/score.yaml -o /tmp/compose.yaml
 
 - `run` tells the CLI to translate the Score file to a Docker Compose file.
 - `-f` is the path to the Score file.
-- `--env` specifies the path to the output file.
+- `-o` specifies the path to the output file.
 
 If you're just getting started, follow [this guide](https://docs.score.dev/docs/get-started/score-compose-hello-world/) to run your first Hello World program with `score-compose`.
 

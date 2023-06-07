@@ -95,6 +95,9 @@ Verify score-compose run
     Execute score-compose with run -f ${RESOURCES_DIR}example-score.yaml --overrides ${RESOURCES_DIR}overrides.yaml
     Exit code is 0
     Vaildate output
+    Execute score-compose with run -f ${RESOURCES_DIR}example-score.yaml -p containers.hello.image=hello:1.1
+    Exit code is 0
+    Vaildate output
 
 Verify score-compose run (error cases)
     Execute score-compose with run
