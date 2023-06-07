@@ -55,7 +55,7 @@ func init() {
 	runCmd.Flags().StringVar(&envFile, "env-file", "", "Location to store sample .env file")
 	runCmd.Flags().StringVar(&buildCtx, "build", "", "Replaces 'image' name with compose 'build' instruction")
 
-	runCmd.Flags().StringArrayVarP(&overrideParams, "property", "p", nil, "Override selected property value")
+	runCmd.Flags().StringArrayVarP(&overrideParams, "property", "p", nil, "Overrides selected property value")
 
 	runCmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "DEPRECATED: Disables Score file schema validation")
 	runCmd.Flags().BoolVar(&verbose, "verbose", false, "Enable diagnostic messages (written to STDERR)")
