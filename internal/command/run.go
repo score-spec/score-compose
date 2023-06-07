@@ -8,16 +8,19 @@ The Apache Software Foundation (http://www.apache.org/).
 package command
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/compose-spec/compose-go/types"
 	"github.com/imdario/mergo"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/sjson"
 	"github.com/xeipuuv/gojsonschema"
 
 	"github.com/score-spec/score-compose/internal/compose"
@@ -39,6 +42,8 @@ var (
 	envFile       string
 	buildCtx      string
 
+	overrideParams []string
+
 	skipValidation bool
 	verbose        bool
 )
@@ -49,6 +54,8 @@ func init() {
 	runCmd.Flags().StringVarP(&outFile, "output", "o", "", "Output file")
 	runCmd.Flags().StringVar(&envFile, "env-file", "", "Location to store sample .env file")
 	runCmd.Flags().StringVar(&buildCtx, "build", "", "Replaces 'image' name with compose 'build' instruction")
+
+	runCmd.Flags().StringArrayVarP(&overrideParams, "property", "p", nil, "Overrides selected property value")
 
 	runCmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "DEPRECATED: Disables Score file schema validation")
 	runCmd.Flags().BoolVar(&verbose, "verbose", false, "Enable diagnostic messages (written to STDERR)")
@@ -85,7 +92,7 @@ func run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Apply overrides (optional)
+	// Apply overrides from file (optional)
 	//
 	if overridesFile != "" {
 		log.Printf("Checking '%s'...\n", overridesFile)
@@ -102,6 +109,34 @@ func run(cmd *cobra.Command, args []string) error {
 			}
 		} else if !os.IsNotExist(err) || overridesFile != overridesFileDefault {
 			return err
+		}
+	}
+
+	// Apply overrides from command line (optional)
+	//
+	for _, pstr := range overrideParams {
+		log.Print("Applying SCORE properties overrides...\n")
+
+		jsonBytes, err := json.Marshal(srcMap)
+		if err != nil {
+			return fmt.Errorf("marshalling score spec: %w", err)
+		}
+
+		pmap := strings.SplitN(pstr, "=", 2)
+		if len(pmap) <= 1 {
+			log.Printf("removing '%s'", pmap[0])
+			if jsonBytes, err = sjson.DeleteBytes(jsonBytes, pmap[0]); err != nil {
+				return fmt.Errorf("removing '%s': %w", pmap[0], err)
+			}
+		} else {
+			log.Printf("overriding '%s' = '%s'", pmap[0], pmap[1])
+			if jsonBytes, err = sjson.SetBytes(jsonBytes, pmap[0], pmap[1]); err != nil {
+				return fmt.Errorf("overriding '%s': %w", pmap[0], err)
+			}
+		}
+
+		if err = json.Unmarshal(jsonBytes, &srcMap); err != nil {
+			return fmt.Errorf("unmarshalling score spec: %w", err)
 		}
 	}
 

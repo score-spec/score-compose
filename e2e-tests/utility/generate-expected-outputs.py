@@ -29,6 +29,7 @@ arglist = [
     "run -f example-score.yaml",
     "run -f example-score.yaml --build test",
     "run -f example-score.yaml --overrides overrides.yaml",
+    "run -f example-score.yaml -p containers.hello.image=hello:1.1",
     "run --verbose",
 ]
 
