@@ -24,6 +24,7 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 
 	"github.com/score-spec/score-compose/internal/compose"
+	"github.com/score-spec/score-compose/internal/utils"
 
 	loader "github.com/score-spec/score-go/loader"
 	schema "github.com/score-spec/score-go/schema"
@@ -124,14 +125,17 @@ func run(cmd *cobra.Command, args []string) error {
 
 		pmap := strings.SplitN(pstr, "=", 2)
 		if len(pmap) <= 1 {
-			log.Printf("removing '%s'", pmap[0])
-			if jsonBytes, err = sjson.DeleteBytes(jsonBytes, pmap[0]); err != nil {
-				return fmt.Errorf("removing '%s': %w", pmap[0], err)
+			var path = pmap[0]
+			log.Printf("removing '%s'", path)
+			if jsonBytes, err = sjson.DeleteBytes(jsonBytes, path); err != nil {
+				return fmt.Errorf("removing '%s': %w", path, err)
 			}
 		} else {
-			log.Printf("overriding '%s' = '%s'", pmap[0], pmap[1])
-			if jsonBytes, err = sjson.SetBytes(jsonBytes, pmap[0], pmap[1]); err != nil {
-				return fmt.Errorf("overriding '%s': %w", pmap[0], err)
+			var path = pmap[0]
+			var val = utils.TryParseJsonValue(pmap[1])
+			log.Printf("overriding '%s' = '%s'", path, val)
+			if jsonBytes, err = sjson.SetBytes(jsonBytes, path, val); err != nil {
+				return fmt.Errorf("overriding '%s': %w", path, err)
 			}
 		}
 
