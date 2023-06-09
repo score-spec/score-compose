@@ -22,9 +22,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tidwall/sjson"
 	"github.com/xeipuuv/gojsonschema"
+	"gopkg.in/yaml.v3"
 
 	"github.com/score-spec/score-compose/internal/compose"
-	"github.com/score-spec/score-compose/internal/utils"
 
 	loader "github.com/score-spec/score-go/loader"
 	schema "github.com/score-spec/score-go/schema"
@@ -132,8 +132,12 @@ func run(cmd *cobra.Command, args []string) error {
 			}
 		} else {
 			var path = pmap[0]
-			var val = utils.TryParseJsonValue(pmap[1])
-			log.Printf("overriding '%s' = '%s'", path, val)
+			var val interface{}
+			if err := yaml.Unmarshal([]byte(pmap[1]), &val); err != nil {
+				val = pmap[1]
+			}
+
+			log.Printf("overriding '%s' = '%s' (%T)", path, val, val)
 			if jsonBytes, err = sjson.SetBytes(jsonBytes, path, val); err != nil {
 				return fmt.Errorf("overriding '%s': %w", path, err)
 			}
