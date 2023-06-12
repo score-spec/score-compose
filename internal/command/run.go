@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tidwall/sjson"
 	"github.com/xeipuuv/gojsonschema"
+	"gopkg.in/yaml.v3"
 
 	"github.com/score-spec/score-compose/internal/compose"
 
@@ -124,14 +125,21 @@ func run(cmd *cobra.Command, args []string) error {
 
 		pmap := strings.SplitN(pstr, "=", 2)
 		if len(pmap) <= 1 {
-			log.Printf("removing '%s'", pmap[0])
-			if jsonBytes, err = sjson.DeleteBytes(jsonBytes, pmap[0]); err != nil {
-				return fmt.Errorf("removing '%s': %w", pmap[0], err)
+			var path = pmap[0]
+			log.Printf("removing '%s'", path)
+			if jsonBytes, err = sjson.DeleteBytes(jsonBytes, path); err != nil {
+				return fmt.Errorf("removing '%s': %w", path, err)
 			}
 		} else {
-			log.Printf("overriding '%s' = '%s'", pmap[0], pmap[1])
-			if jsonBytes, err = sjson.SetBytes(jsonBytes, pmap[0], pmap[1]); err != nil {
-				return fmt.Errorf("overriding '%s': %w", pmap[0], err)
+			var path = pmap[0]
+			var val interface{}
+			if err := yaml.Unmarshal([]byte(pmap[1]), &val); err != nil {
+				val = pmap[1]
+			}
+
+			log.Printf("overriding '%s' = '%s' (%T)", path, val, val)
+			if jsonBytes, err = sjson.SetBytes(jsonBytes, path, val); err != nil {
+				return fmt.Errorf("overriding '%s': %w", path, err)
 			}
 		}
 
