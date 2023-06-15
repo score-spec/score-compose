@@ -64,7 +64,7 @@ Execute score-compose run for 04-extras example for web-app
 
 Verify output of ${example} via docker compose convert
     ${docker_compose_output}    Run
-    ...    docker compose -f ${EXAMPLES_DIR}${example}/compose.yaml convert -q
+    ...    docker compose -f ${EXAMPLES_DIR}${example}/compose.yaml convert -q --no-interpolate
     Should Be Empty    ${docker_compose_output}
     Remove File    ${EXAMPLES_DIR}${example}/compose.yaml
 
