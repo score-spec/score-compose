@@ -6,5 +6,5 @@ services:
     entrypoint:
       - /bin/sh
     environment:
-      FRIEND: ${NAME-World}
+      FRIEND: ${NAME}
     image: busybox

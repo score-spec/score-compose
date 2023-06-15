@@ -6,6 +6,6 @@ services:
     entrypoint:
       - /bin/sh
     environment:
-      CONNECTION_STRING: postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST-localhost}:${DB_PORT-5432}/${DB_NAME-postgres}
+      CONNECTION_STRING: postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
       FRIEND: ${NAME-World}
     image: busybox
