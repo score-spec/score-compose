@@ -40,7 +40,7 @@ services:
     entrypoint:
       - /bin/sh
     environment:
-      FRIEND: ${NAME-World}
+      FRIEND: ${NAME}
     image: busybox
 ```
 
@@ -70,7 +70,7 @@ $ score-compose run -f ./score.yaml -o ./compose.yaml --env-file ./.env
 For the example above the `.env` file would include only one variable:
 
 ```yaml
-NAME=World
+NAME=
 ```
 
 Once the `.env` is populated with all the values (usually such file is generated automatically by the configuration managements system or with the CI/CD automation scripts), it can be fed to `docker-compose`:

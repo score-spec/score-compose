@@ -107,7 +107,7 @@ func TestScoreConvert(t *testing.T) {
 						Variables: map[string]string{
 							"DEBUG":             "${resources.env.DEBUG}",
 							"LOGS_LEVEL":        "$${LOGS_LEVEL}",
-							"DOMAIN_NAME":       "${resources.dns.domain_name}",
+							"DOMAIN_NAME":       "${resources.some-dns.domain_name}",
 							"CONNECTION_STRING": "postgresql://${resources.app-db.host}:${resources.app-db.port}/${resources.app-db.name}",
 						},
 						Volumes: []score.VolumeMountSpec{
@@ -122,25 +122,12 @@ func TestScoreConvert(t *testing.T) {
 				Resources: map[string]score.ResourceSpec{
 					"env": {
 						Type: "environment",
-						Properties: map[string]score.ResourcePropertySpec{
-							"DEBUG":      {Default: false, Required: false},
-							"LOGS_LEVEL": {Default: "WARN", Required: false},
-						},
 					},
 					"app-db": {
-						Properties: map[string]score.ResourcePropertySpec{
-							"host":      {Default: "localhost", Required: true},
-							"port":      {Default: 5432, Required: false},
-							"name":      {Required: true},
-							"user.name": {Required: true, Secret: true},
-							"password":  {Required: true, Secret: true},
-						},
+						Type: "postgress",
 					},
 					"dns": {
 						Type: "dns",
-						Properties: map[string]score.ResourcePropertySpec{
-							"domain": {Required: false},
-						},
 					},
 					"data": {
 						Type: "volume",
@@ -153,10 +140,10 @@ func TestScoreConvert(t *testing.T) {
 						Name:  "test",
 						Image: "busybox",
 						Environment: compose.MappingWithEquals{
-							"DEBUG":             stringPtr("${DEBUG-false}"),
+							"DEBUG":             stringPtr("${DEBUG}"),
 							"LOGS_LEVEL":        stringPtr("${LOGS_LEVEL}"),
 							"DOMAIN_NAME":       stringPtr(""),
-							"CONNECTION_STRING": stringPtr("postgresql://${APP_DB_HOST-localhost}:${APP_DB_PORT-5432}/${APP_DB_NAME?err}"),
+							"CONNECTION_STRING": stringPtr("postgresql://${APP_DB_HOST}:${APP_DB_PORT}/${APP_DB_NAME}"),
 						},
 						Volumes: []compose.ServiceVolumeConfig{
 							{
@@ -170,14 +157,10 @@ func TestScoreConvert(t *testing.T) {
 				},
 			},
 			Vars: ExternalVariables{
-				"DEBUG":            "false",
-				"LOGS_LEVEL":       "WARN",
-				"APP_DB_HOST":      "localhost",
-				"APP_DB_PORT":      "5432",
-				"APP_DB_NAME":      "",
-				"APP_DB_USER_NAME": "",
-				"APP_DB_PASSWORD":  "",
-				"DNS_DOMAIN":       "",
+				"DEBUG":       "",
+				"APP_DB_HOST": "",
+				"APP_DB_PORT": "",
+				"APP_DB_NAME": "",
 			},
 		},
 

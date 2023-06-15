@@ -18,16 +18,15 @@ import (
 
 // ConvertSpec converts SCORE specification into docker-compose configuration.
 func ConvertSpec(spec *score.WorkloadSpec) (*compose.Project, ExternalVariables, error) {
-	context, err := buildContext(spec.Metadata, spec.Resources)
+	ctx, err := buildContext(spec.Metadata, spec.Resources)
 	if err != nil {
 		return nil, nil, fmt.Errorf("preparing context: %w", err)
 	}
 
 	for _, cSpec := range spec.Containers {
-		var externalVars = ExternalVariables(context.ListEnvVars())
 		var env = make(compose.MappingWithEquals, len(cSpec.Variables))
 		for key, val := range cSpec.Variables {
-			var envVarVal = context.Substitute(val)
+			var envVarVal = ctx.Substitute(val)
 			env[key] = &envVarVal
 		}
 
@@ -62,7 +61,7 @@ func ConvertSpec(spec *score.WorkloadSpec) (*compose.Project, ExternalVariables,
 				}
 				volumes[idx] = compose.ServiceVolumeConfig{
 					Type:     "volume",
-					Source:   context.Substitute(vol.Source),
+					Source:   ctx.Substitute(vol.Source),
 					Target:   vol.Target,
 					ReadOnly: vol.ReadOnly,
 				}
@@ -89,6 +88,8 @@ func ConvertSpec(spec *score.WorkloadSpec) (*compose.Project, ExternalVariables,
 				svc,
 			},
 		}
+
+		var externalVars = ExternalVariables(ctx.ListEnvVars())
 
 		// NOTE: Only one container per workload can be defined for compose.
 		//       All other containers will be ignored by this tool.
