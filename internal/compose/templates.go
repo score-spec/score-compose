@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -20,12 +19,16 @@ import (
 )
 
 // templatesContext ia an utility type that provides a context for '${...}' templates substitution
-type templatesContext map[string]string
+type templatesContext struct {
+	meta      map[string]interface{}
+	resources score.ResourcesSpecs
+
+	// env map is populated dynamically with any refenced variable used by Substitute
+	env map[string]interface{}
+}
 
 // buildContext initializes a new templatesContext instance
-func buildContext(metadata score.WorkloadMeta, resources score.ResourcesSpecs) (templatesContext, error) {
-	var ctx = make(map[string]string)
-
+func buildContext(metadata score.WorkloadMeta, resources score.ResourcesSpecs) (*templatesContext, error) {
 	var metadataMap = make(map[string]interface{})
 	if decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		TagName: "json",
@@ -34,53 +37,24 @@ func buildContext(metadata score.WorkloadMeta, resources score.ResourcesSpecs) (
 		return nil, err
 	} else {
 		decoder.Decode(metadata)
-		for key, val := range metadataMap {
-			var ref = fmt.Sprintf("metadata.%s", key)
-			if _, exists := ctx[ref]; exists {
-				return nil, fmt.Errorf("ambiguous property reference '%s'", ref)
-			}
-			ctx[ref] = fmt.Sprintf("%v", val)
-		}
 	}
 
-	for resName, res := range resources {
-		ctx[fmt.Sprintf("resources.%s", resName)] = resName
+	return &templatesContext{
+		meta:      metadataMap,
+		resources: resources,
 
-		for propName, prop := range res.Properties {
-			var ref = fmt.Sprintf("resources.%s.%s", resName, propName)
-
-			var envVar string
-			switch res.Type {
-			case "environment":
-				envVar = strings.ToUpper(propName)
-			default:
-				envVar = strings.ToUpper(fmt.Sprintf("%s_%s", resName, propName))
-			}
-
-			envVar = strings.Replace(envVar, "-", "_", -1)
-			envVar = strings.Replace(envVar, ".", "_", -1)
-
-			if prop.Default != nil {
-				envVar += fmt.Sprintf("-%v", prop.Default)
-			} else if prop.Required {
-				envVar += "?err"
-			}
-
-			ctx[ref] = fmt.Sprintf("${%s}", envVar)
-		}
-	}
-
-	return ctx, nil
+		env: make(map[string]interface{}),
+	}, nil
 }
 
 // Substitute replaces all matching '${...}' templates in a source string
-func (context templatesContext) Substitute(src string) string {
-	return os.Expand(src, context.mapVar)
+func (ctx *templatesContext) Substitute(src string) string {
+	return os.Expand(src, ctx.mapVar)
 }
 
 // MapVar replaces objects and properties references with corresponding values
 // Returns an empty string if the reference can't be resolved
-func (context templatesContext) mapVar(ref string) string {
+func (ctx *templatesContext) mapVar(ref string) string {
 	if ref == "" {
 		return ""
 	}
@@ -94,28 +68,47 @@ func (context templatesContext) mapVar(ref string) string {
 		return ref
 	}
 
-	if res, ok := context[ref]; ok {
-		return res
+	var segments = strings.SplitN(ref, ".", 2)
+	switch segments[0] {
+	case "metadata":
+		if len(segments) == 2 {
+			if val, exists := ctx.meta[segments[1]]; exists {
+				return fmt.Sprintf("%v", val)
+			}
+		}
+
+	case "resources":
+		if len(segments) == 2 {
+			segments = strings.SplitN(segments[1], ".", 2)
+			var resName = segments[0]
+			if res, exists := ctx.resources[resName]; exists {
+				if len(segments) == 1 {
+					return resName
+				} else {
+					var propName = segments[1]
+
+					var envVar string
+					switch res.Type {
+					case "environment":
+						envVar = strings.ToUpper(propName)
+					default:
+						envVar = strings.ToUpper(fmt.Sprintf("%s_%s", resName, propName))
+					}
+					envVar = strings.Replace(envVar, "-", "_", -1)
+					envVar = strings.Replace(envVar, ".", "_", -1)
+
+					ctx.env[envVar] = ""
+					return fmt.Sprintf("${%s}", envVar)
+				}
+			}
+		}
 	}
 
-	log.Printf("Warning: Can not resolve '%s'. Resource or property is not declared.", ref)
+	log.Printf("Warning: Can not resolve '%s' reference.", ref)
 	return ""
 }
 
-// composeEnvVarReferencePattern defines the rule for compose environment variable references
-// Possible documented references for compose v3.5:
-//   - ${ENV_VAR}
-//   - ${ENV_VAR?err}
-//   - ${ENV_VAR-default}
-var envVarPattern = regexp.MustCompile(`\$\{(\w+)(?:\-(.+?)|\?.+)?\}$`)
-
 // ListEnvVars reports all environment variables used by templatesContext
-func (context templatesContext) ListEnvVars() map[string]interface{} {
-	var vars = make(map[string]interface{})
-	for _, ref := range context {
-		if matches := envVarPattern.FindStringSubmatch(ref); len(matches) == 3 {
-			vars[matches[1]] = matches[2]
-		}
-	}
-	return vars
+func (ctx *templatesContext) ListEnvVars() map[string]interface{} {
+	return ctx.env
 }
