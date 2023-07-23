@@ -10,12 +10,16 @@ package compose
 import (
 	"fmt"
 	"log"
-	"os"
+	"regexp"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
 
 	score "github.com/score-spec/score-go/types"
+)
+
+var (
+	placeholderRegEx = regexp.MustCompile(`\$(\$|{([a-zA-Z0-9.\-_\[\]"'#]+)})`)
 )
 
 // templatesContext ia an utility type that provides a context for '${...}' templates substitution
@@ -49,22 +53,30 @@ func buildContext(metadata score.WorkloadMeta, resources score.ResourcesSpecs) (
 
 // Substitute replaces all matching '${...}' templates in a source string
 func (ctx *templatesContext) Substitute(src string) string {
-	return os.Expand(src, ctx.mapVar)
+	return placeholderRegEx.ReplaceAllStringFunc(src, func(str string) string {
+		// WORKAROUND: ReplaceAllStringFunc(..) does not provide match details
+		//             https://github.com/golang/go/issues/5690
+		var matches = placeholderRegEx.FindStringSubmatch(str)
+
+		// SANITY CHECK
+		if len(matches) != 3 {
+			log.Printf("Error: could not find a proper match in previously captured string fragment")
+			return src
+		}
+
+		// EDGE CASE: Captures "$$" sequences and empty templates "${}"
+		if matches[2] == "" {
+			return matches[1]
+		}
+
+		return ctx.mapVar(matches[2])
+	})
 }
 
 // MapVar replaces objects and properties references with corresponding values
 // Returns an empty string if the reference can't be resolved
 func (ctx *templatesContext) mapVar(ref string) string {
-	if ref == "" {
-		return ""
-	}
-
-	// NOTE: os.Expand(..) would invoke a callback function with "$" as an argument for escaped sequences.
-	//       "$${abc}" is treated as "$$" pattern and "{abc}" static text.
-	//       The first segment (pattern) would trigger a callback function call.
-	//       By returning "$" value we would ensure that escaped sequences would remain in the source text.
-	//       For example "$${abc}" would result in "${abc}" after os.Expand(..) call.
-	if ref == "$" {
+	if ref == "" || ref == "$" {
 		return ref
 	}
 
