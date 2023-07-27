@@ -6,7 +6,7 @@ require (
 	github.com/compose-spec/compose-go v1.6.0
 	github.com/imdario/mergo v0.3.13
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/score-spec/score-go v0.0.0-20230615134243-75a810d22ad1
+	github.com/score-spec/score-go v0.0.0-20230727093059-c46db671789d
 	github.com/spf13/cobra v1.6.0
 	github.com/stretchr/testify v1.8.0
 	github.com/tidwall/sjson v1.2.5
