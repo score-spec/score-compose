@@ -9,7 +9,6 @@ package command
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -21,7 +20,6 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/sjson"
-	"github.com/xeipuuv/gojsonschema"
 	"gopkg.in/yaml.v3"
 
 	"github.com/score-spec/score-compose/internal/compose"
@@ -152,15 +150,7 @@ func run(cmd *cobra.Command, args []string) error {
 	//
 	if !skipValidation {
 		log.Print("Validating SCORE spec...\n")
-		if res, err := schema.Validate(gojsonschema.NewGoLoader(srcMap)); err != nil {
-			return fmt.Errorf("validating workload spec: %w", err)
-		} else if !res.Valid() {
-			for _, valErr := range res.Errors() {
-				log.Println(valErr.String())
-				if err == nil {
-					err = errors.New(valErr.String())
-				}
-			}
+		if err := schema.Validate(srcMap); err != nil {
 			return fmt.Errorf("validating workload spec: %w", err)
 		}
 	}
