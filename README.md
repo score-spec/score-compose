@@ -2,9 +2,9 @@
 
 # ![Score](docs/images/logo.svg) Score overview
 
-Score aims to improve developer productivity and experience by reducing the risk of configuration inconsistencies between local and remote environments. It provides developer-centric workload specification (`score.yaml`) which captures a workloads runtime requirements in a platform-agnostic manner.
+Score aims to improve developer productivity and experience by reducing the risk of configuration inconsistencies between local and remote environments. It provides developer-centric workload specification (`score.yaml`) which captures a workloads runtime requirements in a platform-agnostic manner. Learn more [here](https://github.com/score-spec/spec#-what-is-score).
 
-The `score.yaml` specification file can be executed against a _Score Implementation CLI_, a conversion tool for application developers to generate environment specific configuration. In combination with environment specific parameters, the CLI tool can run your workload in the target environment by generating a platform-specific configuration file such as `docker-compose.yaml` or a Helm `values.yaml`. Learn more [here](https://github.com/score-spec/spec#-what-is-score).
+The `score.yaml` specification file can be executed against a _Score Implementation CLI_, a conversion tool for application developers to generate environment specific configuration. In combination with environment specific parameters, the CLI tool can run your workload in the target environment by generating a platform-specific configuration file. The `score-compose` CLI is a reference implementation used to generate `docker-compose.yaml` files.
 
 ## ![Installation](docs/images/install.svg) Installation
 
@@ -31,13 +31,13 @@ If you're just getting started, follow [this guide](https://docs.score.dev/docs/
 - Contact us via Email:
   - team@score.dev
   - abuse@score.dev
-- See our [documentation](https://docs.score.dev).
+- See our [documentation](https://docs.score.dev)
 
 ## ![Contributing](docs/images/contributing.svg) Contributing
 
-- Write a [blog post](https://score.dev/blog).
-- Provide feedback on our [road map and releases board](https://github.com/score-spec/spec/blob/main/roadmap.md#get-involved).
-- Contribute.
+- Write a [blog post](https://score.dev/blog)
+- Provide feedback on our [roadmap](https://github.com/score-spec/spec/blob/main/roadmap.md#get-involved)
+- Contribute
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
 
@@ -65,4 +65,4 @@ See [Roadmap](https://github.com/score-spec/spec/blob/main/roadmap.md). You can 
 
 ### Code of conduct
 
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
