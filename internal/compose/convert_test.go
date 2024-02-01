@@ -23,7 +23,7 @@ func TestScoreConvert(t *testing.T) {
 
 	var tests = []struct {
 		Name    string
-		Source  *score.WorkloadSpec
+		Source  *score.Workload
 		Project *compose.Project
 		Vars    ExternalVariables
 		Error   error
@@ -32,24 +32,24 @@ func TestScoreConvert(t *testing.T) {
 		//
 		{
 			Name: "Should convert SCORE to docker-compose spec",
-			Source: &score.WorkloadSpec{
-				Metadata: score.WorkloadMeta{
+			Source: &score.Workload{
+				Metadata: score.WorkloadMetadata{
 					Name: "test",
 				},
-				Service: score.ServiceSpec{
-					Ports: score.ServicePortsSpecs{
-						"www": score.ServicePortSpec{
+				Service: &score.WorkloadService{
+					Ports: score.WorkloadServicePorts{
+						"www": score.ServicePort{
 							Port:       80,
-							TargetPort: 8080,
+							TargetPort: Ref(8080),
 						},
-						"admin": score.ServicePortSpec{
+						"admin": score.ServicePort{
 							Port:     8080,
-							Protocol: "UDP",
+							Protocol: Ref("udp"),
 						},
 					},
 				},
-				Containers: score.ContainersSpecs{
-					"backend": score.ContainerSpec{
+				Containers: score.WorkloadContainers{
+					"backend": score.Container{
 						Image: "busybox",
 						Command: []string{
 							"/bin/sh",
@@ -87,7 +87,7 @@ func TestScoreConvert(t *testing.T) {
 							{
 								Published: "8080",
 								Target:    8080,
-								Protocol:  "UDP",
+								Protocol:  "udp",
 							},
 						},
 					},
@@ -97,12 +97,12 @@ func TestScoreConvert(t *testing.T) {
 		},
 		{
 			Name: "Should convert all resources references",
-			Source: &score.WorkloadSpec{
-				Metadata: score.WorkloadMeta{
+			Source: &score.Workload{
+				Metadata: score.WorkloadMetadata{
 					Name: "test",
 				},
-				Containers: score.ContainersSpecs{
-					"backend": score.ContainerSpec{
+				Containers: score.WorkloadContainers{
+					"backend": score.Container{
 						Image: "busybox",
 						Variables: map[string]string{
 							"DEBUG":             "${resources.env.DEBUG}",
@@ -110,16 +110,16 @@ func TestScoreConvert(t *testing.T) {
 							"DOMAIN_NAME":       "${resources.some-dns.domain_name}",
 							"CONNECTION_STRING": "postgresql://${resources.app-db.host}:${resources.app-db.port}/${resources.app-db.name}",
 						},
-						Volumes: []score.VolumeMountSpec{
+						Volumes: []score.ContainerVolumesElem{
 							{
 								Source:   "${resources.data}",
 								Target:   "/mnt/data",
-								ReadOnly: true,
+								ReadOnly: Ref(true),
 							},
 						},
 					},
 				},
-				Resources: map[string]score.ResourceSpec{
+				Resources: map[string]score.Resource{
 					"env": {
 						Type: "environment",
 					},
@@ -168,24 +168,24 @@ func TestScoreConvert(t *testing.T) {
 		//
 		{
 			Name: "Should report an error for volumes with sub path (not supported)",
-			Source: &score.WorkloadSpec{
-				Metadata: score.WorkloadMeta{
+			Source: &score.Workload{
+				Metadata: score.WorkloadMetadata{
 					Name: "test",
 				},
-				Containers: score.ContainersSpecs{
-					"backend": score.ContainerSpec{
+				Containers: score.WorkloadContainers{
+					"backend": score.Container{
 						Image: "busybox",
-						Volumes: []score.VolumeMountSpec{
+						Volumes: []score.ContainerVolumesElem{
 							{
 								Source:   "${resources.data}",
-								Path:     "sub/path",
 								Target:   "/mnt/data",
-								ReadOnly: true,
+								Path:     Ref("sub/path"),
+								ReadOnly: Ref(true),
 							},
 						},
 					},
 				},
-				Resources: map[string]score.ResourceSpec{
+				Resources: map[string]score.Resource{
 					"data": {
 						Type: "volume",
 					},
