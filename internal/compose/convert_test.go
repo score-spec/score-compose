@@ -163,6 +163,58 @@ func TestScoreConvert(t *testing.T) {
 				"APP_DB_NAME": "",
 			},
 		},
+		{
+			Name: "Should support multiple containers",
+			Source: &score.Workload{
+				Metadata: score.WorkloadMetadata{
+					Name: "test",
+				},
+				Containers: score.WorkloadContainers{
+					"frontend": score.Container{
+						Image: "busybox",
+						Variables: map[string]string{
+							"PORT": "80",
+						},
+					},
+					"backend": score.Container{
+						Image: "busybox",
+						Variables: map[string]string{
+							"PORT": "81",
+						},
+					},
+				},
+				Service: &score.WorkloadService{
+					Ports: map[string]score.ServicePort{
+						"frontend": {Port: 8080, TargetPort: Ref(80)},
+						"backend":  {Port: 8081, TargetPort: Ref(81)},
+					},
+				},
+			},
+			Project: &compose.Project{
+				Services: compose.Services{
+					{
+						Name:  "test-backend",
+						Image: "busybox",
+						Environment: compose.MappingWithEquals{
+							"PORT": stringPtr("81"),
+						},
+						Ports: []compose.ServicePortConfig{
+							{Target: 80, Published: "8080"},
+							{Target: 81, Published: "8081"},
+						},
+					},
+					{
+						Name:  "test-frontend",
+						Image: "busybox",
+						Environment: compose.MappingWithEquals{
+							"PORT": stringPtr("80"),
+						},
+						NetworkMode: "service:test-backend",
+					},
+				},
+			},
+			Vars: ExternalVariables{},
+		},
 
 		// Errors handling
 		//
