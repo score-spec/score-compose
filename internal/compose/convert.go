@@ -17,7 +17,7 @@ import (
 )
 
 // ConvertSpec converts SCORE specification into docker-compose configuration.
-func ConvertSpec(spec *score.WorkloadSpec) (*compose.Project, ExternalVariables, error) {
+func ConvertSpec(spec *score.Workload) (*compose.Project, ExternalVariables, error) {
 	ctx, err := buildContext(spec.Metadata, spec.Resources)
 	if err != nil {
 		return nil, nil, fmt.Errorf("preparing context: %w", err)
@@ -31,18 +31,14 @@ func ConvertSpec(spec *score.WorkloadSpec) (*compose.Project, ExternalVariables,
 		}
 
 		var ports []compose.ServicePortConfig
-		if len(spec.Service.Ports) > 0 {
+		if spec.Service != nil && len(spec.Service.Ports) > 0 {
 			ports = []compose.ServicePortConfig{}
 			for _, pSpec := range spec.Service.Ports {
 				var pubPort = fmt.Sprintf("%v", pSpec.Port)
-				var tgtPort = pSpec.TargetPort
-				if pSpec.TargetPort == 0 {
-					tgtPort = pSpec.Port
-				}
 				ports = append(ports, compose.ServicePortConfig{
 					Published: pubPort,
-					Target:    uint32(tgtPort),
-					Protocol:  pSpec.Protocol,
+					Target:    uint32(DerefOr(pSpec.TargetPort, pSpec.Port)),
+					Protocol:  DerefOr(pSpec.Protocol, ""),
 				})
 			}
 		}
@@ -56,14 +52,14 @@ func ConvertSpec(spec *score.WorkloadSpec) (*compose.Project, ExternalVariables,
 		if len(cSpec.Volumes) > 0 {
 			volumes = make([]compose.ServiceVolumeConfig, len(cSpec.Volumes))
 			for idx, vol := range cSpec.Volumes {
-				if vol.Path != "" {
-					return nil, nil, fmt.Errorf("can't mount named volume with sub path '%s': %w", vol.Path, errors.New("not supported"))
+				if vol.Path != nil && *vol.Path != "" {
+					return nil, nil, fmt.Errorf("can't mount named volume with sub path '%s': %w", *vol.Path, errors.New("not supported"))
 				}
 				volumes[idx] = compose.ServiceVolumeConfig{
 					Type:     "volume",
 					Source:   ctx.Substitute(vol.Source),
 					Target:   vol.Target,
-					ReadOnly: vol.ReadOnly,
+					ReadOnly: DerefOr(vol.ReadOnly, false),
 				}
 			}
 		}

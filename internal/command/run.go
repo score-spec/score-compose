@@ -157,7 +157,7 @@ func run(cmd *cobra.Command, args []string) error {
 
 	// Convert SCORE spec
 	//
-	var spec score.WorkloadSpec
+	var spec score.Workload
 	if err = loader.MapSpec(&spec, srcMap); err != nil {
 		return fmt.Errorf("validating workload spec: %w", err)
 	}
