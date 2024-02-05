@@ -1,0 +1,19 @@
+services:
+  my-project-api:
+    command:
+      - /bin/sh
+      - -c
+      - sleep 2600
+    image: debian
+    ports:
+      - target: 8080
+        published: "80"
+    environment:
+      FOO: bar
+  my-project-worker:
+    command:
+      - /bin/sh
+      - -c
+      - sleep 2600
+    image: debian
+    network_mode: service:my-project-api
