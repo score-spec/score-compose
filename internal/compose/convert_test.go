@@ -67,7 +67,7 @@ func TestScoreConvert(t *testing.T) {
 			Project: &compose.Project{
 				Services: compose.Services{
 					{
-						Name:  "test",
+						Name:  "test-backend",
 						Image: "busybox",
 						Entrypoint: compose.ShellCommand{
 							"/bin/sh",
@@ -137,7 +137,7 @@ func TestScoreConvert(t *testing.T) {
 			Project: &compose.Project{
 				Services: compose.Services{
 					{
-						Name:  "test",
+						Name:  "test-backend",
 						Image: "busybox",
 						Environment: compose.MappingWithEquals{
 							"DEBUG":             stringPtr("${DEBUG}"),

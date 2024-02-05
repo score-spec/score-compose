@@ -1,5 +1,5 @@
 services:
-  service-a:
+  service-a-service-a:
     command:
       - -c
       - 'while true; do echo service-a: Hello $${FRIEND}! Connecting to $${CONNECTION_STRING}...; sleep 10; done'

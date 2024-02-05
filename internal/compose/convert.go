@@ -92,7 +92,7 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, ExternalVariables, err
 		// END (NOTE)
 
 		var svc = compose.ServiceConfig{
-			Name:        spec.Metadata.Name,
+			Name:        spec.Metadata.Name + "-" + containerName,
 			Image:       cSpec.Image,
 			Entrypoint:  cSpec.Command,
 			Command:     cSpec.Args,
@@ -101,14 +101,10 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, ExternalVariables, err
 			Volumes:     volumes,
 		}
 
-		if len(spec.Containers) > 1 {
-			// if we have more than 1 container then namespace them with the container name
-			svc.Name += "-" + containerName
-			// if we are not the "first" service, then inherit the network from the first service
-			if len(project.Services) > 0 {
-				svc.Ports = nil
-				svc.NetworkMode = "service:" + project.Services[0].Name
-			}
+		// if we are not the "first" service, then inherit the network from the first service
+		if len(project.Services) > 0 {
+			svc.Ports = nil
+			svc.NetworkMode = "service:" + project.Services[0].Name
 		}
 
 		project.Services = append(project.Services, svc)

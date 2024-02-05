@@ -61,11 +61,11 @@ Common place to store non-score defined configuration and resources is a root `c
 
 ```yaml
 services:
-  service-a:
+  service-a-service-a:
     depends_on:
       db:
         condition: service_started
-      service-b:
+      service-b-service-b:
         condition: service_started
   db:
     image: postgres:alpine
