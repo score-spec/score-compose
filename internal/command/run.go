@@ -174,11 +174,12 @@ func run(cmd *cobra.Command, args []string) error {
 	//
 	if buildCtx != "" {
 		log.Printf("Applying build instructions: '%s'...\n", buildCtx)
+		// We add the build context to all services and containers here and make a big assumption that all are
+		// using the image we are building here and now. If this is unexpected, users should use a more complex
+		// overrides file.
 		for idx := range proj.Services {
-			if proj.Services[idx].Name == spec.Metadata.Name {
-				proj.Services[idx].Build = &types.BuildConfig{Context: buildCtx}
-				proj.Services[idx].Image = ""
-			}
+			proj.Services[idx].Build = &types.BuildConfig{Context: buildCtx}
+			proj.Services[idx].Image = ""
 		}
 	}
 

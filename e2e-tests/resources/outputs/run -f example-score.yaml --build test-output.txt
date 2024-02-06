@@ -1,5 +1,5 @@
 services:
-  hello-world:
+  hello-world-hello:
     build:
       context: test
     command:

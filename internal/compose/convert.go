@@ -23,25 +23,47 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, ExternalVariables, err
 		return nil, nil, fmt.Errorf("preparing context: %w", err)
 	}
 
-	for _, cSpec := range spec.Containers {
+	if len(spec.Containers) == 0 {
+		return nil, nil, errors.New("workload does not have any containers to convert into a compose service")
+	}
+
+	var project = compose.Project{
+		Services: make(compose.Services, 0, len(spec.Containers)),
+	}
+
+	externalVars := ExternalVariables(ctx.ListEnvVars())
+
+	var ports []compose.ServicePortConfig
+	if spec.Service != nil && len(spec.Service.Ports) > 0 {
+		ports = []compose.ServicePortConfig{}
+		for _, pSpec := range spec.Service.Ports {
+			var pubPort = fmt.Sprintf("%v", pSpec.Port)
+			ports = append(ports, compose.ServicePortConfig{
+				Published: pubPort,
+				Target:    uint32(DerefOr(pSpec.TargetPort, pSpec.Port)),
+				Protocol:  DerefOr(pSpec.Protocol, ""),
+			})
+		}
+	}
+
+	// When multiple containers are specified we need to identify one container as the "main" container which will own
+	// the network and use the native workload name. All other containers in this workload will have the container
+	// name appended as a suffix. We use the natural sort order of the container names and pick the first one
+	containerNames := make([]string, 0, len(spec.Containers))
+	for name := range spec.Containers {
+		containerNames = append(containerNames, name)
+	}
+	sort.Strings(containerNames)
+
+	for _, containerName := range containerNames {
+		cSpec := spec.Containers[containerName]
+
 		var env = make(compose.MappingWithEquals, len(cSpec.Variables))
 		for key, val := range cSpec.Variables {
 			var envVarVal = ctx.Substitute(val)
 			env[key] = &envVarVal
 		}
 
-		var ports []compose.ServicePortConfig
-		if spec.Service != nil && len(spec.Service.Ports) > 0 {
-			ports = []compose.ServicePortConfig{}
-			for _, pSpec := range spec.Service.Ports {
-				var pubPort = fmt.Sprintf("%v", pSpec.Port)
-				ports = append(ports, compose.ServicePortConfig{
-					Published: pubPort,
-					Target:    uint32(DerefOr(pSpec.TargetPort, pSpec.Port)),
-					Protocol:  DerefOr(pSpec.Protocol, ""),
-				})
-			}
-		}
 		// NOTE: Sorting is necessary for DeepEqual call within our Unit Tests to work reliably
 		sort.Slice(ports, func(i, j int) bool {
 			return ports[i].Published < ports[j].Published
@@ -70,7 +92,7 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, ExternalVariables, err
 		// END (NOTE)
 
 		var svc = compose.ServiceConfig{
-			Name:        spec.Metadata.Name,
+			Name:        spec.Metadata.Name + "-" + containerName,
 			Image:       cSpec.Image,
 			Entrypoint:  cSpec.Command,
 			Command:     cSpec.Args,
@@ -79,18 +101,13 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, ExternalVariables, err
 			Volumes:     volumes,
 		}
 
-		var proj = compose.Project{
-			Services: compose.Services{
-				svc,
-			},
+		// if we are not the "first" service, then inherit the network from the first service
+		if len(project.Services) > 0 {
+			svc.Ports = nil
+			svc.NetworkMode = "service:" + project.Services[0].Name
 		}
 
-		var externalVars = ExternalVariables(ctx.ListEnvVars())
-
-		// NOTE: Only one container per workload can be defined for compose.
-		//       All other containers will be ignored by this tool.
-		return &proj, externalVars, nil
+		project.Services = append(project.Services, svc)
 	}
-
-	return nil, nil, errors.New("workload does not have any containers to convert into a compose service")
+	return &project, externalVars, nil
 }

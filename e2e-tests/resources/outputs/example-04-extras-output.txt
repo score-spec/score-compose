@@ -1,5 +1,5 @@
 services:
-  web-app:
+  web-app-hello:
     image: nginx
     ports:
       - target: 80
