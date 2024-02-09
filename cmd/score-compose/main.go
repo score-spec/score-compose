@@ -15,8 +15,11 @@ import (
 )
 
 func main() {
-	if err := command.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	status := command.ParseOpts()
+	if status == 0 {
+		if err := command.Execute(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	}
 }
