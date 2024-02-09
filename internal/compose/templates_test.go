@@ -16,7 +16,7 @@ import (
 
 func TestMapVar(t *testing.T) {
 	var meta = score.WorkloadMetadata{
-		Name: "test-name",
+		"name": "test-name",
 	}
 
 	var resources = score.WorkloadResources{
@@ -52,7 +52,7 @@ func TestMapVar(t *testing.T) {
 
 func TestSubstitute(t *testing.T) {
 	var meta = score.WorkloadMetadata{
-		Name: "test-name",
+		"name": "test-name",
 	}
 
 	var resources = score.WorkloadResources{

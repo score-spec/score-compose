@@ -23,6 +23,11 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, ExternalVariables, err
 		return nil, nil, fmt.Errorf("preparing context: %w", err)
 	}
 
+	workloadName, ok := spec.Metadata["name"].(string)
+	if !ok || len(workloadName) == 0 {
+		return nil, nil, errors.New("workload metadata is missing a name")
+	}
+
 	if len(spec.Containers) == 0 {
 		return nil, nil, errors.New("workload does not have any containers to convert into a compose service")
 	}
@@ -92,7 +97,7 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, ExternalVariables, err
 		// END (NOTE)
 
 		var svc = compose.ServiceConfig{
-			Name:        spec.Metadata.Name + "-" + containerName,
+			Name:        workloadName + "-" + containerName,
 			Image:       cSpec.Image,
 			Entrypoint:  cSpec.Command,
 			Command:     cSpec.Args,
