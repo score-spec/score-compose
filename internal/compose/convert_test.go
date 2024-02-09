@@ -34,7 +34,7 @@ func TestScoreConvert(t *testing.T) {
 			Name: "Should convert SCORE to docker-compose spec",
 			Source: &score.Workload{
 				Metadata: score.WorkloadMetadata{
-					Name: "test",
+					"name": "test",
 				},
 				Service: &score.WorkloadService{
 					Ports: score.WorkloadServicePorts{
@@ -99,7 +99,7 @@ func TestScoreConvert(t *testing.T) {
 			Name: "Should convert all resources references",
 			Source: &score.Workload{
 				Metadata: score.WorkloadMetadata{
-					Name: "test",
+					"name": "test",
 				},
 				Containers: score.WorkloadContainers{
 					"backend": score.Container{
@@ -167,7 +167,7 @@ func TestScoreConvert(t *testing.T) {
 			Name: "Should support multiple containers",
 			Source: &score.Workload{
 				Metadata: score.WorkloadMetadata{
-					Name: "test",
+					"name": "test",
 				},
 				Containers: score.WorkloadContainers{
 					"frontend": score.Container{
@@ -222,7 +222,7 @@ func TestScoreConvert(t *testing.T) {
 			Name: "Should report an error for volumes with sub path (not supported)",
 			Source: &score.Workload{
 				Metadata: score.WorkloadMetadata{
-					Name: "test",
+					"name": "test",
 				},
 				Containers: score.WorkloadContainers{
 					"backend": score.Container{
