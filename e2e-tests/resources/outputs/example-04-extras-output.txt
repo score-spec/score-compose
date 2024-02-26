@@ -4,7 +4,9 @@ services:
     ports:
       - target: 80
         published: "8000"
+        protocol: TCP
     volumes:
       - type: volume
         source: data
         target: /usr/share/nginx/html
+        readOnly: true
