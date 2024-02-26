@@ -44,7 +44,7 @@ func TestScoreConvert(t *testing.T) {
 						},
 						"admin": score.ServicePort{
 							Port:     8080,
-							Protocol: Ref("udp"),
+							Protocol: Ref(score.ServicePortProtocolUDP),
 						},
 					},
 				},
@@ -83,11 +83,12 @@ func TestScoreConvert(t *testing.T) {
 							{
 								Published: "80",
 								Target:    8080,
+								Protocol:  "TCP",
 							},
 							{
 								Published: "8080",
 								Target:    8080,
-								Protocol:  "udp",
+								Protocol:  "UDP",
 							},
 						},
 					},
@@ -199,8 +200,8 @@ func TestScoreConvert(t *testing.T) {
 							"PORT": stringPtr("81"),
 						},
 						Ports: []compose.ServicePortConfig{
-							{Target: 80, Published: "8080"},
-							{Target: 81, Published: "8081"},
+							{Target: 80, Published: "8080", Protocol: "TCP"},
+							{Target: 81, Published: "8081", Protocol: "TCP"},
 						},
 					},
 					{
