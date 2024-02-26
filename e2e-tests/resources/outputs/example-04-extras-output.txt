@@ -4,7 +4,6 @@ services:
     ports:
       - target: 80
         published: "8000"
-        protocol: tcp
     volumes:
       - type: volume
         source: data

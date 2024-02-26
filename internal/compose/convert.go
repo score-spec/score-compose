@@ -44,14 +44,14 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, ExternalVariables, err
 		ports = []compose.ServicePortConfig{}
 		for _, pSpec := range spec.Service.Ports {
 			var pubPort = fmt.Sprintf("%v", pSpec.Port)
-			var protocol = score.ServicePortProtocolTCP
+			var protocol string
 			if pSpec.Protocol != nil {
-				protocol = *pSpec.Protocol
+				protocol = strings.ToLower(string(*pSpec.Protocol))
 			}
 			ports = append(ports, compose.ServicePortConfig{
 				Published: pubPort,
 				Target:    uint32(DerefOr(pSpec.TargetPort, pSpec.Port)),
-				Protocol:  strings.ToLower(string(protocol)),
+				Protocol:  protocol,
 			})
 		}
 	}
