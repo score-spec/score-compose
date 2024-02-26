@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	compose "github.com/compose-spec/compose-go/types"
 	score "github.com/score-spec/score-go/types"
@@ -50,7 +51,7 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, ExternalVariables, err
 			ports = append(ports, compose.ServicePortConfig{
 				Published: pubPort,
 				Target:    uint32(DerefOr(pSpec.TargetPort, pSpec.Port)),
-				Protocol:  string(protocol),
+				Protocol:  strings.ToLower(string(protocol)),
 			})
 		}
 	}
