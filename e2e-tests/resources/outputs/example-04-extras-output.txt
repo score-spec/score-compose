@@ -9,4 +9,4 @@ services:
       - type: volume
         source: data
         target: /usr/share/nginx/html
-        readOnly: true
+        read_only: true
