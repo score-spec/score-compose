@@ -23,7 +23,25 @@ score-compose run -f /tmp/score.yaml -o /tmp/compose.yaml
 - `-f` is the path to the Score file.
 - `-o` specifies the path to the output file.
 
-If you're just getting started, follow [this guide](https://docs.score.dev/docs/get-started/score-compose-hello-world/) to run your first Hello World program with `score-compose`.
+If you're just getting started, follow [this guide](https://docs.score.dev/docs/get-started/score-compose-hello-world/) to run your first Hello World program with `score-compose`. The full usage of the `run` command is:
+
+```
+Translate the SCORE file to docker-compose configuration
+
+Usage:
+  score-compose run [--file=score.yaml] [--output=compose.yaml] [flags]
+
+Flags:
+      --build string           Replaces 'image' name with compose 'build' instruction
+      --env-file string        Location to store sample .env file
+  -f, --file string            Source SCORE file (default "./score.yaml")
+  -h, --help                   help for run
+  -o, --output string          Output file
+      --overrides string       Overrides SCORE file (default "./overrides.score.yaml")
+  -p, --property stringArray   Overrides selected property value
+      --skip-validation        DEPRECATED: Disables Score file schema validation
+      --verbose                Enable diagnostic messages (written to STDERR)
+```
 
 ## ![Get involved](docs/images/get-involved.svg) Get involved
 

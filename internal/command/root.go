@@ -23,6 +23,8 @@ var (
 This tool produces a docker-compose configuration file from the SCORE specification.
 Complete documentation is available at https://score.dev`,
 		Version: fmt.Sprintf("%s (build: %s; sha: %s)", version.Version, version.BuildTime, version.GitSHA),
+		// don't print the errors - we print these ourselves in main()
+		SilenceErrors: true,
 	}
 )
 

@@ -1,3 +1,1 @@
 Error: unknown command "unknown" for "score-compose"
-Run 'score-compose --help' for usage.
-unknown command "unknown" for "score-compose"

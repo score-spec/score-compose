@@ -63,12 +63,17 @@ func init() {
 }
 
 var runCmd = &cobra.Command{
-	Use:   "run",
+	Use:   "run [--file=score.yaml] [--output=compose.yaml]",
 	Short: "Translate the SCORE file to docker-compose configuration",
 	RunE:  run,
+	// don't print the errors - we print these ourselves in main()
+	SilenceErrors: true,
 }
 
 func run(cmd *cobra.Command, args []string) error {
+	// Silence usage message if args are parsed correctly
+	cmd.SilenceUsage = true
+
 	if !verbose {
 		log.SetOutput(io.Discard)
 	}
@@ -185,7 +190,7 @@ func run(cmd *cobra.Command, args []string) error {
 
 	// Open output file (optional)
 	//
-	var dest = io.Writer(os.Stdout)
+	var dest = cmd.OutOrStdout()
 	if outFile != "" {
 		log.Printf("Creating '%s'...\n", outFile)
 		destFile, err := os.Create(outFile)

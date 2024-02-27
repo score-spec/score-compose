@@ -1,7 +1,7 @@
 Translate the SCORE file to docker-compose configuration
 
 Usage:
-  score-compose run [flags]
+  score-compose run [--file=score.yaml] [--output=compose.yaml] [flags]
 
 Flags:
       --build string           Replaces 'image' name with compose 'build' instruction
