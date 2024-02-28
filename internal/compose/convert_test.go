@@ -44,7 +44,7 @@ func TestScoreConvert(t *testing.T) {
 						},
 						"admin": score.ServicePort{
 							Port:     8080,
-							Protocol: Ref("udp"),
+							Protocol: Ref(score.ServicePortProtocolUDP),
 						},
 					},
 				},

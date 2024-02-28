@@ -121,7 +121,7 @@ resources:
 					"SOME_VAR": "some content here",
 				},
 				"ports": []interface{}{
-					map[string]interface{}{"target": 10000, "published": "1000", "protocol": "TCP"},
+					map[string]interface{}{"target": 10000, "published": "1000", "protocol": "tcp"},
 					map[string]interface{}{"target": 8000, "published": "8000"},
 				},
 				"volumes": []interface{}{
@@ -143,6 +143,42 @@ func TestExample_invalid_spec(t *testing.T) {
 {}`), 0600))
 	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", filepath.Join(td, "score.yaml"), "--output", filepath.Join(td, "compose.yaml")})
 	assert.EqualError(t, err, "validating workload spec: jsonschema: '' does not validate with https://score.dev/schemas/score#/required: missing properties: 'apiVersion', 'metadata', 'containers'")
+	assert.Equal(t, "", stdout)
+	assert.Equal(t, "", stderr)
+}
+
+func TestVolumeSubPathNotSupported(t *testing.T) {
+	td := t.TempDir()
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example-workload-name123
+containers:
+  container-one1:
+    image: localhost:4000/repo/my-image:tag
+    volumes:
+    - source: volume-name
+      target: /mnt/something
+      path: /sub/path
+`), 0600))
+	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", filepath.Join(td, "score.yaml"), "--output", filepath.Join(td, "compose.yaml")})
+	assert.EqualError(t, err, "building docker-compose configuration: can't mount named volume with sub path '/sub/path': not supported")
+	assert.Equal(t, "", stdout)
+	assert.Equal(t, "", stderr)
+}
+
+func TestInvalidWorkloadName(t *testing.T) {
+	td := t.TempDir()
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: Invalid Name
+containers:
+  container-one1:
+    image: localhost:4000/repo/my-image:tag
+`), 0600))
+	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", filepath.Join(td, "score.yaml")})
+	assert.EqualError(t, err, "validating workload spec: jsonschema: '/metadata/name' does not validate with https://score.dev/schemas/score#/properties/metadata/properties/name/pattern: does not match pattern '^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$'")
 	assert.Equal(t, "", stdout)
 	assert.Equal(t, "", stderr)
 }

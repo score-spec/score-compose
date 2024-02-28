@@ -151,6 +151,15 @@ func run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Apply upgrades to fix backports or backward incompatible things
+	if changes, err := schema.ApplyCommonUpgradeTransforms(srcMap); err != nil {
+		return fmt.Errorf("failed to upgrade spec: %w", err)
+	} else if len(changes) > 0 {
+		for _, change := range changes {
+			log.Printf("Applying upgrade to specification: %s\n", change)
+		}
+	}
+
 	// Validate SCORE spec
 	//
 	if !skipValidation {
