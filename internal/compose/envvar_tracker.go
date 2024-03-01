@@ -6,16 +6,15 @@ import (
 	"strings"
 )
 
+// EnvVarTracker is used to provide the `environment` resource type. This tracks what keys are accessed and replaces
+// them with outputs that are environment variable references that docker compose will support.
+// This keeps track of which keys were accessed so that we can produce a reference file or list of keys for the user
+// to understand what inputs docker compose will require at launch time.
 type EnvVarTracker struct {
-	lookup   func(key string) (string, bool)
+	// lookup is an environment variable lookup function, if nil this will be defaulted to os.LookupEnv
+	lookup func(key string) (string, bool)
+	// accessed is the map of accessed environment variables and the value they had at access time
 	accessed map[string]string
-}
-
-func NewEnvVarTracker() *EnvVarTracker {
-	return &EnvVarTracker{
-		lookup:   os.LookupEnv,
-		accessed: make(map[string]string),
-	}
 }
 
 func (e *EnvVarTracker) Accessed() map[string]string {
@@ -30,7 +29,18 @@ func (e *EnvVarTracker) LookupOutput(keys ...string) (interface{}, error) {
 		panic("requires at least 1 key")
 	}
 	envVarKey := strings.ToUpper(strings.Join(keys, "_"))
+
+	// in theory we can replace more unexpected characters
 	envVarKey = strings.ReplaceAll(envVarKey, "-", "_")
+	envVarKey = strings.ReplaceAll(envVarKey, ".", "_")
+
+	if e.lookup == nil {
+		e.lookup = os.LookupEnv
+	}
+	if e.accessed == nil {
+		e.accessed = make(map[string]string, 1)
+	}
+
 	if v, ok := e.lookup(envVarKey); ok {
 		e.accessed[envVarKey] = v
 	} else {
@@ -39,6 +49,15 @@ func (e *EnvVarTracker) LookupOutput(keys ...string) (interface{}, error) {
 	return "${" + envVarKey + "}", nil
 }
 
+func (e *EnvVarTracker) GenerateResource(resName string) ResourceWithOutputs {
+	return &envVarResourceTracker{
+		inner:  e,
+		prefix: resName,
+	}
+}
+
+// envVarResourceTracker is a child object of EnvVarTracker and is used as a fallback behavior for resource types
+// that are not supported natively: we treat them like environment variables instead with a prefix of the resource name.
 type envVarResourceTracker struct {
 	prefix string
 	inner  *EnvVarTracker
@@ -51,11 +70,4 @@ func (e *envVarResourceTracker) LookupOutput(keys ...string) (interface{}, error
 		next[1+i] = k
 	}
 	return e.inner.LookupOutput(next...)
-}
-
-func (e *EnvVarTracker) GenerateResource(resName string) ResourceWithOutputs {
-	return &envVarResourceTracker{
-		inner:  e,
-		prefix: resName,
-	}
 }

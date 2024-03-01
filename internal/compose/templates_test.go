@@ -19,7 +19,7 @@ func TestMapVar(t *testing.T) {
 		"name":  "test-name",
 		"other": map[string]interface{}{"key": "value"},
 	}
-	evt := NewEnvVarTracker()
+	evt := new(EnvVarTracker)
 	evt.lookup = func(key string) (string, bool) {
 		if key == "DEBUG" {
 			return "something", true
@@ -77,7 +77,7 @@ func TestSubstitute(t *testing.T) {
 	var meta = score.WorkloadMetadata{
 		"name": "test-name",
 	}
-	evt := NewEnvVarTracker()
+	evt := new(EnvVarTracker)
 	evt.lookup = func(key string) (string, bool) {
 		if key == "DEBUG" {
 			return "something", true

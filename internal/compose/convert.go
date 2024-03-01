@@ -19,16 +19,22 @@ import (
 
 // ConvertSpec converts SCORE specification into docker-compose configuration.
 func ConvertSpec(spec *score.Workload) (*compose.Project, *EnvVarTracker, error) {
-	// Track any uses of the environment resource or resources that are overridden with an env provider using the tracker.
-	envVarTracker := NewEnvVarTracker()
+	workloadName, ok := spec.Metadata["name"].(string)
+	if !ok || len(workloadName) == 0 {
+		return nil, nil, errors.New("workload metadata is missing a name")
+	}
+
+	if len(spec.Containers) == 0 {
+		return nil, nil, errors.New("workload does not have any containers to convert into a compose service")
+	}
 
 	var project = compose.Project{
 		Services: make(compose.Services, 0, len(spec.Containers)),
 	}
 
-	// this map holds the results of the provisioning process
+	// Track any uses of the environment resource or resources that are overridden with an env provider using the tracker.
+	envVarTracker := new(EnvVarTracker)
 	resources := make(map[string]ResourceWithOutputs)
-
 	// The first thing we must do is validate or create the resources this workload depends on.
 	// NOTE: this will soon be replaced by a much more sophisticated resource provisioning system!
 	for resourceName, resourceSpec := range spec.Resources {
@@ -47,9 +53,6 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, *EnvVarTracker, error)
 	if err != nil {
 		return nil, nil, fmt.Errorf("preparing context: %w", err)
 	}
-
-	// This is already  validated by spec validation
-	workloadName, _ := spec.Metadata["name"].(string)
 
 	var ports []compose.ServicePortConfig
 	if spec.Service != nil && len(spec.Service.Ports) > 0 {

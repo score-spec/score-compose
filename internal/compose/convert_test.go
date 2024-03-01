@@ -93,7 +93,6 @@ func TestScoreConvert(t *testing.T) {
 					},
 				},
 			},
-			Vars: map[string]string{},
 		},
 		{
 			Name: "Should convert all resources references",
@@ -214,7 +213,6 @@ func TestScoreConvert(t *testing.T) {
 					},
 				},
 			},
-			Vars: map[string]string{},
 		},
 
 		// Errors handling
