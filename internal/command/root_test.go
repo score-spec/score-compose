@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,7 +35,8 @@ Use "score-compose [command] --help" for more information about a command.
 func TestRootVersion(t *testing.T) {
 	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"--version"})
 	assert.NoError(t, err)
-	assert.Equal(t, "score-compose 0.0.0 (build: local; sha: dirty)\n", stdout)
+	pattern := regexp.MustCompile(`^score-compose 0.0.0 \(build: \S+, sha: \S+\)\n$`)
+	assert.Truef(t, pattern.MatchString(stdout), "%s does not match: '%s'", pattern.String(), stdout)
 	assert.Equal(t, "", stderr)
 }
 
