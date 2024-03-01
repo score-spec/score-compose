@@ -8,8 +8,6 @@ The Apache Software Foundation (http://www.apache.org/).
 package command
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"github.com/score-spec/score-compose/internal/version"
@@ -22,13 +20,13 @@ var (
 		Long: `SCORE is a specification for defining environment agnostic configuration for cloud based workloads.
 This tool produces a docker-compose configuration file from the SCORE specification.
 Complete documentation is available at https://score.dev`,
-		Version: fmt.Sprintf("%s (build: %s; sha: %s)", version.Version, version.BuildTime, version.GitSHA),
 		// don't print the errors - we print these ourselves in main()
 		SilenceErrors: true,
 	}
 )
 
 func init() {
+	rootCmd.Version = version.BuildVersionString()
 	rootCmd.SetVersionTemplate(`{{with .Name}}{{printf "%s " .}}{{end}}{{printf "%s" .Version}}
 `)
 }

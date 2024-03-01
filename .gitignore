@@ -7,6 +7,7 @@
 *.dll
 *.so
 *.dylib
+/score-compose
 
 # Test binary, built with `go test -c`
 *.test
