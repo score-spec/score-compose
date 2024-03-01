@@ -8,119 +8,118 @@ The Apache Software Foundation (http://www.apache.org/).
 package compose
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
-	"log"
+	"maps"
 	"regexp"
 	"strings"
-
-	"github.com/mitchellh/mapstructure"
-
-	score "github.com/score-spec/score-go/types"
 )
 
 var (
-	placeholderRegEx = regexp.MustCompile(`\$(\$|{([a-zA-Z0-9.\-_\[\]"'#]+)})`)
+	placeholderRegEx = regexp.MustCompile(`\$(\$|{([a-zA-Z0-9.\-_\\]+)})`)
 )
 
 // templatesContext ia an utility type that provides a context for '${...}' templates substitution
 type templatesContext struct {
 	meta      map[string]interface{}
-	resources score.WorkloadResources
-
-	// env map is populated dynamically with any refenced variable used by Substitute
-	env map[string]interface{}
+	resources map[string]ResourceWithOutputs
 }
 
 // buildContext initializes a new templatesContext instance
-func buildContext(metadata score.WorkloadMetadata, resources score.WorkloadResources) (*templatesContext, error) {
-	var metadataMap = make(map[string]interface{})
-	if decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		TagName: "json",
-		Result:  &metadataMap,
-	}); err != nil {
-		return nil, err
-	} else {
-		decoder.Decode(metadata)
-	}
-
+func buildContext(metadata map[string]interface{}, resources map[string]ResourceWithOutputs) (*templatesContext, error) {
 	return &templatesContext{
-		meta:      metadataMap,
-		resources: resources,
-
-		env: make(map[string]interface{}),
+		meta:      maps.Clone(metadata),
+		resources: maps.Clone(resources),
 	}, nil
 }
 
 // Substitute replaces all matching '${...}' templates in a source string
-func (ctx *templatesContext) Substitute(src string) string {
-	return placeholderRegEx.ReplaceAllStringFunc(src, func(str string) string {
+func (ctx *templatesContext) Substitute(src string) (string, error) {
+	var err error
+	result := placeholderRegEx.ReplaceAllStringFunc(src, func(str string) string {
 		// WORKAROUND: ReplaceAllStringFunc(..) does not provide match details
 		//             https://github.com/golang/go/issues/5690
 		var matches = placeholderRegEx.FindStringSubmatch(str)
 
 		// SANITY CHECK
 		if len(matches) != 3 {
-			log.Printf("Error: could not find a proper match in previously captured string fragment")
+			err = errors.Join(err, fmt.Errorf("could not find a proper match in previously captured string fragment"))
 			return src
 		}
 
 		// EDGE CASE: Captures "$$" sequences and empty templates "${}"
 		if matches[2] == "" {
 			return matches[1]
+		} else if matches[2] == "$" {
+			return matches[2]
 		}
 
-		return ctx.mapVar(matches[2])
+		result, subErr := ctx.mapVar(matches[2])
+		err = errors.Join(err, subErr)
+		return result
 	})
+	return result, err
 }
 
 // MapVar replaces objects and properties references with corresponding values
 // Returns an empty string if the reference can't be resolved
-func (ctx *templatesContext) mapVar(ref string) string {
-	if ref == "" || ref == "$" {
-		return ref
+func (ctx *templatesContext) mapVar(ref string) (string, error) {
+	subRef := strings.Replace(ref, `\.`, "\000", -1)
+	parts := strings.Split(subRef, ".")
+	for i, part := range parts {
+		parts[i] = strings.Replace(part, "\000", ".", -1)
 	}
 
-	var segments = strings.SplitN(ref, ".", 2)
-	switch segments[0] {
+	var resolvedValue interface{}
+	var remainingParts []string
+
+	switch parts[0] {
 	case "metadata":
-		if len(segments) == 2 {
-			if val, exists := ctx.meta[segments[1]]; exists {
-				return fmt.Sprintf("%v", val)
-			}
+		if len(parts) < 2 {
+			return "", fmt.Errorf("invalid ref '%s': requires at least a metadata key to lookup", ref)
 		}
-
-	case "resources":
-		if len(segments) == 2 {
-			segments = strings.SplitN(segments[1], ".", 2)
-			var resName = segments[0]
-			if res, exists := ctx.resources[resName]; exists {
-				if len(segments) == 1 {
-					return resName
-				} else {
-					var propName = segments[1]
-
-					var envVar string
-					switch res.Type {
-					case "environment":
-						envVar = strings.ToUpper(propName)
-					default:
-						envVar = strings.ToUpper(fmt.Sprintf("%s_%s", resName, propName))
-					}
-					envVar = strings.Replace(envVar, "-", "_", -1)
-					envVar = strings.Replace(envVar, ".", "_", -1)
-
-					ctx.env[envVar] = ""
-					return fmt.Sprintf("${%s}", envVar)
+		if rv, ok := ctx.meta[parts[1]]; ok {
+			resolvedValue = rv
+			remainingParts = parts[2:]
+			for _, part := range remainingParts {
+				mapV, ok := resolvedValue.(map[string]interface{})
+				if !ok {
+					return "", fmt.Errorf("invalid ref '%s': cannot lookup a key in %T", ref, resolvedValue)
+				}
+				resolvedValue, ok = mapV[part]
+				if !ok {
+					return "", fmt.Errorf("invalid ref '%s': key '%s' does not exist", ref, part)
 				}
 			}
+		} else {
+			return "", fmt.Errorf("invalid ref '%s': unknown metadata key '%s'", ref, parts[1])
 		}
+	case "resources":
+		if len(parts) < 2 {
+			return "", fmt.Errorf("invalid ref '%s': requires at least a resource name to lookup", ref)
+		}
+		rv, ok := ctx.resources[parts[1]]
+		if !ok {
+			return "", fmt.Errorf("invalid ref '%s': no known resource '%s'", ref, parts[1])
+		} else if len(parts) == 2 {
+			return "", fmt.Errorf("invalid ref '%s': an output key is required", ref)
+		} else if rv2, err := rv.LookupOutput(parts[2:]...); err != nil {
+			return "", err
+		} else {
+			resolvedValue = rv2
+		}
+	default:
+		return "", fmt.Errorf("invalid ref '%s': unknown reference root", ref)
 	}
 
-	log.Printf("Warning: Can not resolve '%s' reference.", ref)
-	return ""
-}
-
-// ListEnvVars reports all environment variables used by templatesContext
-func (ctx *templatesContext) ListEnvVars() map[string]interface{} {
-	return ctx.env
+	if asString, ok := resolvedValue.(string); ok {
+		return asString, nil
+	}
+	// TODO: work out how we might support other types here in the future
+	raw, err := json.Marshal(resolvedValue)
+	if err != nil {
+		return "", err
+	}
+	return string(raw), nil
 }

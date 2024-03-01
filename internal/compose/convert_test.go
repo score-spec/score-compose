@@ -25,7 +25,7 @@ func TestScoreConvert(t *testing.T) {
 		Name    string
 		Source  *score.Workload
 		Project *compose.Project
-		Vars    ExternalVariables
+		Vars    map[string]string
 		Error   error
 	}{
 		// Success path
@@ -93,7 +93,7 @@ func TestScoreConvert(t *testing.T) {
 					},
 				},
 			},
-			Vars: ExternalVariables{},
+			Vars: map[string]string{},
 		},
 		{
 			Name: "Should convert all resources references",
@@ -112,7 +112,7 @@ func TestScoreConvert(t *testing.T) {
 						},
 						Volumes: []score.ContainerVolumesElem{
 							{
-								Source:   "${resources.data}",
+								Source:   "data",
 								Target:   "/mnt/data",
 								ReadOnly: Ref(true),
 							},
@@ -126,7 +126,7 @@ func TestScoreConvert(t *testing.T) {
 					"app-db": {
 						Type: "postgress",
 					},
-					"dns": {
+					"some-dns": {
 						Type: "dns",
 					},
 					"data": {
@@ -142,7 +142,7 @@ func TestScoreConvert(t *testing.T) {
 						Environment: compose.MappingWithEquals{
 							"DEBUG":             stringPtr("${DEBUG}"),
 							"LOGS_LEVEL":        stringPtr("${LOGS_LEVEL}"),
-							"DOMAIN_NAME":       stringPtr(""),
+							"DOMAIN_NAME":       stringPtr("${SOME_DNS_DOMAIN_NAME}"),
 							"CONNECTION_STRING": stringPtr("postgresql://${APP_DB_HOST}:${APP_DB_PORT}/${APP_DB_NAME}"),
 						},
 						Volumes: []compose.ServiceVolumeConfig{
@@ -156,11 +156,12 @@ func TestScoreConvert(t *testing.T) {
 					},
 				},
 			},
-			Vars: ExternalVariables{
-				"DEBUG":       "",
-				"APP_DB_HOST": "",
-				"APP_DB_PORT": "",
-				"APP_DB_NAME": "",
+			Vars: map[string]string{
+				"DEBUG":                "",
+				"APP_DB_HOST":          "",
+				"APP_DB_PORT":          "",
+				"APP_DB_NAME":          "",
+				"SOME_DNS_DOMAIN_NAME": "",
 			},
 		},
 		{
@@ -213,7 +214,7 @@ func TestScoreConvert(t *testing.T) {
 					},
 				},
 			},
-			Vars: ExternalVariables{},
+			Vars: map[string]string{},
 		},
 
 		// Errors handling
@@ -229,7 +230,7 @@ func TestScoreConvert(t *testing.T) {
 						Image: "busybox",
 						Volumes: []score.ContainerVolumesElem{
 							{
-								Source:   "${resources.data}",
+								Source:   "data",
 								Target:   "/mnt/data",
 								Path:     Ref("sub/path"),
 								ReadOnly: Ref(true),
@@ -260,7 +261,7 @@ func TestScoreConvert(t *testing.T) {
 				//
 				assert.NoError(t, err)
 				assert.Equal(t, tt.Project, proj)
-				assert.Equal(t, tt.Vars, vars)
+				assert.Equal(t, tt.Vars, vars.Accessed())
 			}
 		})
 	}

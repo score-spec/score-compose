@@ -232,11 +232,8 @@ func run(cmd *cobra.Command, args []string) error {
 		//
 		log.Print("Writing .env file template...\n")
 
-		envVars := make([]string, 0, len(vars))
-		for key, val := range vars {
-			if val == nil {
-				val = ""
-			}
+		envVars := make([]string, 0)
+		for key, val := range vars.Accessed() {
 			var envVar = fmt.Sprintf("%s=%v\n", key, val)
 			envVars = append(envVars, envVar)
 		}

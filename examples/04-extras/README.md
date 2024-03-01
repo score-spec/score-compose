@@ -20,13 +20,9 @@ containers:
   hello:
     image: nginx
     volumes:
-      - source: ${resources.data}
+      - source: data
         target: /usr/share/nginx/html
         readOnly: true
-
-resources:
-  data:
-    type: volume
 ```
 
 To convert `score.yaml` file into runnable `web-app.compose.yaml` use a `score-compose` CLI tool:
@@ -50,7 +46,7 @@ services:
         target: /usr/share/nginx/html
 ```
 
-This compose service configuration references a volume called `data`, that should be available in the target environment by the time service starts.
+This compose service configuration references a volume called `data`, that should be available in the target environment by the time the service starts.
 
 If running the service with the Docker, the volume can be created manually ([read more](https://docs.docker.com/storage/volumes/#create-and-manage-volumes)).
 

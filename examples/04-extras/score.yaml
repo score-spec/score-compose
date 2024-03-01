@@ -13,7 +13,7 @@ containers:
   hello:
     image: nginx
     volumes:
-      - source: ${resources.data}
+      - source: data
         target: /usr/share/nginx/html
         readOnly: true
 
