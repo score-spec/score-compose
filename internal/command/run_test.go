@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -20,6 +21,13 @@ func executeAndResetCommand(ctx context.Context, cmd *cobra.Command, args []stri
 	defer func() {
 		cmd.SetOut(beforeOut)
 		cmd.SetErr(beforeErr)
+		// also have to remove completion commands which get auto added and bound to an output buffer
+		for _, command := range cmd.Commands() {
+			if command.Name() == "completion" {
+				cmd.RemoveCommand(command)
+				break
+			}
+		}
 	}()
 
 	nowOut, nowErr := new(bytes.Buffer), new(bytes.Buffer)
@@ -28,9 +36,10 @@ func executeAndResetCommand(ctx context.Context, cmd *cobra.Command, args []stri
 	cmd.SetArgs(args)
 	subCmd, err := cmd.ExecuteContextC(ctx)
 	if subCmd != nil {
+		subCmd.SetOut(nil)
+		subCmd.SetErr(nil)
 		subCmd.SetContext(nil)
 		subCmd.SilenceUsage = false
-		subCmd.SilenceErrors = false
 		subCmd.Flags().VisitAll(func(f *pflag.Flag) {
 			_ = f.Value.Set(f.DefValue)
 		})
@@ -38,7 +47,34 @@ func executeAndResetCommand(ctx context.Context, cmd *cobra.Command, args []stri
 	return nowOut.String(), nowErr.String(), err
 }
 
-func TestExample(t *testing.T) {
+func TestRunHelp(t *testing.T) {
+	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--help"})
+	assert.NoError(t, err)
+	assert.Equal(t, `Translate the SCORE file to docker-compose configuration
+
+Usage:
+  score-compose run [--file=score.yaml] [--output=compose.yaml] [flags]
+
+Flags:
+      --build string           Replaces 'image' name with compose 'build' instruction
+      --env-file string        Location to store sample .env file
+  -f, --file string            Source SCORE file (default "./score.yaml")
+  -h, --help                   help for run
+  -o, --output string          Output file
+      --overrides string       Overrides SCORE file (default "./overrides.score.yaml")
+  -p, --property stringArray   Overrides selected property value
+      --skip-validation        DEPRECATED: Disables Score file schema validation
+      --verbose                Enable diagnostic messages (written to STDERR)
+`, stdout)
+	assert.Equal(t, "", stderr)
+
+	stdout2, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"help", "run"})
+	assert.NoError(t, err)
+	assert.Equal(t, stdout, stdout2)
+	assert.Equal(t, "", stderr)
+}
+
+func TestRunExample(t *testing.T) {
 	td := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
 apiVersion: score.dev/v1b1
@@ -135,6 +171,31 @@ resources:
 			},
 		},
 	}, actualComposeContent)
+
+	t.Run("validate", func(t *testing.T) {
+		if os.Getenv("NO_DOCKER") != "" {
+			t.Skip("NO_DOCKER is set")
+			return
+		}
+
+		dockerCmd, err := exec.LookPath("docker")
+		require.NoError(t, err)
+
+		assert.NoError(t, os.WriteFile(filepath.Join(td, "volume.yaml"), []byte(`
+volumes:
+  volume-name:
+    driver: local
+  volume-two:
+    driver: local
+
+`), 0644))
+
+		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "-f", "volume.yaml", "convert", "--quiet", "--dry-run")
+		cmd.Dir = td
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		assert.NoError(t, cmd.Run())
+	})
 }
 
 func TestExample_invalid_spec(t *testing.T) {
@@ -181,4 +242,293 @@ containers:
 	assert.EqualError(t, err, "validating workload spec: jsonschema: '/metadata/name' does not validate with https://score.dev/schemas/score#/properties/metadata/properties/name/pattern: does not match pattern '^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$'")
 	assert.Equal(t, "", stdout)
 	assert.Equal(t, "", stderr)
+}
+
+func TestRunExample01(t *testing.T) {
+	td := t.TempDir()
+	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", "../../examples/01-hello/score.yaml", "--output", filepath.Join(td, "compose.yaml")})
+	assert.NoError(t, err)
+
+	expectedOutput := `services:
+  hello-world-hello:
+    command:
+      - -c
+      - while true; do echo Hello World!; sleep 5; done
+    entrypoint:
+      - /bin/sh
+    image: busybox
+`
+
+	assert.Equal(t, expectedOutput, stdout)
+	assert.Equal(t, "", stderr)
+	rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+	require.NoError(t, err)
+	assert.Equal(t, expectedOutput, string(rawComposeContent))
+
+	t.Run("validate", func(t *testing.T) {
+		if os.Getenv("NO_DOCKER") != "" {
+			t.Skip("NO_DOCKER is set")
+			return
+		}
+
+		dockerCmd, err := exec.LookPath("docker")
+		require.NoError(t, err)
+
+		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "convert", "--quiet", "--dry-run")
+		cmd.Dir = td
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		assert.NoError(t, cmd.Run())
+	})
+}
+
+func TestRunExample02(t *testing.T) {
+	td := t.TempDir()
+	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", "../../examples/02-environment/score.yaml", "--output", filepath.Join(td, "compose.yaml")})
+	assert.NoError(t, err)
+
+	expectedOutput := `services:
+  hello-world-hello:
+    command:
+      - -c
+      - while true; do echo Hello $${FRIEND}!; sleep 5; done
+    entrypoint:
+      - /bin/sh
+    environment:
+      FRIEND: ${NAME}
+    image: busybox
+`
+
+	assert.Equal(t, expectedOutput, stdout)
+	assert.Equal(t, "", stderr)
+	rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+	require.NoError(t, err)
+	assert.Equal(t, expectedOutput, string(rawComposeContent))
+
+	t.Run("validate", func(t *testing.T) {
+		if os.Getenv("NO_DOCKER") != "" {
+			t.Skip("NO_DOCKER is set")
+			return
+		}
+
+		dockerCmd, err := exec.LookPath("docker")
+		require.NoError(t, err)
+
+		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "convert", "--quiet", "--dry-run")
+		cmd.Dir = td
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		assert.NoError(t, cmd.Run())
+	})
+}
+
+func TestRunExample03(t *testing.T) {
+	td := t.TempDir()
+
+	t.Run("a", func(t *testing.T) {
+		stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", "../../examples/03-dependencies/service-a.yaml", "--output", filepath.Join(td, "compose-a.yaml")})
+		assert.NoError(t, err)
+
+		expectedOutput := `services:
+  service-a-service-a:
+    command:
+      - -c
+      - 'while true; do echo service-a: Hello $${FRIEND}! Connecting to $${CONNECTION_STRING}...; sleep 10; done'
+    entrypoint:
+      - /bin/sh
+    environment:
+      CONNECTION_STRING: postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+      FRIEND: ${NAME}
+    image: busybox
+`
+
+		assert.Equal(t, expectedOutput, stdout)
+		assert.Equal(t, "", stderr)
+		rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose-a.yaml"))
+		require.NoError(t, err)
+		assert.Equal(t, expectedOutput, string(rawComposeContent))
+	})
+
+	t.Run("b", func(t *testing.T) {
+		stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", "../../examples/03-dependencies/service-b.yaml", "--output", filepath.Join(td, "compose-b.yaml")})
+		assert.NoError(t, err)
+
+		expectedOutput := `services:
+  service-b-service-b:
+    command:
+      - -c
+      - 'while true; do echo service-b: Hello $${FRIEND}!; sleep 5; done'
+    entrypoint:
+      - /bin/sh
+    environment:
+      FRIEND: ${NAME}
+    image: busybox
+`
+
+		assert.Equal(t, expectedOutput, stdout)
+		assert.Equal(t, "", stderr)
+		rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose-b.yaml"))
+		require.NoError(t, err)
+		assert.Equal(t, expectedOutput, string(rawComposeContent))
+	})
+
+	t.Run("validate", func(t *testing.T) {
+		if os.Getenv("NO_DOCKER") != "" {
+			t.Skip("NO_DOCKER is set")
+			return
+		}
+
+		baseContent, err := os.ReadFile("../../examples/03-dependencies/compose.yaml")
+		assert.NoError(t, err)
+		assert.NoError(t, os.WriteFile(filepath.Join(td, "compose.yaml"), baseContent, 0644))
+
+		dockerCmd, err := exec.LookPath("docker")
+		require.NoError(t, err)
+
+		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "-f", "compose-a.yaml", "-f", "compose-b.yaml", "convert", "--quiet", "--dry-run")
+		cmd.Dir = td
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		assert.NoError(t, cmd.Run())
+	})
+}
+
+func TestRunExample04(t *testing.T) {
+	td := t.TempDir()
+
+	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", "../../examples/04-extras/score.yaml", "--output", filepath.Join(td, "compose.yaml")})
+	assert.NoError(t, err)
+
+	expectedOutput := `services:
+  web-app-hello:
+    image: nginx
+    ports:
+      - target: 80
+        published: "8000"
+    volumes:
+      - type: volume
+        source: data
+        target: /usr/share/nginx/html
+        read_only: true
+`
+
+	assert.Equal(t, expectedOutput, stdout)
+	assert.Equal(t, "", stderr)
+	rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+	require.NoError(t, err)
+	assert.Equal(t, expectedOutput, string(rawComposeContent))
+
+	t.Run("validate", func(t *testing.T) {
+		if os.Getenv("NO_DOCKER") != "" {
+			t.Skip("NO_DOCKER is set")
+			return
+		}
+
+		baseContent, err := os.ReadFile("../../examples/04-extras/compose.yaml")
+		assert.NoError(t, err)
+		assert.NoError(t, os.WriteFile(filepath.Join(td, "extras.yaml"), baseContent, 0644))
+
+		dockerCmd, err := exec.LookPath("docker")
+		require.NoError(t, err)
+
+		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "-f", "extras.yaml", "convert", "--quiet", "--dry-run")
+		cmd.Dir = td
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		assert.NoError(t, cmd.Run())
+	})
+}
+
+func TestRunWithBuild(t *testing.T) {
+	td := t.TempDir()
+
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: hello-world
+containers:
+  hello:
+    image: busybox
+`), 0600))
+
+	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{
+		"run", "--file", filepath.Join(td, "score.yaml"), "--output", filepath.Join(td, "compose.yaml"), "--build", "./test",
+	})
+	assert.NoError(t, err)
+
+	expectedOutput := `services:
+  hello-world-hello:
+    build:
+      context: ./test
+`
+
+	assert.Equal(t, expectedOutput, stdout)
+	assert.Equal(t, "", stderr)
+	rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+	require.NoError(t, err)
+	assert.Equal(t, expectedOutput, string(rawComposeContent))
+}
+
+func TestRunWithOverrides(t *testing.T) {
+	td := t.TempDir()
+
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: hello-world
+containers:
+  hello:
+    image: busybox
+`), 0600))
+
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score-overrides.yaml"), []byte(`
+containers:
+  hello:
+    image: nginx
+`), 0600))
+
+	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{
+		"run", "--file", filepath.Join(td, "score.yaml"), "--output", filepath.Join(td, "compose.yaml"), "--overrides", filepath.Join(td, "score-overrides.yaml"),
+	})
+	assert.NoError(t, err)
+
+	expectedOutput := `services:
+  hello-world-hello:
+    image: nginx
+`
+
+	assert.Equal(t, expectedOutput, stdout)
+	assert.Equal(t, "", stderr)
+	rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+	require.NoError(t, err)
+	assert.Equal(t, expectedOutput, string(rawComposeContent))
+}
+
+func TestRunWithPropertyOverrides(t *testing.T) {
+	td := t.TempDir()
+
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: hello-world
+containers:
+  hello:
+    image: busybox
+`), 0600))
+
+	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{
+		"run", "--file", filepath.Join(td, "score.yaml"), "--output", filepath.Join(td, "compose.yaml"), "--property", "containers.hello.image=bananas:latest",
+	})
+	assert.NoError(t, err)
+
+	expectedOutput := `services:
+  hello-world-hello:
+    image: bananas:latest
+`
+
+	assert.Equal(t, expectedOutput, stdout)
+	assert.Equal(t, "", stderr)
+	rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+	require.NoError(t, err)
+	assert.Equal(t, expectedOutput, string(rawComposeContent))
 }

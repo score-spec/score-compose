@@ -1,9 +1,0 @@
-services:
-  hello-world-hello:
-    build:
-      context: test
-    command:
-      - -c
-      - while true; do echo Hello World!; sleep 5; done
-    entrypoint:
-      - /bin/sh

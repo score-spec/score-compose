@@ -69,6 +69,11 @@ If you have a suggestion that would make this better, please fork the repo and c
 
 Read [CONTRIBUTING](CONTRIBUTING.md) for more information.
 
+### Testing
+
+Run the tests using `go test -v ./... -race`. If you do not have `docker` CLI installed locally or want the tests to run
+faster, consider setting `NO_DOCKER=true` to skip any `docker compose` based validation during testing.
+
 ### Documentation
 
 You can find our documentation at [docs.score.dev](https://docs.score.dev/docs).
