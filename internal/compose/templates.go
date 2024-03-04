@@ -20,17 +20,9 @@ var (
 	placeholderRegEx = regexp.MustCompile(`\$(\$|{([a-zA-Z0-9.\-_\\]+)})`)
 )
 
-// ResourceWithOutputs is an interface that resource implementations in the future may provide.
-// The keys here are the parts of a .-separated path traversal down a tree to return some data from the outputs of
-// the provisioned resource. If an error occurs looking up the output, an error should be thrown.
-// nil is a valid result since some resources may return null in their outputs.
-type ResourceWithOutputs interface {
-	LookupOutput(keys ...string) (interface{}, error)
-}
-
 // templatesContext ia an utility type that provides a context for '${...}' templates substitution
 type templatesContext struct {
-	meta      map[string]interface{}
+	meta      resourceWithStaticOutputs
 	resources map[string]ResourceWithOutputs
 }
 
@@ -80,28 +72,16 @@ func (ctx *templatesContext) mapVar(ref string) (string, error) {
 	}
 
 	var resolvedValue interface{}
-	var remainingParts []string
 
 	switch parts[0] {
 	case "metadata":
 		if len(parts) < 2 {
 			return "", fmt.Errorf("invalid ref '%s': requires at least a metadata key to lookup", ref)
 		}
-		if rv, ok := ctx.meta[parts[1]]; ok {
-			resolvedValue = rv
-			remainingParts = parts[2:]
-			for _, part := range remainingParts {
-				mapV, ok := resolvedValue.(map[string]interface{})
-				if !ok {
-					return "", fmt.Errorf("invalid ref '%s': cannot lookup a key in %T", ref, resolvedValue)
-				}
-				resolvedValue, ok = mapV[part]
-				if !ok {
-					return "", fmt.Errorf("invalid ref '%s': key '%s' does not exist", ref, part)
-				}
-			}
+		if rv, err := ctx.meta.LookupOutput(parts[1:]...); err != nil {
+			return "", fmt.Errorf("invalid ref '%s': %w", ref, err)
 		} else {
-			return "", fmt.Errorf("invalid ref '%s': unknown metadata key '%s'", ref, parts[1])
+			resolvedValue = rv
 		}
 	case "resources":
 		if len(parts) < 2 {
@@ -114,7 +94,7 @@ func (ctx *templatesContext) mapVar(ref string) (string, error) {
 			// TODO: deprecate this - this is an annoying and nonsensical legacy thing
 			return parts[1], nil
 		} else if rv2, err := rv.LookupOutput(parts[2:]...); err != nil {
-			return "", err
+			return "", fmt.Errorf("invalid ref '%s': %w", ref, err)
 		} else {
 			resolvedValue = rv2
 		}

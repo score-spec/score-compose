@@ -43,6 +43,8 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, *EnvVarTracker, error)
 				return nil, nil, fmt.Errorf("resources.%s: '%s.%s' is not supported in score-compose", resourceName, resourceSpec.Type, *resourceSpec.Class)
 			}
 			resources[resourceName] = envVarTracker
+		} else if resourceSpec.Type == "volume" && DerefOr(resourceSpec.Class, "default") == "default" {
+			resources[resourceName] = resourceWithStaticOutputs{}
 		} else {
 			// TODO: only enable this if the type.class is in an allow-list or the allow-list is '*' - otherwise return an error
 			resources[resourceName] = envVarTracker.GenerateResource(resourceName)

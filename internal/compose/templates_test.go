@@ -27,8 +27,9 @@ func TestMapVar(t *testing.T) {
 		return "", false
 	}
 	ctx, err := buildContext(meta, map[string]ResourceWithOutputs{
-		"env": evt,
-		"db":  evt.GenerateResource("db"),
+		"env":    evt,
+		"db":     evt.GenerateResource("db"),
+		"static": resourceWithStaticOutputs{"x": "a"},
 	})
 	assert.NoError(t, err)
 
@@ -42,8 +43,8 @@ func TestMapVar(t *testing.T) {
 		{Input: "metadata", ExpectedError: "invalid ref 'metadata': requires at least a metadata key to lookup"},
 		{Input: "metadata.other", Expected: "{\"key\":\"value\"}"},
 		{Input: "metadata.other.key", Expected: "value"},
-		{Input: "metadata.missing", ExpectedError: "invalid ref 'metadata.missing': unknown metadata key 'missing'"},
-		{Input: "metadata.name.foo", ExpectedError: "invalid ref 'metadata.name.foo': cannot lookup a key in string"},
+		{Input: "metadata.missing", ExpectedError: "invalid ref 'metadata.missing': key 'missing' not found"},
+		{Input: "metadata.name.foo", ExpectedError: "invalid ref 'metadata.name.foo': cannot lookup key 'foo', context is not a map"},
 		{Input: "resources.env", Expected: "env"},
 		{Input: "resources.env.DEBUG", Expected: "${DEBUG}"},
 		{Input: "resources.missing", ExpectedError: "invalid ref 'resources.missing': no known resource 'missing'"},
@@ -52,6 +53,9 @@ func TestMapVar(t *testing.T) {
 		{Input: "resources.db.port", Expected: "${DB_PORT}"},
 		{Input: "resources.db.name", Expected: "${DB_NAME}"},
 		{Input: "resources.db.name.user", Expected: "${DB_NAME_USER}"},
+		{Input: "resources.static", Expected: "static"},
+		{Input: "resources.static.x", Expected: "a"},
+		{Input: "resources.static.y", ExpectedError: "invalid ref 'resources.static.y': key 'y' not found"},
 	} {
 		t.Run(tc.Input, func(t *testing.T) {
 			res, err := ctx.mapVar(tc.Input)
@@ -101,7 +105,7 @@ func TestSubstitute(t *testing.T) {
 		{Input: "abc $$ abc", Expected: "abc $ abc"},
 		{Input: "$${abc}", Expected: "${abc}"},
 		{Input: "my name is ${metadata.name}", Expected: "my name is test-name"},
-		{Input: "my name is ${metadata.thing\\.two}", ExpectedError: "invalid ref 'metadata.thing\\.two': unknown metadata key 'thing.two'"},
+		{Input: "my name is ${metadata.thing\\.two}", ExpectedError: "invalid ref 'metadata.thing\\.two': key 'thing.two' not found"},
 		{
 			Input:    "postgresql://${resources.db.user}:${resources.db.password}@${resources.db.host}:${resources.db.port}/${resources.db.name}",
 			Expected: "postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}",
