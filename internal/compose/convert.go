@@ -105,10 +105,19 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, *EnvVarTracker, error)
 				if vol.Path != nil && *vol.Path != "" {
 					return nil, nil, fmt.Errorf("can't mount named volume with sub path '%s': %w", *vol.Path, errors.New("not supported"))
 				}
+
+				// TODO: deprecate this - volume should be linked directly
 				resolvedVolumeSource, err := ctx.Substitute(vol.Source)
 				if err != nil {
 					return nil, nil, fmt.Errorf("containers.%s.volumes[%d].source: %w", containerName, idx, err)
 				}
+
+				if res, ok := spec.Resources[resolvedVolumeSource]; !ok {
+					return nil, nil, fmt.Errorf("containers.%s.volumes[%d].source: resource '%s' does not exist", containerName, idx, resolvedVolumeSource)
+				} else if res.Type != "volume" {
+					return nil, nil, fmt.Errorf("containers.%s.volumes[%d].source: resource '%s' is not a volume", containerName, idx, resolvedVolumeSource)
+				}
+
 				volumes[idx] = compose.ServiceVolumeConfig{
 					Type:     "volume",
 					Source:   resolvedVolumeSource,

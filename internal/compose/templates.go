@@ -111,7 +111,8 @@ func (ctx *templatesContext) mapVar(ref string) (string, error) {
 		if !ok {
 			return "", fmt.Errorf("invalid ref '%s': no known resource '%s'", ref, parts[1])
 		} else if len(parts) == 2 {
-			return "", fmt.Errorf("invalid ref '%s': an output key is required", ref)
+			// TODO: deprecate this - this is an annoying and nonsensical legacy thing
+			return parts[1], nil
 		} else if rv2, err := rv.LookupOutput(parts[2:]...); err != nil {
 			return "", err
 		} else {

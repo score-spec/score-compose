@@ -23,6 +23,10 @@ containers:
       - source: data
         target: /usr/share/nginx/html
         readOnly: true
+
+resources:
+  data:
+    type: volume
 ```
 
 To convert `score.yaml` file into runnable `web-app.compose.yaml` use a `score-compose` CLI tool:
