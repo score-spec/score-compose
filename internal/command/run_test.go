@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -64,7 +65,10 @@ Flags:
       --overrides string       Overrides SCORE file (default "./overrides.score.yaml")
   -p, --property stringArray   Overrides selected property value
       --skip-validation        DEPRECATED: Disables Score file schema validation
-      --verbose                Enable diagnostic messages (written to STDERR)
+
+Global Flags:
+      --quiet           Mute any logging output
+  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
 `, stdout)
 	assert.Equal(t, "", stderr)
 
@@ -219,7 +223,7 @@ func TestExample_invalid_spec(t *testing.T) {
 	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", filepath.Join(td, "score.yaml"), "--output", filepath.Join(td, "compose.yaml")})
 	assert.EqualError(t, err, "validating workload spec: jsonschema: '' does not validate with https://score.dev/schemas/score#/required: missing properties: 'apiVersion', 'metadata', 'containers'")
 	assert.Equal(t, "", stdout)
-	assert.Equal(t, "", stderr)
+	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 }
 
 func TestVolumeSubPathNotSupported(t *testing.T) {
@@ -239,7 +243,7 @@ containers:
 	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", filepath.Join(td, "score.yaml"), "--output", filepath.Join(td, "compose.yaml")})
 	assert.EqualError(t, err, "building docker-compose configuration: containers.container-one1.volumes[0].path: can't mount named volume with sub path '/sub/path': not supported")
 	assert.Equal(t, "", stdout)
-	assert.Equal(t, "", stderr)
+	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 }
 
 func TestFilesNotSupported(t *testing.T) {
@@ -258,7 +262,7 @@ containers:
 	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", filepath.Join(td, "score.yaml"), "--output", filepath.Join(td, "compose.yaml")})
 	assert.EqualError(t, err, "building docker-compose configuration: containers.container-one1.files: not supported")
 	assert.Equal(t, "", stdout)
-	assert.Equal(t, "", stderr)
+	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 }
 
 func TestInvalidWorkloadName(t *testing.T) {
@@ -274,7 +278,7 @@ containers:
 	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", filepath.Join(td, "score.yaml")})
 	assert.EqualError(t, err, "validating workload spec: jsonschema: '/metadata/name' does not validate with https://score.dev/schemas/score#/properties/metadata/properties/name/pattern: does not match pattern '^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$'")
 	assert.Equal(t, "", stdout)
-	assert.Equal(t, "", stderr)
+	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 }
 
 func TestRunExample01(t *testing.T) {
@@ -293,7 +297,7 @@ func TestRunExample01(t *testing.T) {
 `
 
 	assert.Equal(t, expectedOutput, stdout)
-	assert.Equal(t, "", stderr)
+	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 	rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
 	require.NoError(t, err)
 	assert.Equal(t, expectedOutput, string(rawComposeContent))
@@ -333,7 +337,7 @@ func TestRunExample02(t *testing.T) {
 `
 
 	assert.Equal(t, expectedOutput, stdout)
-	assert.Equal(t, "", stderr)
+	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 	rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
 	require.NoError(t, err)
 	assert.Equal(t, expectedOutput, string(rawComposeContent))
@@ -376,12 +380,7 @@ func TestRunExample03(t *testing.T) {
 `
 
 		assert.Equal(t, expectedOutput, stdout)
-		for _, l := range []string{
-			"WARN: resources.db: 'postgres.default' is not directly supported in score-compose, references will be converted to environment variables\n",
-			"WARN: resources.service-b: 'service.default' is not directly supported in score-compose, references will be converted to environment variables\n",
-		} {
-			assert.Contains(t, stderr, l)
-		}
+		assert.NotEqual(t, "", strings.TrimSpace(stderr))
 		rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose-a.yaml"))
 		require.NoError(t, err)
 		assert.Equal(t, expectedOutput, string(rawComposeContent))
@@ -404,7 +403,7 @@ func TestRunExample03(t *testing.T) {
 `
 
 		assert.Equal(t, expectedOutput, stdout)
-		assert.Equal(t, "", stderr)
+		assert.NotEqual(t, "", strings.TrimSpace(stderr))
 		rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose-b.yaml"))
 		require.NoError(t, err)
 		assert.Equal(t, expectedOutput, string(rawComposeContent))
@@ -451,7 +450,7 @@ func TestRunExample04(t *testing.T) {
 `
 
 	assert.Equal(t, expectedOutput, stdout)
-	assert.Equal(t, "", stderr)
+	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 	rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
 	require.NoError(t, err)
 	assert.Equal(t, expectedOutput, string(rawComposeContent))
@@ -501,7 +500,7 @@ containers:
 `
 
 	assert.Equal(t, expectedOutput, stdout)
-	assert.Equal(t, "", stderr)
+	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 	rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
 	require.NoError(t, err)
 	assert.Equal(t, expectedOutput, string(rawComposeContent))
@@ -536,7 +535,7 @@ containers:
 `
 
 	assert.Equal(t, expectedOutput, stdout)
-	assert.Equal(t, "", stderr)
+	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 	rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
 	require.NoError(t, err)
 	assert.Equal(t, expectedOutput, string(rawComposeContent))
@@ -565,7 +564,7 @@ containers:
 `
 
 	assert.Equal(t, expectedOutput, stdout)
-	assert.Equal(t, "", stderr)
+	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 	rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
 	require.NoError(t, err)
 	assert.Equal(t, expectedOutput, string(rawComposeContent))

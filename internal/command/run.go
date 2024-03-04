@@ -22,12 +22,11 @@ import (
 	"github.com/tidwall/sjson"
 	"gopkg.in/yaml.v3"
 
-	"github.com/score-spec/score-compose/internal/compose"
-	"github.com/score-spec/score-compose/internal/logging"
-
 	loader "github.com/score-spec/score-go/loader"
 	schema "github.com/score-spec/score-go/schema"
 	score "github.com/score-spec/score-go/types"
+
+	"github.com/score-spec/score-compose/internal/compose"
 )
 
 const (
@@ -45,7 +44,6 @@ var (
 	overrideParams []string
 
 	skipValidation bool
-	verbose        bool
 )
 
 func init() {
@@ -58,13 +56,13 @@ func init() {
 	runCmd.Flags().StringArrayVarP(&overrideParams, "property", "p", nil, "Overrides selected property value")
 
 	runCmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "DEPRECATED: Disables Score file schema validation")
-	runCmd.Flags().BoolVar(&verbose, "verbose", false, "Enable diagnostic messages (written to STDERR)")
 
 	rootCmd.AddCommand(runCmd)
 }
 
 var runCmd = &cobra.Command{
 	Use:   "run [--file=score.yaml] [--output=compose.yaml]",
+	Args:  cobra.NoArgs,
 	Short: "Translate the SCORE file to docker-compose configuration",
 	RunE:  run,
 	// don't print the errors - we print these ourselves in main()
@@ -74,12 +72,6 @@ var runCmd = &cobra.Command{
 func run(cmd *cobra.Command, args []string) error {
 	// Silence usage message if args are parsed correctly
 	cmd.SilenceUsage = true
-
-	logLevel := slog.LevelWarn
-	if verbose {
-		logLevel = slog.LevelDebug
-	}
-	slog.SetDefault(slog.New(&logging.SimpleHandler{Level: logLevel, Writer: cmd.ErrOrStderr()}))
 
 	// Open source file
 	//
@@ -102,10 +94,10 @@ func run(cmd *cobra.Command, args []string) error {
 	// Apply overrides from file (optional)
 	//
 	if overridesFile != "" {
-		slog.Info(fmt.Sprintf("Loading Score overrides file '%s'", overridesFile))
 		if ovr, err := os.Open(overridesFile); err == nil {
 			defer ovr.Close()
 
+			slog.Info(fmt.Sprintf("Loading Score overrides file '%s'", overridesFile))
 			var ovrMap map[string]interface{}
 			if err = loader.ParseYAML(&ovrMap, ovr); err != nil {
 				return err

@@ -24,8 +24,10 @@ Available Commands:
   run         Translate the SCORE file to docker-compose configuration
 
 Flags:
-  -h, --help      help for score-compose
-  -v, --version   version for score-compose
+  -h, --help            help for score-compose
+      --quiet           Mute any logging output
+  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
+      --version         version for score-compose
 
 Use "score-compose [command] --help" for more information about a command.
 `, stdout)
@@ -57,6 +59,10 @@ Available Commands:
 
 Flags:
   -h, --help   help for completion
+
+Global Flags:
+      --quiet           Mute any logging output
+  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
 
 Use "score-compose completion [command] --help" for more information about a command.
 `, stdout)
@@ -98,6 +104,10 @@ Usage:
 Flags:
   -h, --help              help for bash
       --no-descriptions   disable completion descriptions
+
+Global Flags:
+      --quiet           Mute any logging output
+  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
 `, stdout)
 	assert.Equal(t, "", stderr)
 }
@@ -130,6 +140,10 @@ Usage:
 Flags:
   -h, --help              help for fish
       --no-descriptions   disable completion descriptions
+
+Global Flags:
+      --quiet           Mute any logging output
+  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
 `, stdout)
 	assert.Equal(t, "", stderr)
 }
@@ -173,6 +187,10 @@ Usage:
 Flags:
   -h, --help              help for zsh
       --no-descriptions   disable completion descriptions
+
+Global Flags:
+      --quiet           Mute any logging output
+  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
 `, stdout)
 	assert.Equal(t, "", stderr)
 }
@@ -202,6 +220,10 @@ Usage:
 Flags:
   -h, --help              help for powershell
       --no-descriptions   disable completion descriptions
+
+Global Flags:
+      --quiet           Mute any logging output
+  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
 `, stdout)
 	assert.Equal(t, "", stderr)
 }
