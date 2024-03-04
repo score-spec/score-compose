@@ -244,6 +244,35 @@ func TestScoreConvert(t *testing.T) {
 			},
 			Error: errors.New("not supported"),
 		},
+
+		{
+			Name: "Should report an error for volume that doesn't exist in resources",
+			Source: &score.Workload{
+				Metadata: score.WorkloadMetadata{"name": "test"},
+				Containers: score.WorkloadContainers{
+					"test": score.Container{
+						Image:   "busybox",
+						Volumes: []score.ContainerVolumesElem{{Source: "data", Target: "/mnt/data"}},
+					},
+				},
+			},
+			Error: errors.New("containers.test.volumes[0].source: resource 'data' does not exist"),
+		},
+
+		{
+			Name: "Should report an error for volume resource that isn't a volume",
+			Source: &score.Workload{
+				Metadata: score.WorkloadMetadata{"name": "test"},
+				Containers: score.WorkloadContainers{
+					"test": score.Container{
+						Image:   "busybox",
+						Volumes: []score.ContainerVolumesElem{{Source: "data", Target: "/mnt/data"}},
+					},
+				},
+				Resources: map[string]score.Resource{"data": {Type: "thing"}},
+			},
+			Error: errors.New("containers.test.volumes[0].source: resource 'data' is not a volume"),
+		},
 	}
 
 	for _, tt := range tests {
