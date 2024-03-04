@@ -10,6 +10,7 @@ package compose
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 
@@ -38,14 +39,16 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, *EnvVarTracker, error)
 	// The first thing we must do is validate or create the resources this workload depends on.
 	// NOTE: this will soon be replaced by a much more sophisticated resource provisioning system!
 	for resourceName, resourceSpec := range spec.Resources {
+		resClass := DerefOr(resourceSpec.Class, "default")
 		if resourceSpec.Type == "environment" {
-			if DerefOr(resourceSpec.Class, "default") != "default" {
-				return nil, nil, fmt.Errorf("resources.%s: '%s.%s' is not supported in score-compose", resourceName, resourceSpec.Type, *resourceSpec.Class)
+			if resClass != "default" {
+				return nil, nil, fmt.Errorf("resources.%s: '%s.%s' is not supported in score-compose", resourceName, resourceSpec.Type, resClass)
 			}
 			resources[resourceName] = envVarTracker
-		} else if resourceSpec.Type == "volume" && DerefOr(resourceSpec.Class, "default") == "default" {
+		} else if resourceSpec.Type == "volume" && resClass == "default" {
 			resources[resourceName] = resourceWithStaticOutputs{}
 		} else {
+			slog.Warn(fmt.Sprintf("resources.%s: '%s.%s' is not directly supported in score-compose, references will be converted to environment variables", resourceName, resourceSpec.Type, resClass))
 			// TODO: only enable this if the type.class is in an allow-list or the allow-list is '*' - otherwise return an error
 			resources[resourceName] = envVarTracker.GenerateResource(resourceName)
 		}
@@ -105,13 +108,15 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, *EnvVarTracker, error)
 			volumes = make([]compose.ServiceVolumeConfig, len(cSpec.Volumes))
 			for idx, vol := range cSpec.Volumes {
 				if vol.Path != nil && *vol.Path != "" {
-					return nil, nil, fmt.Errorf("can't mount named volume with sub path '%s': %w", *vol.Path, errors.New("not supported"))
+					return nil, nil, fmt.Errorf("containers.%s.volumes[%d].path: can't mount named volume with sub path '%s': not supported", containerName, idx, *vol.Path)
 				}
 
 				// TODO: deprecate this - volume should be linked directly
 				resolvedVolumeSource, err := ctx.Substitute(vol.Source)
 				if err != nil {
 					return nil, nil, fmt.Errorf("containers.%s.volumes[%d].source: %w", containerName, idx, err)
+				} else if resolvedVolumeSource != vol.Source {
+					slog.Warn(fmt.Sprintf("containers.%s.volumes[%d].source: interpolation will be deprecated in the future", containerName, idx))
 				}
 
 				if res, ok := spec.Resources[resolvedVolumeSource]; !ok {
@@ -133,6 +138,29 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, *EnvVarTracker, error)
 			return volumes[i].Source < volumes[j].Source
 		})
 		// END (NOTE)
+
+		// Files are not supported just yet
+		if len(cSpec.Files) > 0 {
+			return nil, nil, fmt.Errorf("containers.%s.files: not supported", containerName)
+		}
+
+		// Docker compose without swarm/stack mode doesn't really support resource limits. There are optimistic
+		// workarounds but they vary between specific versions of the CLI. Better to just ignore.
+		if cSpec.Resources != nil {
+			if cSpec.Resources.Requests != nil {
+				slog.Warn(fmt.Sprintf("containers.%s.resources.requests: not supported - ignoring", containerName))
+			}
+			if cSpec.Resources.Limits != nil {
+				slog.Warn(fmt.Sprintf("containers.%s.resources.limits: not supported - ignoring", containerName))
+			}
+		}
+
+		if cSpec.ReadinessProbe != nil {
+			slog.Warn(fmt.Sprintf("containers.%s.readinessProbe: not supported - ignoring", containerName))
+		}
+		if cSpec.LivenessProbe != nil {
+			slog.Warn(fmt.Sprintf("containers.%s.livenessProbe: not supported - ignoring", containerName))
+		}
 
 		var svc = compose.ServiceConfig{
 			Name:        workloadName + "-" + containerName,

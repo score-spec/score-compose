@@ -11,7 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 	"sort"
 	"strings"
@@ -23,6 +23,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/score-spec/score-compose/internal/compose"
+	"github.com/score-spec/score-compose/internal/logging"
 
 	loader "github.com/score-spec/score-go/loader"
 	schema "github.com/score-spec/score-go/schema"
@@ -74,13 +75,15 @@ func run(cmd *cobra.Command, args []string) error {
 	// Silence usage message if args are parsed correctly
 	cmd.SilenceUsage = true
 
-	if !verbose {
-		log.SetOutput(io.Discard)
+	logLevel := slog.LevelWarn
+	if verbose {
+		logLevel = slog.LevelDebug
 	}
+	slog.SetDefault(slog.New(&logging.SimpleHandler{Level: logLevel, Writer: cmd.ErrOrStderr()}))
 
 	// Open source file
 	//
-	log.Printf("Reading '%s'...\n", scoreFile)
+	slog.Info(fmt.Sprintf("Reading Score file '%s'", scoreFile))
 	var err error
 	var src *os.File
 	if src, err = os.Open(scoreFile); err != nil {
@@ -90,7 +93,7 @@ func run(cmd *cobra.Command, args []string) error {
 
 	// Parse SCORE spec
 	//
-	log.Print("Parsing SCORE spec...\n")
+	slog.Info("Parsing Score specification")
 	var srcMap map[string]interface{}
 	if err = loader.ParseYAML(&srcMap, src); err != nil {
 		return err
@@ -99,15 +102,15 @@ func run(cmd *cobra.Command, args []string) error {
 	// Apply overrides from file (optional)
 	//
 	if overridesFile != "" {
-		log.Printf("Checking '%s'...\n", overridesFile)
+		slog.Info(fmt.Sprintf("Loading Score overrides file '%s'", overridesFile))
 		if ovr, err := os.Open(overridesFile); err == nil {
 			defer ovr.Close()
 
-			log.Print("Applying SCORE overrides...\n")
 			var ovrMap map[string]interface{}
 			if err = loader.ParseYAML(&ovrMap, ovr); err != nil {
 				return err
 			}
+			slog.Info("Applying Score overrides")
 			if err := mergo.MergeWithOverwrite(&srcMap, ovrMap); err != nil {
 				return fmt.Errorf("applying overrides fom '%s': %w", overridesFile, err)
 			}
@@ -119,8 +122,6 @@ func run(cmd *cobra.Command, args []string) error {
 	// Apply overrides from command line (optional)
 	//
 	for _, pstr := range overrideParams {
-		log.Print("Applying SCORE properties overrides...\n")
-
 		jsonBytes, err := json.Marshal(srcMap)
 		if err != nil {
 			return fmt.Errorf("marshalling score spec: %w", err)
@@ -129,7 +130,7 @@ func run(cmd *cobra.Command, args []string) error {
 		pmap := strings.SplitN(pstr, "=", 2)
 		if len(pmap) <= 1 {
 			var path = pmap[0]
-			log.Printf("removing '%s'", path)
+			slog.Info(fmt.Sprintf("Applying Score properties override: removing '%s'", path))
 			if jsonBytes, err = sjson.DeleteBytes(jsonBytes, path); err != nil {
 				return fmt.Errorf("removing '%s': %w", path, err)
 			}
@@ -140,7 +141,7 @@ func run(cmd *cobra.Command, args []string) error {
 				val = pmap[1]
 			}
 
-			log.Printf("overriding '%s' = '%s' (%T)", path, val, val)
+			slog.Info(fmt.Sprintf("Applying Score properties override: overriding '%s' = '%s' (%T)", path, val, val))
 			if jsonBytes, err = sjson.SetBytes(jsonBytes, path, val); err != nil {
 				return fmt.Errorf("overriding '%s': %w", path, err)
 			}
@@ -156,14 +157,14 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to upgrade spec: %w", err)
 	} else if len(changes) > 0 {
 		for _, change := range changes {
-			log.Printf("Applying upgrade to specification: %s\n", change)
+			slog.Info(fmt.Sprintf("Applying upgrade to specification: %s", change))
 		}
 	}
 
 	// Validate SCORE spec
 	//
 	if !skipValidation {
-		log.Print("Validating SCORE spec...\n")
+		slog.Info("Validating final Score specification")
 		if err := schema.Validate(srcMap); err != nil {
 			return fmt.Errorf("validating workload spec: %w", err)
 		}
@@ -178,7 +179,7 @@ func run(cmd *cobra.Command, args []string) error {
 
 	// Build docker-compose configuration
 	//
-	log.Print("Building docker-compose configuration...\n")
+	slog.Info("Building docker-compose configuration")
 	proj, vars, err := compose.ConvertSpec(&spec)
 	if err != nil {
 		return fmt.Errorf("building docker-compose configuration: %w", err)
@@ -187,7 +188,7 @@ func run(cmd *cobra.Command, args []string) error {
 	// Override 'image' reference with 'build' instructions
 	//
 	if buildCtx != "" {
-		log.Printf("Applying build instructions: '%s'...\n", buildCtx)
+		slog.Info(fmt.Sprintf("Applying build context '%s' for service images", buildCtx))
 		// We add the build context to all services and containers here and make a big assumption that all are
 		// using the image we are building here and now. If this is unexpected, users should use a more complex
 		// overrides file.
@@ -201,7 +202,7 @@ func run(cmd *cobra.Command, args []string) error {
 	//
 	var dest = cmd.OutOrStdout()
 	if outFile != "" {
-		log.Printf("Creating '%s'...\n", outFile)
+		slog.Info(fmt.Sprintf("Writing output compose file '%s'", outFile))
 		destFile, err := os.Create(outFile)
 		if err != nil {
 			return err
@@ -213,7 +214,6 @@ func run(cmd *cobra.Command, args []string) error {
 
 	// Write docker-compose spec
 	//
-	log.Print("Writing docker-compose configuration...\n")
 	if err = compose.WriteYAML(dest, proj); err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func run(cmd *cobra.Command, args []string) error {
 	if envFile != "" {
 		// Open .env file
 		//
-		log.Printf("Creating '%s'...\n", envFile)
+		slog.Info(fmt.Sprintf("Writing output .env file '%s'", envFile))
 		dest, err := os.Create(envFile)
 		if err != nil {
 			return err
@@ -230,8 +230,6 @@ func run(cmd *cobra.Command, args []string) error {
 
 		// Write .env file
 		//
-		log.Print("Writing .env file template...\n")
-
 		envVars := make([]string, 0)
 		for key, val := range vars.Accessed() {
 			var envVar = fmt.Sprintf("%s=%v\n", key, val)

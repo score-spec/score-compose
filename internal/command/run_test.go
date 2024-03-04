@@ -146,7 +146,17 @@ resources:
 	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", filepath.Join(td, "score.yaml"), "--output", filepath.Join(td, "compose.yaml")})
 	assert.NoError(t, err)
 	assert.NotEqual(t, "", stdout)
-	assert.Equal(t, "", stderr)
+	for _, l := range []string{
+		"WARN: resources.resource-one1: 'Resource-One.default' is not directly supported in score-compose, references will be converted to environment variables\n",
+		"WARN: resources.resource-two2: 'Resource-Two.default' is not directly supported in score-compose, references will be converted to environment variables\n",
+		"WARN: containers.container-one1.resources.requests: not supported - ignoring\n",
+		"WARN: containers.container-one1.resources.limits: not supported - ignoring\n",
+		"WARN: containers.container-one1.readinessProbe: not supported - ignoring\n",
+		"WARN: containers.container-one1.livenessProbe: not supported - ignoring\n",
+	} {
+		assert.Contains(t, stderr, l)
+	}
+
 	rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
 	require.NoError(t, err)
 	var actualComposeContent map[string]interface{}
@@ -227,7 +237,26 @@ containers:
       path: /sub/path
 `), 0600))
 	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", filepath.Join(td, "score.yaml"), "--output", filepath.Join(td, "compose.yaml")})
-	assert.EqualError(t, err, "building docker-compose configuration: can't mount named volume with sub path '/sub/path': not supported")
+	assert.EqualError(t, err, "building docker-compose configuration: containers.container-one1.volumes[0].path: can't mount named volume with sub path '/sub/path': not supported")
+	assert.Equal(t, "", stdout)
+	assert.Equal(t, "", stderr)
+}
+
+func TestFilesNotSupported(t *testing.T) {
+	td := t.TempDir()
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example-workload-name123
+containers:
+  container-one1:
+    image: localhost:4000/repo/my-image:tag
+    files:
+    - target: /mnt/something
+      content: bananas
+`), 0600))
+	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", filepath.Join(td, "score.yaml"), "--output", filepath.Join(td, "compose.yaml")})
+	assert.EqualError(t, err, "building docker-compose configuration: containers.container-one1.files: not supported")
 	assert.Equal(t, "", stdout)
 	assert.Equal(t, "", stderr)
 }
@@ -347,7 +376,12 @@ func TestRunExample03(t *testing.T) {
 `
 
 		assert.Equal(t, expectedOutput, stdout)
-		assert.Equal(t, "", stderr)
+		for _, l := range []string{
+			"WARN: resources.db: 'postgres.default' is not directly supported in score-compose, references will be converted to environment variables\n",
+			"WARN: resources.service-b: 'service.default' is not directly supported in score-compose, references will be converted to environment variables\n",
+		} {
+			assert.Contains(t, stderr, l)
+		}
 		rawComposeContent, err := os.ReadFile(filepath.Join(td, "compose-a.yaml"))
 		require.NoError(t, err)
 		assert.Equal(t, expectedOutput, string(rawComposeContent))
