@@ -1,6 +1,10 @@
-![Score banner](docs/images/banner.png)
+# score-compose
 
-# ![Score](docs/images/logo.svg) Score overview
+`score-compose` is an implementation of the Score Workload specification for [Docker compose](https://docs.docker.com/compose/).
+
+## ![Score](docs/images/logo.svg) Score overview
+
+<img src="docs/images/banner.png" width="500px"/>
 
 Score aims to improve developer productivity and experience by reducing the risk of configuration inconsistencies between local and remote environments. It provides developer-centric workload specification (`score.yaml`) which captures a workloads runtime requirements in a platform-agnostic manner. Learn more [here](https://github.com/score-spec/spec#-what-is-score).
 
@@ -10,20 +14,37 @@ The `score.yaml` specification file can be executed against a _Score Implementat
 
 To install `score-compose`, follow the instructions as described in our [installation guide](https://docs.score.dev/docs/get-started/install/).
 
+You will also need a recent version of Docker and the Compose plugin installed. [Read more here](https://docs.docker.com/compose/install/).
+
 ## ![Get Started](docs/images/overview.svg) Get Started
 
-If you already have a `score.yaml` file defined, you can simply run the following command:
+If you're getting started, you can use `score-compose init` to create a basic `score.yaml` file in the current directory along with a `.score-compose/` working directory.
 
-```bash
-# Prepare a compose.yaml file
-score-compose run -f /tmp/score.yaml -o /tmp/compose.yaml
+```
+$ score-compose init --help
+The init subcommand will prepare the current directory for working with score-compose and prepare any local
+files or configuration needed to be successful.
+
+A directory named .score-compose will be created if it doesn't exist. This file stores local state and generally should
+not be checked into source control. Add it to your .gitignore file if you use Git as version control.
+
+The project name will be used as a Docker compose project name when the final compose files are written. This name
+acts as a namespace when multiple score files and containers are used.
+
+Usage:
+  score-compose init [flags]
+
+Flags:
+  -f, --file string      The score file to initialize (default "./score.yaml")
+  -h, --help             help for init
+  -p, --project string   Set the name of the docker compose project (defaults to the current directory name)
+
+Global Flags:
+      --quiet           Mute any logging output
+  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
 ```
 
-- `run` tells the CLI to translate the Score file to a Docker Compose file.
-- `-f` is the path to the Score file.
-- `-o` specifies the path to the output file.
-
-If you're just getting started, follow [this guide](https://docs.score.dev/docs/get-started/score-compose-hello-world/) to run your first Hello World program with `score-compose`. The full usage of the `run` command is:
+Once you have a `score.yaml` file created, modify it by following [this guide](https://docs.score.dev/docs/get-started/score-compose-hello-world/), and use `score-compose run` to convert it into a Docker compose manifest:
 
 ```
 Translate the SCORE file to docker-compose configuration
