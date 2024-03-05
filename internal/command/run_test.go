@@ -138,6 +138,10 @@ resources:
         data: here
   resource-two2:
     type: Resource-Two
+  volume-name:
+    type: volume
+  volume-two:
+    type: volume
 `), 0600))
 	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", filepath.Join(td, "score.yaml"), "--output", filepath.Join(td, "compose.yaml")})
 	assert.NoError(t, err)

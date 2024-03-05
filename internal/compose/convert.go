@@ -18,12 +18,7 @@ import (
 )
 
 // ConvertSpec converts SCORE specification into docker-compose configuration.
-func ConvertSpec(spec *score.Workload) (*compose.Project, ExternalVariables, error) {
-	ctx, err := buildContext(spec.Metadata, spec.Resources)
-	if err != nil {
-		return nil, nil, fmt.Errorf("preparing context: %w", err)
-	}
-
+func ConvertSpec(spec *score.Workload) (*compose.Project, *EnvVarTracker, error) {
 	workloadName, ok := spec.Metadata["name"].(string)
 	if !ok || len(workloadName) == 0 {
 		return nil, nil, errors.New("workload metadata is missing a name")
@@ -37,7 +32,29 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, ExternalVariables, err
 		Services: make(compose.Services, 0, len(spec.Containers)),
 	}
 
-	externalVars := ExternalVariables(ctx.ListEnvVars())
+	// Track any uses of the environment resource or resources that are overridden with an env provider using the tracker.
+	envVarTracker := new(EnvVarTracker)
+	resources := make(map[string]ResourceWithOutputs)
+	// The first thing we must do is validate or create the resources this workload depends on.
+	// NOTE: this will soon be replaced by a much more sophisticated resource provisioning system!
+	for resourceName, resourceSpec := range spec.Resources {
+		if resourceSpec.Type == "environment" {
+			if DerefOr(resourceSpec.Class, "default") != "default" {
+				return nil, nil, fmt.Errorf("resources.%s: '%s.%s' is not supported in score-compose", resourceName, resourceSpec.Type, *resourceSpec.Class)
+			}
+			resources[resourceName] = envVarTracker
+		} else if resourceSpec.Type == "volume" && DerefOr(resourceSpec.Class, "default") == "default" {
+			resources[resourceName] = resourceWithStaticOutputs{}
+		} else {
+			// TODO: only enable this if the type.class is in an allow-list or the allow-list is '*' - otherwise return an error
+			resources[resourceName] = envVarTracker.GenerateResource(resourceName)
+		}
+	}
+
+	ctx, err := buildContext(spec.Metadata, resources)
+	if err != nil {
+		return nil, nil, fmt.Errorf("preparing context: %w", err)
+	}
 
 	var ports []compose.ServicePortConfig
 	if spec.Service != nil && len(spec.Service.Ports) > 0 {
@@ -70,8 +87,11 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, ExternalVariables, err
 
 		var env = make(compose.MappingWithEquals, len(cSpec.Variables))
 		for key, val := range cSpec.Variables {
-			var envVarVal = ctx.Substitute(val)
-			env[key] = &envVarVal
+			resolved, err := ctx.Substitute(val)
+			if err != nil {
+				return nil, nil, fmt.Errorf("containers.%s.variables.%s: %w", containerName, key, err)
+			}
+			env[key] = &resolved
 		}
 
 		// NOTE: Sorting is necessary for DeepEqual call within our Unit Tests to work reliably
@@ -87,9 +107,22 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, ExternalVariables, err
 				if vol.Path != nil && *vol.Path != "" {
 					return nil, nil, fmt.Errorf("can't mount named volume with sub path '%s': %w", *vol.Path, errors.New("not supported"))
 				}
+
+				// TODO: deprecate this - volume should be linked directly
+				resolvedVolumeSource, err := ctx.Substitute(vol.Source)
+				if err != nil {
+					return nil, nil, fmt.Errorf("containers.%s.volumes[%d].source: %w", containerName, idx, err)
+				}
+
+				if res, ok := spec.Resources[resolvedVolumeSource]; !ok {
+					return nil, nil, fmt.Errorf("containers.%s.volumes[%d].source: resource '%s' does not exist", containerName, idx, resolvedVolumeSource)
+				} else if res.Type != "volume" {
+					return nil, nil, fmt.Errorf("containers.%s.volumes[%d].source: resource '%s' is not a volume", containerName, idx, resolvedVolumeSource)
+				}
+
 				volumes[idx] = compose.ServiceVolumeConfig{
 					Type:     "volume",
-					Source:   ctx.Substitute(vol.Source),
+					Source:   resolvedVolumeSource,
 					Target:   vol.Target,
 					ReadOnly: DerefOr(vol.ReadOnly, false),
 				}
@@ -119,5 +152,5 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, ExternalVariables, err
 
 		project.Services = append(project.Services, svc)
 	}
-	return &project, externalVars, nil
+	return &project, envVarTracker, nil
 }

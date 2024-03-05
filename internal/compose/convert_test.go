@@ -25,7 +25,7 @@ func TestScoreConvert(t *testing.T) {
 		Name    string
 		Source  *score.Workload
 		Project *compose.Project
-		Vars    ExternalVariables
+		Vars    map[string]string
 		Error   error
 	}{
 		// Success path
@@ -93,7 +93,6 @@ func TestScoreConvert(t *testing.T) {
 					},
 				},
 			},
-			Vars: ExternalVariables{},
 		},
 		{
 			Name: "Should convert all resources references",
@@ -112,7 +111,7 @@ func TestScoreConvert(t *testing.T) {
 						},
 						Volumes: []score.ContainerVolumesElem{
 							{
-								Source:   "${resources.data}",
+								Source:   "data",
 								Target:   "/mnt/data",
 								ReadOnly: Ref(true),
 							},
@@ -126,7 +125,7 @@ func TestScoreConvert(t *testing.T) {
 					"app-db": {
 						Type: "postgress",
 					},
-					"dns": {
+					"some-dns": {
 						Type: "dns",
 					},
 					"data": {
@@ -142,7 +141,7 @@ func TestScoreConvert(t *testing.T) {
 						Environment: compose.MappingWithEquals{
 							"DEBUG":             stringPtr("${DEBUG}"),
 							"LOGS_LEVEL":        stringPtr("${LOGS_LEVEL}"),
-							"DOMAIN_NAME":       stringPtr(""),
+							"DOMAIN_NAME":       stringPtr("${SOME_DNS_DOMAIN_NAME}"),
 							"CONNECTION_STRING": stringPtr("postgresql://${APP_DB_HOST}:${APP_DB_PORT}/${APP_DB_NAME}"),
 						},
 						Volumes: []compose.ServiceVolumeConfig{
@@ -156,11 +155,12 @@ func TestScoreConvert(t *testing.T) {
 					},
 				},
 			},
-			Vars: ExternalVariables{
-				"DEBUG":       "",
-				"APP_DB_HOST": "",
-				"APP_DB_PORT": "",
-				"APP_DB_NAME": "",
+			Vars: map[string]string{
+				"DEBUG":                "",
+				"APP_DB_HOST":          "",
+				"APP_DB_PORT":          "",
+				"APP_DB_NAME":          "",
+				"SOME_DNS_DOMAIN_NAME": "",
 			},
 		},
 		{
@@ -213,7 +213,6 @@ func TestScoreConvert(t *testing.T) {
 					},
 				},
 			},
-			Vars: ExternalVariables{},
 		},
 
 		// Errors handling
@@ -229,7 +228,7 @@ func TestScoreConvert(t *testing.T) {
 						Image: "busybox",
 						Volumes: []score.ContainerVolumesElem{
 							{
-								Source:   "${resources.data}",
+								Source:   "data",
 								Target:   "/mnt/data",
 								Path:     Ref("sub/path"),
 								ReadOnly: Ref(true),
@@ -244,6 +243,35 @@ func TestScoreConvert(t *testing.T) {
 				},
 			},
 			Error: errors.New("not supported"),
+		},
+
+		{
+			Name: "Should report an error for volume that doesn't exist in resources",
+			Source: &score.Workload{
+				Metadata: score.WorkloadMetadata{"name": "test"},
+				Containers: score.WorkloadContainers{
+					"test": score.Container{
+						Image:   "busybox",
+						Volumes: []score.ContainerVolumesElem{{Source: "data", Target: "/mnt/data"}},
+					},
+				},
+			},
+			Error: errors.New("containers.test.volumes[0].source: resource 'data' does not exist"),
+		},
+
+		{
+			Name: "Should report an error for volume resource that isn't a volume",
+			Source: &score.Workload{
+				Metadata: score.WorkloadMetadata{"name": "test"},
+				Containers: score.WorkloadContainers{
+					"test": score.Container{
+						Image:   "busybox",
+						Volumes: []score.ContainerVolumesElem{{Source: "data", Target: "/mnt/data"}},
+					},
+				},
+				Resources: map[string]score.Resource{"data": {Type: "thing"}},
+			},
+			Error: errors.New("containers.test.volumes[0].source: resource 'data' is not a volume"),
 		},
 	}
 
@@ -260,7 +288,7 @@ func TestScoreConvert(t *testing.T) {
 				//
 				assert.NoError(t, err)
 				assert.Equal(t, tt.Project, proj)
-				assert.Equal(t, tt.Vars, vars)
+				assert.Equal(t, tt.Vars, vars.Accessed())
 			}
 		})
 	}

@@ -16,80 +16,119 @@ import (
 
 func TestMapVar(t *testing.T) {
 	var meta = score.WorkloadMetadata{
-		"name": "test-name",
+		"name":  "test-name",
+		"other": map[string]interface{}{"key": "value"},
 	}
-
-	var resources = score.WorkloadResources{
-		"env": score.Resource{
-			Type: "environment",
-		},
-		"db": score.Resource{
-			Type: "postgres",
-		},
+	evt := new(EnvVarTracker)
+	evt.lookup = func(key string) (string, bool) {
+		if key == "DEBUG" {
+			return "something", true
+		}
+		return "", false
 	}
-
-	ctx, err := buildContext(meta, resources)
+	ctx, err := buildContext(meta, map[string]ResourceWithOutputs{
+		"env":    evt,
+		"db":     evt.GenerateResource("db"),
+		"static": resourceWithStaticOutputs{"x": "a"},
+	})
 	assert.NoError(t, err)
 
-	assert.Equal(t, "", ctx.mapVar(""))
-	assert.Equal(t, "$", ctx.mapVar("$"))
+	for _, tc := range []struct {
+		Input         string
+		Expected      string
+		ExpectedError string
+	}{
+		{Input: "missing", ExpectedError: "invalid ref 'missing': unknown reference root"},
+		{Input: "metadata.name", Expected: "test-name"},
+		{Input: "metadata", ExpectedError: "invalid ref 'metadata': requires at least a metadata key to lookup"},
+		{Input: "metadata.other", Expected: "{\"key\":\"value\"}"},
+		{Input: "metadata.other.key", Expected: "value"},
+		{Input: "metadata.missing", ExpectedError: "invalid ref 'metadata.missing': key 'missing' not found"},
+		{Input: "metadata.name.foo", ExpectedError: "invalid ref 'metadata.name.foo': cannot lookup key 'foo', context is not a map"},
+		{Input: "resources.env", Expected: "env"},
+		{Input: "resources.env.DEBUG", Expected: "${DEBUG}"},
+		{Input: "resources.missing", ExpectedError: "invalid ref 'resources.missing': no known resource 'missing'"},
+		{Input: "resources.db", Expected: "db"},
+		{Input: "resources.db.host", Expected: "${DB_HOST}"},
+		{Input: "resources.db.port", Expected: "${DB_PORT}"},
+		{Input: "resources.db.name", Expected: "${DB_NAME}"},
+		{Input: "resources.db.name.user", Expected: "${DB_NAME_USER}"},
+		{Input: "resources.static", Expected: "static"},
+		{Input: "resources.static.x", Expected: "a"},
+		{Input: "resources.static.y", ExpectedError: "invalid ref 'resources.static.y': key 'y' not found"},
+	} {
+		t.Run(tc.Input, func(t *testing.T) {
+			res, err := ctx.mapVar(tc.Input)
+			if tc.ExpectedError != "" {
+				assert.EqualError(t, err, tc.ExpectedError)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.Expected, res)
+			}
+		})
+	}
 
-	assert.Equal(t, "test-name", ctx.mapVar("metadata.name"))
-	assert.Equal(t, "", ctx.mapVar("metadata.name.nil"))
-	assert.Equal(t, "", ctx.mapVar("metadata.nil"))
-
-	assert.Equal(t, "${DEBUG}", ctx.mapVar("resources.env.DEBUG"))
-
-	assert.Equal(t, "db", ctx.mapVar("resources.db"))
-	assert.Equal(t, "${DB_HOST}", ctx.mapVar("resources.db.host"))
-	assert.Equal(t, "${DB_PORT}", ctx.mapVar("resources.db.port"))
-	assert.Equal(t, "${DB_NAME}", ctx.mapVar("resources.db.name"))
-	assert.Equal(t, "${DB_NAME_USER}", ctx.mapVar("resources.db.name.user"))
-
-	assert.Equal(t, "", ctx.mapVar("resources.nil"))
-	assert.Equal(t, "", ctx.mapVar("nil.db.name"))
+	assert.Equal(t, map[string]string{
+		"DEBUG":        "something",
+		"DB_HOST":      "",
+		"DB_NAME":      "",
+		"DB_NAME_USER": "",
+		"DB_PORT":      "",
+	}, evt.Accessed())
 }
 
 func TestSubstitute(t *testing.T) {
 	var meta = score.WorkloadMetadata{
 		"name": "test-name",
 	}
-
-	var resources = score.WorkloadResources{
-		"env": score.Resource{
-			Type: "environment",
-		},
-		"db": score.Resource{
-			Type: "postgres",
-		},
+	evt := new(EnvVarTracker)
+	evt.lookup = func(key string) (string, bool) {
+		if key == "DEBUG" {
+			return "something", true
+		}
+		return "", false
 	}
-
-	ctx, err := buildContext(meta, resources)
+	ctx, err := buildContext(meta, map[string]ResourceWithOutputs{
+		"env": evt,
+		"db":  evt.GenerateResource("db"),
+	})
 	assert.NoError(t, err)
 
-	assert.Empty(t, ctx.ListEnvVars())
+	for _, tc := range []struct {
+		Input         string
+		Expected      string
+		ExpectedError string
+	}{
+		{Input: "", Expected: ""},
+		{Input: "abc", Expected: "abc"},
+		{Input: "$abc", Expected: "$abc"},
+		{Input: "abc $$ abc", Expected: "abc $ abc"},
+		{Input: "$${abc}", Expected: "${abc}"},
+		{Input: "my name is ${metadata.name}", Expected: "my name is test-name"},
+		{Input: "my name is ${metadata.thing\\.two}", ExpectedError: "invalid ref 'metadata.thing\\.two': key 'thing.two' not found"},
+		{
+			Input:    "postgresql://${resources.db.user}:${resources.db.password}@${resources.db.host}:${resources.db.port}/${resources.db.name}",
+			Expected: "postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}",
+		},
+	} {
+		t.Run(tc.Input, func(t *testing.T) {
+			res, err := ctx.Substitute(tc.Input)
+			if tc.ExpectedError != "" {
+				if !assert.EqualError(t, err, tc.ExpectedError) {
+					assert.Equal(t, "", res)
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.Expected, res)
+			}
+		})
+	}
 
-	assert.Equal(t, "", ctx.Substitute(""))
-	assert.Equal(t, "abc", ctx.Substitute("abc"))
-	assert.Equal(t, "$abc", ctx.Substitute("$abc"))
-	assert.Equal(t, "abc $ abc", ctx.Substitute("abc $$ abc"))
-	assert.Equal(t, "${abc}", ctx.Substitute("$${abc}"))
-
-	assert.Equal(t, "The name is 'test-name'", ctx.Substitute("The name is '${metadata.name}'"))
-	assert.Equal(t, "The name is ''", ctx.Substitute("The name is '${metadata.nil}'"))
-
-	assert.Equal(t, "resources.badref.DEBUG", ctx.Substitute("resources.badref.DEBUG"))
-
-	assert.Equal(t, "db", ctx.Substitute("${resources.db}"))
-	assert.Equal(t,
-		"postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}",
-		ctx.Substitute("postgresql://${resources.db.user}:${resources.db.password}@${resources.db.host}:${resources.db.port}/${resources.db.name}"))
-
-	assert.Equal(t, map[string]interface{}{
-		"DB_USER":     "",
-		"DB_PASSWORD": "",
+	assert.Equal(t, map[string]string{
 		"DB_HOST":     "",
-		"DB_PORT":     "",
 		"DB_NAME":     "",
-	}, ctx.ListEnvVars())
+		"DB_PASSWORD": "",
+		"DB_PORT":     "",
+		"DB_USER":     "",
+	}, evt.Accessed())
 }
