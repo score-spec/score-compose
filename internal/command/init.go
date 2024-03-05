@@ -105,19 +105,16 @@ acts as a namespace when multiple score files and containers are used.
 			}
 		}
 
-		if st, err := os.Stat(initCmdScoreFile); err != nil {
+		if _, err := os.ReadFile(initCmdScoreFile); err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
-				return fmt.Errorf("failed to read existing Score file: %w", err)
+				return fmt.Errorf("failed to check existing Score file: %w", err)
 			}
 			slog.Info(fmt.Sprintf("Initial Score file '%s' does not exist - creating it", initCmdScoreFile))
-
 			if err := os.WriteFile(initCmdScoreFile+".temp", []byte(DefaultScoreFileContent), 0755); err != nil {
 				return fmt.Errorf("failed to write initial score file: %w", err)
 			} else if err := os.Rename(initCmdScoreFile+".temp", initCmdScoreFile); err != nil {
 				return fmt.Errorf("failed to complete writing initial Score file: %w", err)
 			}
-		} else if st.IsDir() || !st.Mode().IsRegular() {
-			return fmt.Errorf("existing Score file is not a regular file")
 		} else {
 			slog.Info(fmt.Sprintf("Found existing Score file '%s'", initCmdScoreFile))
 		}

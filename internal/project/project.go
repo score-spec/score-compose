@@ -55,17 +55,11 @@ func (sd *StateDirectory) Persist() error {
 // LoadStateDirectory loads the state directory for the given directory (usually PWD).
 func LoadStateDirectory(directory string) (*StateDirectory, bool, error) {
 	d := filepath.Join(directory, DefaultRelativeStateDirectory)
-	if st, err := os.Stat(d); err != nil {
+	content, err := os.ReadFile(filepath.Join(d, ConfigFileName))
+	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, false, nil
 		}
-		return nil, false, fmt.Errorf("failed to stat '%s': %w", d, err)
-	} else if !st.IsDir() {
-		return nil, false, fmt.Errorf("path '%s' is not a directory", d)
-	}
-
-	content, err := os.ReadFile(filepath.Join(d, ConfigFileName))
-	if err != nil {
 		return nil, true, fmt.Errorf("config file couldn't be read: %w", err)
 	}
 
