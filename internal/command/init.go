@@ -128,8 +128,8 @@ acts as a namespace when multiple score files and containers are used.
 }
 
 func init() {
-	initCmd.Flags().StringP("file", "f", scoreFileDefault, "The initial score file to ensure exists")
-	initCmd.Flags().StringP("project", "p", "", "The name of the docker compose project")
+	initCmd.Flags().StringP("file", "f", scoreFileDefault, "The score file to initialize")
+	initCmd.Flags().StringP("project", "p", "", "Set the name of the docker compose project (defaults to the current directory name)")
 
 	rootCmd.AddCommand(initCmd)
 }
