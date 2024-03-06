@@ -1,7 +1,6 @@
 package command
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -21,9 +20,9 @@ import (
 )
 
 const (
-	generateCmdFallbackFlag      = "fallback-to-env-var-resource-types"
-	generateCmdOverridesFileFlag = "overrides-file"
-	generateCmdOverridePathFlag  = "override-path"
+	generateCmdFallbackFlag         = "fallback-to-env-var-resource-types"
+	generateCmdOverridesFileFlag    = "overrides-file"
+	generateCmdOverridePropertyFlag = "override-property"
 )
 
 var generateCommand = &cobra.Command{
@@ -43,7 +42,13 @@ arguments.
   score-compose generate
 
   # Specify Score files
-  score-compose generate score.yaml *.score.yaml`,
+  score-compose generate score.yaml *.score.yaml
+
+  # Provide overrides when one score file is provided
+  score-compose generate score.yaml --override-file=./overrides.score.yaml --override-property=metadata.key=value
+
+  # Provide overrides when more than one score file is provided
+  score-compose generate score.yaml score-two.yaml --override-file=my-workload=./overrides.score.yaml --override-property=my-other-workload=metadata.key=value`,
 
 	// don't print the errors - we print these ourselves in main()
 	SilenceErrors: true,
@@ -81,47 +86,17 @@ arguments.
 		// Now read and apply any overrides files to the score files
 		if v, _ := cmd.Flags().GetStringArray(generateCmdOverridesFileFlag); len(v) > 0 {
 			for _, overrideFileEntry := range v {
-				parts := strings.SplitN(overrideFileEntry, "=", 2)
-				if len(parts) != 2 {
-					return fmt.Errorf("--%s '%s' is invalid, expected a =-separated name and file", generateCmdOverridesFileFlag, overrideFileEntry)
-				} else if spec, ok := workloadSpecs[parts[0]]; !ok {
-					return fmt.Errorf("--%s '%s' is invalid, unknown workload '%s'", generateCmdOverridesFileFlag, overrideFileEntry, parts[0])
-				} else if raw, err := os.ReadFile(parts[1]); err != nil {
-					return fmt.Errorf("--%s '%s' is invalid, failed to read file: %w", generateCmdOverridesFileFlag, overrideFileEntry, err)
-				} else {
-					slog.Info(fmt.Sprintf("Applying overrides from %s to workload %s", parts[1], parts[0]))
-					var out map[string]interface{}
-					if err := yaml.Unmarshal(raw, &out); err != nil {
-						return fmt.Errorf("--%s '%s' is invalid: failed to decode yaml: %w", generateCmdOverridesFileFlag, overrideFileEntry, err)
-					} else if err := mergo.Merge(spec, out, mergo.WithOverride); err != nil {
-						return fmt.Errorf("--%s '%s' failed to apply: %w", generateCmdOverridesFileFlag, overrideFileEntry, err)
-					}
+				if err := parseAndApplyOverrideFile(overrideFileEntry, generateCmdOverridesFileFlag, workloadNames, workloadSpecs); err != nil {
+					return err
 				}
 			}
 		}
 
 		// Now read, parse, and apply any override properties to the score files
-		if v, _ := cmd.Flags().GetStringArray(generateCmdOverridePathFlag); len(v) > 0 {
+		if v, _ := cmd.Flags().GetStringArray(generateCmdOverridePropertyFlag); len(v) > 0 {
 			for _, overridePropertyEntry := range v {
-				parts := strings.SplitN(overridePropertyEntry, "=", 3)
-				if len(parts) != 3 {
-					return fmt.Errorf("--%s '%s' is invalid, expected a =-separated name, path, and value", generateCmdOverridePathFlag, overridePropertyEntry)
-				} else if spec, ok := workloadSpecs[parts[0]]; !ok {
-					return fmt.Errorf("--%s '%s' is invalid, unknown workload '%s'", generateCmdOverridePathFlag, overridePropertyEntry, parts[0])
-				} else if parts[2] == "" {
-					slog.Info(fmt.Sprintf("Overriding '%s' in workload '%s'", parts[1], parts[0]))
-					if err := writePathInStruct(spec, parseDotPathParts(parts[1]), true, nil); err != nil {
-						return fmt.Errorf("--%s '%s' could not be applied: %w", generateCmdOverridePathFlag, overridePropertyEntry, err)
-					}
-				} else {
-					var value interface{}
-					if err := json.Unmarshal([]byte(parts[2]), &value); err != nil {
-						return fmt.Errorf("--%s '%s' is invalid, failed to unmarshal value as json: %w", generateCmdOverridesFileFlag, overridePropertyEntry, err)
-					}
-					slog.Info(fmt.Sprintf("Overriding '%s' in workload '%s'", parts[1], parts[0]))
-					if err := writePathInStruct(spec, parseDotPathParts(parts[1]), false, value); err != nil {
-						return fmt.Errorf("--%s '%s' could not be applied: %w", generateCmdOverridePathFlag, overridePropertyEntry, err)
-					}
+				if err := parseAndApplyOverrideProperty(overridePropertyEntry, generateCmdOverridesFileFlag, workloadNames, workloadSpecs); err != nil {
+					return err
 				}
 			}
 		}
@@ -226,17 +201,15 @@ func loadRawScoreFiles(fileNames []string) ([]string, map[string]map[string]inte
 			return nil, nil, fmt.Errorf("failed to decode '%s' as yaml: %w", fileName, err)
 		}
 
+		var workloadName string
 		if meta, ok := out["metadata"].(map[string]interface{}); ok {
-			if name, ok := meta["name"].(string); ok && name != "" {
-				if _, ok := workloadToRawScore[name]; ok {
-					return nil, nil, fmt.Errorf("workload name '%s' in file '%s' is used more than once", name, fileName)
-				}
-				workloadNames = append(workloadNames, name)
-				workloadToRawScore[name] = out
-				continue
+			workloadName, _ = meta["name"].(string)
+			if _, ok := workloadToRawScore[workloadName]; ok {
+				return nil, nil, fmt.Errorf("workload name '%s' in file '%s' is used more than once", workloadName, fileName)
 			}
 		}
-		return nil, nil, fmt.Errorf("failed to find metadata.name in file '%s' please set a workload name", fileName)
+		workloadNames = append(workloadNames, workloadName)
+		workloadToRawScore[workloadName] = out
 	}
 	return workloadNames, workloadToRawScore, nil
 }
@@ -258,7 +231,7 @@ func init() {
 			"be thrown if a workload with the name does not exist.",
 	)
 	generateCommand.Flags().StringArray(
-		generateCmdOverridePathFlag, []string{},
+		generateCmdOverridePropertyFlag, []string{},
 		"This option can be used one or more times to specify paths in the Score workloads to set or remove. Each "+
 			"argument should provide the workload name, a .-separated path, and a value to set at the path, for example "+
 			"--override-path=hello-world=some.key.subkey=value. The value may be json-encoded to indicate non-string "+
@@ -272,4 +245,58 @@ func init() {
 	)
 
 	rootCmd.AddCommand(generateCommand)
+}
+
+func parseAndApplyOverrideFile(entry string, flagName string, workloadNames []string, workloadSpecs map[string]map[string]interface{}) error {
+	parts := strings.SplitN(entry, "=", 2)
+	if len(workloadNames) > 1 && len(parts) < 2 {
+		return fmt.Errorf("--%s '%s' is invalid, expected a =-separated name and file when more than one score file is used", flagName, entry)
+	} else if len(parts) == 1 {
+		parts = []string{workloadNames[0], parts[0]}
+	}
+
+	if spec, ok := workloadSpecs[parts[0]]; !ok {
+		return fmt.Errorf("--%s '%s' is invalid, unknown workload '%s'", flagName, entry, parts[0])
+	} else if raw, err := os.ReadFile(parts[1]); err != nil {
+		return fmt.Errorf("--%s '%s' is invalid, failed to read file: %w", flagName, entry, err)
+	} else {
+		slog.Info(fmt.Sprintf("Applying overrides from %s to workload %s", parts[1], parts[0]))
+		var out map[string]interface{}
+		if err := yaml.Unmarshal(raw, &out); err != nil {
+			return fmt.Errorf("--%s '%s' is invalid: failed to decode yaml: %w", flagName, entry, err)
+		} else if err := mergo.Merge(&spec, out, mergo.WithOverride); err != nil {
+			return fmt.Errorf("--%s '%s' failed to apply: %w", flagName, entry, err)
+		}
+	}
+	return nil
+}
+
+func parseAndApplyOverrideProperty(entry string, flagName string, workloadNames []string, workloadSpecs map[string]map[string]interface{}) error {
+	parts := strings.SplitN(entry, "=", 3)
+	if len(workloadNames) > 1 && len(parts) < 3 {
+		return fmt.Errorf("--%s '%s' is invalid, expected a =-separated name, path, and value when more than one score file is used", flagName, entry)
+	} else if len(parts) == 2 {
+		parts = []string{workloadNames[0], parts[0], parts[1]}
+	} else {
+		return fmt.Errorf("--%s '%s' is invalid, expected a =-separated path and value", flagName, entry)
+	}
+
+	if spec, ok := workloadSpecs[parts[0]]; !ok {
+		return fmt.Errorf("--%s '%s' is invalid, unknown workload '%s'", flagName, entry, parts[0])
+	} else if parts[2] == "" {
+		slog.Info(fmt.Sprintf("Overriding '%s' in workload '%s'", parts[1], parts[0]))
+		if err := writePathInStruct(spec, parseDotPathParts(parts[1]), true, nil); err != nil {
+			return fmt.Errorf("--%s '%s' could not be applied: %w", flagName, entry, err)
+		}
+	} else {
+		var value interface{}
+		if err := yaml.Unmarshal([]byte(parts[2]), &value); err != nil {
+			return fmt.Errorf("--%s '%s' is invalid, failed to unmarshal value as json: %w", flagName, entry, err)
+		}
+		slog.Info(fmt.Sprintf("Overriding '%s' in workload '%s'", parts[1], parts[0]))
+		if err := writePathInStruct(spec, parseDotPathParts(parts[1]), false, value); err != nil {
+			return fmt.Errorf("--%s '%s' could not be applied: %w", flagName, entry, err)
+		}
+	}
+	return nil
 }

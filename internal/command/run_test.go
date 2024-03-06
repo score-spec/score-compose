@@ -42,7 +42,11 @@ func executeAndResetCommand(ctx context.Context, cmd *cobra.Command, args []stri
 		subCmd.SetContext(nil)
 		subCmd.SilenceUsage = false
 		subCmd.Flags().VisitAll(func(f *pflag.Flag) {
-			_ = f.Value.Set(f.DefValue)
+			if f.Value.Type() == "stringArray" {
+				f.Value.(pflag.SliceValue).Replace(nil)
+			} else {
+				_ = f.Value.Set(f.DefValue)
+			}
 		})
 	}
 	return nowOut.String(), nowErr.String(), err

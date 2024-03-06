@@ -8,23 +8,18 @@ The Apache Software Foundation (http://www.apache.org/).
 package command
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"os"
 	"sort"
-	"strings"
 
 	"github.com/compose-spec/compose-go/types"
-	"github.com/imdario/mergo"
-	"github.com/spf13/cobra"
-	"github.com/tidwall/sjson"
-	"gopkg.in/yaml.v3"
-
 	loader "github.com/score-spec/score-go/loader"
 	schema "github.com/score-spec/score-go/schema"
 	score "github.com/score-spec/score-go/types"
+	"github.com/spf13/cobra"
 
 	"github.com/score-spec/score-compose/internal/compose"
 )
@@ -73,40 +68,17 @@ func run(cmd *cobra.Command, args []string) error {
 	// Silence usage message if args are parsed correctly
 	cmd.SilenceUsage = true
 
-	// Open source file
-	//
-	slog.Info(fmt.Sprintf("Reading Score file '%s'", scoreFile))
-	var err error
-	var src *os.File
-	if src, err = os.Open(scoreFile); err != nil {
+	workloadNames, workloadSpecs, err := loadRawScoreFiles([]string{scoreFile})
+	if err != nil {
 		return err
 	}
-	defer src.Close()
-
-	// Parse SCORE spec
-	//
-	slog.Info("Parsing Score specification")
-	var srcMap map[string]interface{}
-	if err = loader.ParseYAML(&srcMap, src); err != nil {
-		return err
-	}
+	srcMap := workloadSpecs[workloadNames[0]]
 
 	// Apply overrides from file (optional)
 	//
 	if overridesFile != "" {
-		if ovr, err := os.Open(overridesFile); err == nil {
-			defer ovr.Close()
-
-			slog.Info(fmt.Sprintf("Loading Score overrides file '%s'", overridesFile))
-			var ovrMap map[string]interface{}
-			if err = loader.ParseYAML(&ovrMap, ovr); err != nil {
-				return err
-			}
-			slog.Info("Applying Score overrides")
-			if err := mergo.MergeWithOverwrite(&srcMap, ovrMap); err != nil {
-				return fmt.Errorf("applying overrides fom '%s': %w", overridesFile, err)
-			}
-		} else if !os.IsNotExist(err) || overridesFile != overridesFileDefault {
+		err := parseAndApplyOverrideFile(overridesFile, "overrides", workloadNames, workloadSpecs)
+		if err != nil && (!errors.Is(err, os.ErrNotExist) || overridesFile != overridesFileDefault) {
 			return err
 		}
 	}
@@ -114,33 +86,8 @@ func run(cmd *cobra.Command, args []string) error {
 	// Apply overrides from command line (optional)
 	//
 	for _, pstr := range overrideParams {
-		jsonBytes, err := json.Marshal(srcMap)
-		if err != nil {
-			return fmt.Errorf("marshalling score spec: %w", err)
-		}
-
-		pmap := strings.SplitN(pstr, "=", 2)
-		if len(pmap) <= 1 {
-			var path = pmap[0]
-			slog.Info(fmt.Sprintf("Applying Score properties override: removing '%s'", path))
-			if jsonBytes, err = sjson.DeleteBytes(jsonBytes, path); err != nil {
-				return fmt.Errorf("removing '%s': %w", path, err)
-			}
-		} else {
-			var path = pmap[0]
-			var val interface{}
-			if err := yaml.Unmarshal([]byte(pmap[1]), &val); err != nil {
-				val = pmap[1]
-			}
-
-			slog.Info(fmt.Sprintf("Applying Score properties override: overriding '%s' = '%s' (%T)", path, val, val))
-			if jsonBytes, err = sjson.SetBytes(jsonBytes, path, val); err != nil {
-				return fmt.Errorf("overriding '%s': %w", path, err)
-			}
-		}
-
-		if err = json.Unmarshal(jsonBytes, &srcMap); err != nil {
-			return fmt.Errorf("unmarshalling score spec: %w", err)
+		if err := parseAndApplyOverrideProperty(pstr, "property", workloadNames, workloadSpecs); err != nil {
+			return err
 		}
 	}
 
