@@ -169,10 +169,16 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("validating workload spec: %w", err)
 	}
 
+	// Track any uses of the environment resource or resources that are overridden with an env provider using the tracker.
+	resources, vars, err := compose.GenerateOldStyleResourceOutputs(&spec)
+	if err != nil {
+		return err
+	}
+
 	// Build docker-compose configuration
 	//
 	slog.Info("Building docker-compose configuration")
-	proj, vars, err := compose.ConvertSpec(&spec)
+	proj, err := compose.ConvertSpec(&spec, resources)
 	if err != nil {
 		return fmt.Errorf("building docker-compose configuration: %w", err)
 	}

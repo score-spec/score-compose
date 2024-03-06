@@ -277,7 +277,8 @@ func TestScoreConvert(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			proj, vars, err := ConvertSpec(tt.Source)
+			resources, vars, _ := GenerateOldStyleResourceOutputs(tt.Source)
+			proj, err := ConvertSpec(tt.Source, resources)
 
 			if tt.Error != nil {
 				// On Error
