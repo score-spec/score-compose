@@ -374,7 +374,7 @@ func TestRunExample03(t *testing.T) {
     entrypoint:
       - /bin/sh
     environment:
-      CONNECTION_STRING: postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+      CONNECTION_STRING: postgresql://${DB_USER?required}:${DB_PASSWORD?required}@${DB_HOST?required}:${DB_PORT?required}/${DB_NAME?required}
       FRIEND: ${NAME}
     image: busybox
 `
@@ -426,6 +426,7 @@ func TestRunExample03(t *testing.T) {
 		cmd.Dir = td
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
+		cmd.Env = append(os.Environ(), "DB_HOST=host", "DB_PORT=80", "DB_NAME=default", "DB_USER=myuser", "DB_PASSWORD=password")
 		assert.NoError(t, cmd.Run())
 	})
 }

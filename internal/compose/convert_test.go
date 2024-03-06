@@ -141,8 +141,8 @@ func TestScoreConvert(t *testing.T) {
 						Environment: compose.MappingWithEquals{
 							"DEBUG":             stringPtr("${DEBUG}"),
 							"LOGS_LEVEL":        stringPtr("${LOGS_LEVEL}"),
-							"DOMAIN_NAME":       stringPtr("${SOME_DNS_DOMAIN_NAME}"),
-							"CONNECTION_STRING": stringPtr("postgresql://${APP_DB_HOST}:${APP_DB_PORT}/${APP_DB_NAME}"),
+							"DOMAIN_NAME":       stringPtr("${SOME_DNS_DOMAIN_NAME?required}"),
+							"CONNECTION_STRING": stringPtr("postgresql://${APP_DB_HOST?required}:${APP_DB_PORT?required}/${APP_DB_NAME?required}"),
 						},
 						Volumes: []compose.ServiceVolumeConfig{
 							{
