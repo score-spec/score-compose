@@ -8,6 +8,7 @@ The Apache Software Foundation (http://www.apache.org/).
 package command
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -27,6 +28,11 @@ import (
 	score "github.com/score-spec/score-go/types"
 
 	"github.com/score-spec/score-compose/internal/compose"
+	"github.com/score-spec/score-compose/internal/project"
+	"github.com/score-spec/score-compose/internal/project/envvarprovider"
+	"github.com/score-spec/score-compose/internal/project/legacyvarprovider"
+	"github.com/score-spec/score-compose/internal/project/staticprovider"
+	"github.com/score-spec/score-compose/internal/ref"
 )
 
 const (
@@ -169,10 +175,42 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("validating workload spec: %w", err)
 	}
 
+	// Build the legacy provides that are available for score-compose run to keep compatible behavior.
+	//
+	providers := make([]project.ConfiguredResourceProvider, 0)
+	providers = append(providers, new(envvarprovider.Provider))
+	providers = append(providers, &staticprovider.Provider{Type: "volume", Class: "default"})
+	for resName, resource := range spec.Resources {
+		if resource.Type != "environment" && resource.Type != "volume" {
+			resClass, resId := project.GenerateResourceClassAndId(spec.Metadata["name"].(string), resName, &resource)
+			slog.Warn(fmt.Sprintf("resources.%s: '%s.%s' is not directly supported in score-compose, references will be converted to environment variables", resName, resource.Type, resClass))
+			providers = append(providers, &legacyvarprovider.Provider{
+				Prefix: strings.ReplaceAll(strings.ToUpper(resName), "-", "_") + "_",
+				Type:   resource.Type,
+				Class:  resClass,
+				Id:     resId,
+			})
+		}
+	}
+
+	// Initialise the score state
+	state := new(project.State)
+	_ = state.AppendWorkload(&spec, ref.Ref(scoreFile))
+
+	// Provision resources and collect outputs. Note that the legacy drivers do not modify the score compose project
+	// at all.
+	if err := state.ProvisionResources(context.Background(), providers, nil); err != nil {
+		return err
+	}
+	localResourceView, err := state.CollectResourceOutputs(&spec)
+	if err != nil {
+		return err
+	}
+
 	// Build docker-compose configuration
 	//
 	slog.Info("Building docker-compose configuration")
-	proj, vars, err := compose.ConvertSpec(&spec)
+	proj, err := compose.ConvertSpec(&spec, localResourceView)
 	if err != nil {
 		return fmt.Errorf("building docker-compose configuration: %w", err)
 	}
@@ -211,6 +249,16 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	if envFile != "" {
+
+		varsAndValues := make(map[string]string)
+		for _, provider := range providers {
+			if envTracker, ok := provider.(EnvVarTracker); ok {
+				for k := range envTracker.Accessed() {
+					varsAndValues[k] = os.Getenv(k)
+				}
+			}
+		}
+
 		// Open .env file
 		//
 		slog.Info(fmt.Sprintf("Writing output .env file '%s'", envFile))
@@ -223,7 +271,7 @@ func run(cmd *cobra.Command, args []string) error {
 		// Write .env file
 		//
 		envVars := make([]string, 0)
-		for key, val := range vars.Accessed() {
+		for key, val := range varsAndValues {
 			var envVar = fmt.Sprintf("%s=%v\n", key, val)
 			envVars = append(envVars, envVar)
 		}
@@ -237,4 +285,8 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+type EnvVarTracker interface {
+	Accessed() map[string]bool
 }

@@ -14,6 +14,8 @@ import (
 	"maps"
 	"regexp"
 	"strings"
+
+	"github.com/score-spec/score-compose/internal/project"
 )
 
 var (
@@ -23,14 +25,14 @@ var (
 // templatesContext ia an utility type that provides a context for '${...}' templates substitution
 type templatesContext struct {
 	meta      resourceWithStaticOutputs
-	resources map[string]ResourceWithOutputs
+	resources map[string]project.OutputLookupFunc
 }
 
 // buildContext initializes a new templatesContext instance
-func buildContext(metadata map[string]interface{}, resources map[string]ResourceWithOutputs) (*templatesContext, error) {
+func buildContext(metadata map[string]interface{}, resources map[string]project.OutputLookupFunc) (*templatesContext, error) {
 	return &templatesContext{
 		meta:      maps.Clone(metadata),
-		resources: maps.Clone(resources),
+		resources: resources,
 	}, nil
 }
 
@@ -93,7 +95,7 @@ func (ctx *templatesContext) mapVar(ref string) (string, error) {
 		} else if len(parts) == 2 {
 			// TODO: deprecate this - this is an annoying and nonsensical legacy thing
 			return parts[1], nil
-		} else if rv2, err := rv.LookupOutput(parts[2:]...); err != nil {
+		} else if rv2, err := rv(parts[2:]...); err != nil {
 			return "", fmt.Errorf("invalid ref '%s': %w", ref, err)
 		} else {
 			resolvedValue = rv2

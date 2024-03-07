@@ -8,10 +8,13 @@ The Apache Software Foundation (http://www.apache.org/).
 package compose
 
 import (
+	"strings"
 	"testing"
 
 	score "github.com/score-spec/score-go/types"
 	assert "github.com/stretchr/testify/assert"
+
+	"github.com/score-spec/score-compose/internal/project"
 )
 
 func TestMapVar(t *testing.T) {
@@ -19,17 +22,14 @@ func TestMapVar(t *testing.T) {
 		"name":  "test-name",
 		"other": map[string]interface{}{"key": "value"},
 	}
-	evt := new(EnvVarTracker)
-	evt.lookup = func(key string) (string, bool) {
-		if key == "DEBUG" {
-			return "something", true
-		}
-		return "", false
-	}
-	ctx, err := buildContext(meta, map[string]ResourceWithOutputs{
-		"env":    evt,
-		"db":     evt.GenerateResource("db"),
-		"static": resourceWithStaticOutputs{"x": "a"},
+	ctx, err := buildContext(meta, map[string]project.OutputLookupFunc{
+		"env": func(keys ...string) (interface{}, error) {
+			return "${" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "}", nil
+		},
+		"db": func(keys ...string) (interface{}, error) {
+			return "${DB_" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "}", nil
+		},
+		"static": (&project.ScoreResourceState{Outputs: map[string]interface{}{"x": "a"}}).LookupOutput,
 	})
 	assert.NoError(t, err)
 
@@ -67,30 +67,20 @@ func TestMapVar(t *testing.T) {
 			}
 		})
 	}
-
-	assert.Equal(t, map[string]string{
-		"DEBUG":        "something",
-		"DB_HOST":      "",
-		"DB_NAME":      "",
-		"DB_NAME_USER": "",
-		"DB_PORT":      "",
-	}, evt.Accessed())
 }
 
 func TestSubstitute(t *testing.T) {
 	var meta = score.WorkloadMetadata{
 		"name": "test-name",
 	}
-	evt := new(EnvVarTracker)
-	evt.lookup = func(key string) (string, bool) {
-		if key == "DEBUG" {
-			return "something", true
-		}
-		return "", false
-	}
-	ctx, err := buildContext(meta, map[string]ResourceWithOutputs{
-		"env": evt,
-		"db":  evt.GenerateResource("db"),
+	ctx, err := buildContext(meta, map[string]project.OutputLookupFunc{
+		"env": func(keys ...string) (interface{}, error) {
+			return "${" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "}", nil
+		},
+		"db": func(keys ...string) (interface{}, error) {
+			return "${DB_" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "}", nil
+		},
+		"static": (&project.ScoreResourceState{Outputs: map[string]interface{}{"x": "a"}}).LookupOutput,
 	})
 	assert.NoError(t, err)
 
@@ -123,12 +113,4 @@ func TestSubstitute(t *testing.T) {
 			}
 		})
 	}
-
-	assert.Equal(t, map[string]string{
-		"DB_HOST":     "",
-		"DB_NAME":     "",
-		"DB_PASSWORD": "",
-		"DB_PORT":     "",
-		"DB_USER":     "",
-	}, evt.Accessed())
 }

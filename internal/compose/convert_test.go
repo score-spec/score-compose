@@ -9,11 +9,15 @@ package compose
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	compose "github.com/compose-spec/compose-go/types"
 	score "github.com/score-spec/score-go/types"
 	assert "github.com/stretchr/testify/assert"
+
+	"github.com/score-spec/score-compose/internal/project"
+	"github.com/score-spec/score-compose/internal/ref"
 )
 
 func TestScoreConvert(t *testing.T) {
@@ -40,11 +44,11 @@ func TestScoreConvert(t *testing.T) {
 					Ports: score.WorkloadServicePorts{
 						"www": score.ServicePort{
 							Port:       80,
-							TargetPort: Ref(8080),
+							TargetPort: ref.Ref(8080),
 						},
 						"admin": score.ServicePort{
 							Port:     8080,
-							Protocol: Ref(score.ServicePortProtocolUDP),
+							Protocol: ref.Ref(score.ServicePortProtocolUDP),
 						},
 					},
 				},
@@ -113,7 +117,7 @@ func TestScoreConvert(t *testing.T) {
 							{
 								Source:   "data",
 								Target:   "/mnt/data",
-								ReadOnly: Ref(true),
+								ReadOnly: ref.Ref(true),
 							},
 						},
 					},
@@ -185,8 +189,8 @@ func TestScoreConvert(t *testing.T) {
 				},
 				Service: &score.WorkloadService{
 					Ports: map[string]score.ServicePort{
-						"frontend": {Port: 8080, TargetPort: Ref(80)},
-						"backend":  {Port: 8081, TargetPort: Ref(81)},
+						"frontend": {Port: 8080, TargetPort: ref.Ref(80)},
+						"backend":  {Port: 8081, TargetPort: ref.Ref(81)},
 					},
 				},
 			},
@@ -230,8 +234,8 @@ func TestScoreConvert(t *testing.T) {
 							{
 								Source:   "data",
 								Target:   "/mnt/data",
-								Path:     Ref("sub/path"),
-								ReadOnly: Ref(true),
+								Path:     ref.Ref("sub/path"),
+								ReadOnly: ref.Ref(true),
 							},
 						},
 					},
@@ -275,9 +279,21 @@ func TestScoreConvert(t *testing.T) {
 		},
 	}
 
+	resourceOutputs := map[string]project.OutputLookupFunc{
+		"env": func(keys ...string) (interface{}, error) {
+			return "${" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "}", nil
+		},
+		"app-db": func(keys ...string) (interface{}, error) {
+			return "${APP_DB_" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "}", nil
+		},
+		"some-dns": func(keys ...string) (interface{}, error) {
+			return "${SOME_DNS_" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "}", nil
+		},
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			proj, vars, err := ConvertSpec(tt.Source)
+			proj, err := ConvertSpec(tt.Source, resourceOutputs)
 
 			if tt.Error != nil {
 				// On Error
@@ -288,7 +304,6 @@ func TestScoreConvert(t *testing.T) {
 				//
 				assert.NoError(t, err)
 				assert.Equal(t, tt.Project, proj)
-				assert.Equal(t, tt.Vars, vars.Accessed())
 			}
 		})
 	}
