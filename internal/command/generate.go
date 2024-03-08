@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/compose-spec/compose-go/types"
+	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/imdario/mergo"
 	"github.com/score-spec/score-go/loader"
 	"github.com/score-spec/score-go/schema"
@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	generateCmdFallbackFlag         = "fallback-to-env-var-resource-types"
+	generateCmdFallbackFlag         = "fallback-res-id-to-env-var"
 	generateCmdOverridesFileFlag    = "overrides-file"
 	generateCmdOverridePropertyFlag = "override-property"
 )
@@ -33,12 +33,12 @@ const (
 var generateCommand = &cobra.Command{
 	Use:   "generate",
 	Args:  cobra.ArbitraryArgs,
-	Short: "Convert one or more Score files into a Docker compose manifest",
-	Long: `The generate command will convert Score files in the current Score compose project into a combined Docker compose
-manifest. All resources and links between Workloads will be resolved and provisioned as required.
+	Short: "Add or update Score files in the current project and regenerate the Docker compose file",
+	Long: `The generate command will add or update multiple Score workloads in the current Score compose project and
+regenerate the output Docker compose file after all resources have been provisioned.
 
 By default this command looks for score.yaml in the current directory, but can take explicit file names as positional
-arguments.
+arguments as well as overrides to apply.
 
 "score-compose init" MUST be run first. An error will be thrown if the project directory is not present.
 `,
@@ -146,13 +146,14 @@ arguments.
 
 		// TODO: load additional providers here
 
-		if fallbackTypes, _ := cmd.Flags().GetString(generateCmdFallbackFlag); fallbackTypes != "" {
-			parts := strings.Split(fallbackTypes, ",")
-			for _, part := range parts {
-				if part != "" {
+		if fallbackResIds, _ := cmd.Flags().GetString(generateCmdFallbackFlag); fallbackResIds != "" {
+			parts := strings.Split(fallbackResIds, ",")
+			for _, resId := range parts {
+				if resId != "" {
+					slog.Warn(fmt.Sprintf("Injecting legacy variable provider for resource id '%s'", resId))
 					providers = append(providers, &legacyvarprovider.Provider{
-						Type:   part,
-						Prefix: strings.ToUpper(""),
+						Id:     resId,
+						Prefix: resId + "_",
 					})
 				}
 			}
@@ -160,7 +161,7 @@ arguments.
 
 		superProject := &types.Project{
 			Name:     sd.State.ComposeProjectName,
-			Services: make(types.Services, 0),
+			Services: make(types.Services),
 			Volumes:  map[string]types.VolumeConfig{},
 			Networks: map[string]types.NetworkConfig{},
 		}
@@ -184,13 +185,11 @@ arguments.
 				return fmt.Errorf("failed to convert workload '%s' to Docker compose: %w", workloadName, err)
 			}
 
-			for _, service := range converted.Services {
-				if slices.ContainsFunc(superProject.Services, func(config types.ServiceConfig) bool {
-					return config.Name == service.Name
-				}) {
-					return fmt.Errorf("failed to add converted workload '%s': duplicate service name '%s'", workloadName, service.Name)
+			for serviceName, service := range converted.Services {
+				if _, ok := superProject.Services[serviceName]; ok {
+					return fmt.Errorf("failed to add converted workload '%s': duplicated service name '%s'", workloadName, serviceName)
 				}
-				superProject.Services = append(superProject.Services, service)
+				superProject.Services[serviceName] = service
 			}
 			for volumeName, volume := range converted.Volumes {
 				if _, ok := superProject.Volumes[volumeName]; ok {
@@ -256,33 +255,15 @@ func loadRawScoreFiles(fileNames []string) ([]string, map[string]map[string]inte
 }
 
 func init() {
-	// TODO: it would be nice to have some better help rendering here, but we'd need to determine the terminal width
-	//		 and use a small library to wrap the lines with some indentation.
 
 	generateCommand.Flags().StringP(
 		"output", "o", "compose.yaml",
 		"The output file to write the composed compose file to",
 	)
 
-	generateCommand.Flags().String(
-		generateCmdOverridesFileFlag, "",
-		"This option can be to specify a Score overrides file which will be merged with the provided Score file. "+
-			"For example --overrides-file=./service.overrides.score.yaml would merge the contents of the file with the "+
-			"Score workload.",
-	)
-	generateCommand.Flags().StringArray(
-		generateCmdOverridePropertyFlag, []string{},
-		"This option can be used one or more times to specify paths in the Score specification to set or remove. Each "+
-			"argument should provide the .-separated path and a value to set at the path, for example "+
-			"--override-path=some.key.subkey=\"value\". The value may be YAML-encoded to indicate non-string "+
-			"types. If the value is empty, the value at the given path will be removed.",
-	)
-	generateCommand.Flags().String(
-		generateCmdFallbackFlag, "",
-		"In previous versions of score-compose, resource references were resolved to environment variables. "+
-			"This option can be used to specify which resource types can fallback to this behavior. By default none "+
-			"can, but a comma-seperated list of resource types can be provided here.",
-	)
+	generateCommand.Flags().String(generateCmdOverridesFileFlag, "", "Merge Score overrides from another file")
+	generateCommand.Flags().StringArray(generateCmdOverridePropertyFlag, []string{}, "Set or remove a path in the Score file, eg add.this.key=\"value\" or remove.this.key=")
+	generateCommand.Flags().String(generateCmdFallbackFlag, "", "Enable fallback provider for the given ,-separated list of resource ids")
 
 	rootCmd.AddCommand(generateCommand)
 }
@@ -309,17 +290,17 @@ func parseAndApplyOverrideProperty(entry string, flagName string, spec map[strin
 	}
 
 	if parts[1] == "" {
-		slog.Info(fmt.Sprintf("Removing '%s' in workload", parts[0]))
-		if err := writePathInStruct(spec, parseDotPathParts(parts[1]), true, nil); err != nil {
+		slog.Info("Removing in workload")
+		if err := writePathInStruct(spec, parseDotPathParts(parts[0]), true, nil); err != nil {
 			return fmt.Errorf("--%s '%s' could not be applied: %w", flagName, entry, err)
 		}
 	} else {
 		var value interface{}
-		if err := yaml.Unmarshal([]byte(parts[2]), &value); err != nil {
+		if err := yaml.Unmarshal([]byte(parts[1]), &value); err != nil {
 			return fmt.Errorf("--%s '%s' is invalid, failed to unmarshal value as json: %w", flagName, entry, err)
 		}
-		slog.Info(fmt.Sprintf("Overriding '%s' in workload '%s'", parts[1], parts[0]))
-		if err := writePathInStruct(spec, parseDotPathParts(parts[1]), false, value); err != nil {
+		slog.Info(fmt.Sprintf("Overriding '%s' in workload", parts[0]))
+		if err := writePathInStruct(spec, parseDotPathParts(parts[0]), false, value); err != nil {
 			return fmt.Errorf("--%s '%s' could not be applied: %w", flagName, entry, err)
 		}
 	}
