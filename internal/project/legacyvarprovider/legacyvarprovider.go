@@ -12,9 +12,7 @@ import (
 )
 
 type Provider struct {
-	Type  string
-	Class string
-	Id    string
+	Id string
 
 	// Prefix is an environment variable prefix to apply
 	Prefix string
@@ -32,7 +30,7 @@ func (p *Provider) Provision(ctx context.Context, uid string, sharedState map[st
 		if len(keys) < 1 {
 			return nil, fmt.Errorf("resource requires at least one lookup key")
 		}
-		envVarKey := strings.ToUpper(strings.Join(keys, "_"))
+		envVarKey := strings.ToUpper(p.Prefix + strings.Join(keys, "_"))
 		envVarKey = strings.Map(func(r rune) rune {
 			if r == '_' || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
 				return r
@@ -42,7 +40,6 @@ func (p *Provider) Provision(ctx context.Context, uid string, sharedState map[st
 
 		envVarKey = strings.ReplaceAll(envVarKey, "-", "_")
 		envVarKey = strings.ReplaceAll(envVarKey, ".", "_")
-		envVarKey = p.Prefix + envVarKey
 		if p.accessed == nil {
 			p.accessed = make(map[string]bool, 1)
 		}
@@ -53,7 +50,7 @@ func (p *Provider) Provision(ctx context.Context, uid string, sharedState map[st
 }
 
 func (p *Provider) Match(resType, resClass, resId string) bool {
-	return resType == p.Type && (p.Class == "" || (p.Class == resClass)) && (p.Id == "" || (p.Id == resId))
+	return p.Id == resId
 }
 
 func (p *Provider) Accessed() map[string]bool {

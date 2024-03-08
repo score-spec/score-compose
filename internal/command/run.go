@@ -186,8 +186,6 @@ func run(cmd *cobra.Command, args []string) error {
 			slog.Warn(fmt.Sprintf("resources.%s: '%s.%s' is not directly supported in score-compose, references will be converted to environment variables", resName, resource.Type, resClass))
 			providers = append(providers, &legacyvarprovider.Provider{
 				Prefix: strings.ReplaceAll(strings.ToUpper(resName), "-", "_") + "_",
-				Type:   resource.Type,
-				Class:  resClass,
 				Id:     resId,
 			})
 		}

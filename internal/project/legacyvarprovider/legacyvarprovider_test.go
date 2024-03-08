@@ -10,30 +10,16 @@ import (
 )
 
 func TestMatch(t *testing.T) {
-	prov := &Provider{Type: "foo"}
-	assert.True(t, prov.Match("foo", "default", ""))
+	prov := &Provider{Id: "foo"}
+	assert.False(t, prov.Match("foo", "default", ""))
 	assert.True(t, prov.Match("foo", "default", "foo"))
-	assert.True(t, prov.Match("foo", "unknown", ""))
+	assert.False(t, prov.Match("foo", "unknown", ""))
 	assert.True(t, prov.Match("foo", "unknown", "foo"))
-	assert.False(t, prov.Match("bar", "unknown", "foo"))
-
-	prov = &Provider{Type: "foo", Class: "bar"}
-	assert.True(t, prov.Match("foo", "bar", ""))
-	assert.True(t, prov.Match("foo", "bar", "foo"))
-	assert.False(t, prov.Match("foo", "unknown", ""))
-	assert.False(t, prov.Match("foo", "unknown", "foo"))
-	assert.False(t, prov.Match("bar", "unknown", "foo"))
-
-	prov = &Provider{Type: "foo", Class: "bar", Id: "foo"}
-	assert.False(t, prov.Match("foo", "bar", ""))
-	assert.True(t, prov.Match("foo", "bar", "foo"))
-	assert.False(t, prov.Match("foo", "unknown", ""))
-	assert.False(t, prov.Match("foo", "unknown", "foo"))
-	assert.False(t, prov.Match("bar", "unknown", "foo"))
+	assert.True(t, prov.Match("bar", "unknown", "foo"))
 }
 
 func TestProvisionAndLookup(t *testing.T) {
-	prov := &Provider{Prefix: "FOO_"}
+	prov := &Provider{Prefix: "foo."}
 	resState := new(project.ScoreResourceState)
 	assert.NoError(t, prov.Provision(
 		context.Background(),
