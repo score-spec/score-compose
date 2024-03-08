@@ -11,6 +11,32 @@ import (
 	"github.com/score-spec/score-compose/internal/ref"
 )
 
+func TestMergeResource(t *testing.T) {
+	resA := score.Resource{
+		Type:   "foo",
+		Class:  ref.Ref("bar"),
+		Id:     ref.Ref("x"),
+		Params: map[string]interface{}{"a": "b"},
+		Metadata: map[string]interface{}{
+			"c": "d",
+		},
+	}
+	resB := score.Resource{
+		Type:   "foo",
+		Class:  ref.Ref("bar"),
+		Id:     ref.Ref("x"),
+		Params: map[string]interface{}{"a": "b"},
+		Metadata: map[string]interface{}{
+			"d": "f",
+		},
+	}
+	resC, err := mergeResource(resA, resB)
+	assert.NoError(t, err)
+	assert.Equal(t, score.ResourceMetadata{"c": "d"}, resA.Metadata)
+	assert.Equal(t, score.ResourceMetadata{"d": "f"}, resB.Metadata)
+	assert.Equal(t, score.ResourceMetadata{"c": "d", "d": "f"}, resC.Metadata)
+}
+
 func TestProvision_nils(t *testing.T) {
 	state := &State{}
 	assert.NoError(t, state.ProvisionResources(context.Background(), []ConfiguredResourceProvider{}, nil))
@@ -46,7 +72,7 @@ func TestProvision_no_providers(t *testing.T) {
 	}, nil))
 	assert.EqualError(
 		t, state.ProvisionResources(context.Background(), []ConfiguredResourceProvider{}, nil),
-		"failed to provision resource 'something' in workload 'example': no provider matches resource type 'foo', class 'default', id 'example.something'",
+		"failed to provision resource 'foo.default#example.something': no provider matches resource type 'foo', class 'default', id 'example.something'",
 	)
 }
 
@@ -89,8 +115,9 @@ func TestProvisionResources_multiple(t *testing.T) {
 				Type: "example",
 			},
 			"three": {
-				Type: "example",
-				Id:   ref.Ref("thing"),
+				Type:   "example",
+				Id:     ref.Ref("thing"),
+				Params: map[string]interface{}{"a": "b"},
 			},
 		},
 	}, nil))
@@ -108,8 +135,31 @@ func TestProvisionResources_multiple(t *testing.T) {
 	assert.Equal(t, map[int]bool{1: true, 2: true, 3: true}, numbers)
 
 	assert.Equal(t, map[string]string{
-		"thing":       "1",
-		"example.one": "2",
-		"example.two": "3",
+		"example.one": "1",
+		"example.two": "2",
+		"thing":       "3",
 	}, composeProject.Environment)
+}
+
+func TestProvisionResources_conflict_shared_params(t *testing.T) {
+	state := &State{}
+	composeProject := &compose.Project{Environment: map[string]string{}}
+	assert.NoError(t, state.AppendWorkload(&score.Workload{
+		Metadata: score.WorkloadMetadata{"name": "example"},
+		Resources: map[string]score.Resource{
+			"one": {
+				Type:   "example",
+				Id:     ref.Ref("thing"),
+				Params: map[string]interface{}{"a": "b"},
+			},
+			"two": {
+				Type:   "example",
+				Id:     ref.Ref("thing"),
+				Params: map[string]interface{}{"a": "c"},
+			},
+		},
+	}, nil))
+	assert.EqualError(t, state.ProvisionResources(context.Background(), []ConfiguredResourceProvider{
+		&MonotonicCountingProvider{Type: "example"},
+	}, composeProject), "cannot provision shared resource 'example.default#thing': there are multiple definitions with different params")
 }

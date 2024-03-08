@@ -182,11 +182,11 @@ func run(cmd *cobra.Command, args []string) error {
 	providers = append(providers, &staticprovider.Provider{Type: "volume", Class: "default"})
 	for resName, resource := range spec.Resources {
 		if resource.Type != "environment" && resource.Type != "volume" {
-			resClass, resId := project.GenerateResourceClassAndId(spec.Metadata["name"].(string), resName, &resource)
-			slog.Warn(fmt.Sprintf("resources.%s: '%s.%s' is not directly supported in score-compose, references will be converted to environment variables", resName, resource.Type, resClass))
+			coordinate := project.NewResourceCoordinate(spec.Metadata["name"].(string), resName, &resource)
+			slog.Warn(fmt.Sprintf("resources.%s: '%s.%s' is not directly supported in score-compose, references will be converted to environment variables", resName, coordinate.Type(), coordinate.Class()))
 			providers = append(providers, &legacyvarprovider.Provider{
 				Prefix: strings.ReplaceAll(strings.ToUpper(resName), "-", "_") + "_",
-				Id:     resId,
+				Id:     coordinate.Id(),
 			})
 		}
 	}

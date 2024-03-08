@@ -2,7 +2,6 @@ package project
 
 import (
 	"fmt"
-	"slices"
 
 	score "github.com/score-spec/score-go/types"
 )
@@ -55,26 +54,16 @@ func (s *State) AppendWorkload(spec *score.Workload, filePath *string) error {
 	return nil
 }
 
-func (s *State) SortedWorkloadNames() []string {
-	output := make([]string, 0, len(s.ScoreWorkloads))
-	for workloadName := range s.ScoreWorkloads {
-		output = append(output, workloadName)
-	}
-	slices.Sort(output)
-	return output
-}
-
 func (s *State) CollectResourceOutputs(spec *score.Workload) (map[string]OutputLookupFunc, error) {
 	workloadName := spec.Metadata["name"].(string)
 	output := make(map[string]OutputLookupFunc)
 	for resName, resource := range spec.Resources {
-		resClass, resId := GenerateResourceClassAndId(workloadName, resName, &resource)
-		resUid := GenerateResourceUidFromParts(resource.Type, resClass, resId)
-		state, ok := s.Resources[resUid]
+		coordinate := NewResourceCoordinate(workloadName, resName, &resource)
+		state, ok := s.Resources[coordinate.Uid()]
 		if ok {
 			output[resName] = state.LookupOutput
 		} else {
-			return nil, fmt.Errorf("no resource provisioned for '%s'", resUid)
+			return nil, fmt.Errorf("no resource provisioned for '%s'", coordinate.Uid())
 		}
 	}
 	return output, nil
