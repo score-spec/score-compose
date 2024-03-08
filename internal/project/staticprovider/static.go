@@ -4,6 +4,7 @@ import (
 	"context"
 
 	compose "github.com/compose-spec/compose-go/types"
+	score "github.com/score-spec/score-go/types"
 
 	"github.com/score-spec/score-compose/internal/project"
 )
@@ -16,11 +17,11 @@ type Provider struct {
 	Outputs map[string]interface{}
 }
 
-func (p *Provider) String() string {
+func (p *Provider) ProviderUri() string {
 	return "builtin://static"
 }
 
-func (p *Provider) Provision(ctx context.Context, uid string, sharedState map[string]interface{}, state *project.ScoreResourceState, project *compose.Project) error {
+func (p *Provider) Provision(ctx context.Context, uid string, resource score.Resource, sharedState map[string]interface{}, state *project.ScoreResourceState, project *compose.Project) error {
 	// Just set the outputs directly to what the provider returns
 	state.Outputs = p.Outputs
 	return nil

@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	score "github.com/score-spec/score-go/types"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/score-spec/score-compose/internal/project"
@@ -21,13 +22,7 @@ func TestMatch(t *testing.T) {
 func TestProvisionAndLookup(t *testing.T) {
 	prov := new(Provider)
 	resState := new(project.ScoreResourceState)
-	assert.NoError(t, prov.Provision(
-		context.Background(),
-		"my-resource",
-		map[string]interface{}{},
-		resState,
-		nil,
-	))
+	assert.NoError(t, prov.Provision(context.Background(), "my-resource", score.Resource{}, map[string]interface{}{}, resState, nil))
 
 	for _, tc := range []struct {
 		Name          string

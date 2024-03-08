@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	compose "github.com/compose-spec/compose-go/types"
+	score "github.com/score-spec/score-go/types"
 
 	"github.com/score-spec/score-compose/internal/project"
 )
@@ -21,16 +22,22 @@ type Provider struct {
 	accessed map[string]bool
 }
 
-func (p *Provider) String() string {
+func (p *Provider) ProviderUri() string {
 	return "builtin://legacy_var"
 }
 
-func (p *Provider) Provision(ctx context.Context, uid string, sharedState map[string]interface{}, state *project.ScoreResourceState, project *compose.Project) error {
+func (p *Provider) Provision(ctx context.Context, uid string, resource score.Resource, sharedState map[string]interface{}, state *project.ScoreResourceState, project *compose.Project) error {
 	state.OutputLookupFunc = func(keys ...string) (interface{}, error) {
 		if len(keys) < 1 {
 			return nil, fmt.Errorf("resource requires at least one lookup key")
 		}
-		envVarKey := strings.ToUpper(p.Prefix + strings.Join(keys, "_"))
+		envVarKey := strings.Join(keys, "_")
+		if p.Prefix == "" {
+			envVarKey = state.Id + "_" + envVarKey
+		} else {
+			envVarKey = p.Prefix + envVarKey
+		}
+		envVarKey = strings.ToUpper(envVarKey)
 		envVarKey = strings.Map(func(r rune) rune {
 			if r == '_' || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
 				return r

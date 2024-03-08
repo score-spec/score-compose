@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	compose "github.com/compose-spec/compose-go/types"
+	score "github.com/score-spec/score-go/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,18 +20,18 @@ type MonotonicCountingProvider struct {
 	Id    string
 }
 
-func (p *MonotonicCountingProvider) String() string {
+func (p *MonotonicCountingProvider) ProviderUri() string {
 	return "builtin://monotonic-number"
 }
 
-func (p *MonotonicCountingProvider) Provision(ctx context.Context, uid string, sharedState map[string]interface{}, state *ScoreResourceState, project *compose.Project) error {
+func (p *MonotonicCountingProvider) Provision(ctx context.Context, uid string, resource score.Resource, sharedState map[string]interface{}, state *ScoreResourceState, project *compose.Project) error {
 	if state.State == nil {
 		state.State = map[string]interface{}{}
 	}
 	if v, ok := state.State["value"].(int); ok {
 		state.Outputs = map[string]interface{}{"value": v}
 	} else {
-		sharedKey := p.String() + "_last"
+		sharedKey := p.ProviderUri() + "_last"
 		var lastV int
 		if v, ok := sharedState[sharedKey].(int); ok {
 			lastV = v
@@ -79,48 +80,24 @@ func TestMonotonicCountingProviderProvision(t *testing.T) {
 	resState := new(ScoreResourceState)
 	resState.Id = "foo"
 	composeProject := &compose.Project{Environment: map[string]string{}}
-	assert.NoError(t, prov.Provision(
-		context.Background(),
-		"my-resource",
-		sharedState,
-		resState,
-		composeProject,
-	))
+	assert.NoError(t, prov.Provision(context.Background(), "my-resource", score.Resource{}, sharedState, resState, composeProject))
 	assert.Equal(t, map[string]interface{}{"builtin://monotonic-number_last": 1}, sharedState)
 	assert.Equal(t, map[string]interface{}{"value": 1}, resState.State)
 	assert.Equal(t, map[string]interface{}{"value": 1}, resState.Outputs)
 
-	assert.NoError(t, prov.Provision(
-		context.Background(),
-		"my-resource",
-		sharedState,
-		resState,
-		composeProject,
-	))
+	assert.NoError(t, prov.Provision(context.Background(), "my-resource", score.Resource{}, sharedState, resState, composeProject))
 	assert.Equal(t, map[string]interface{}{"builtin://monotonic-number_last": 1}, sharedState)
 	assert.Equal(t, map[string]interface{}{"value": 1}, resState.State)
 	assert.Equal(t, map[string]interface{}{"value": 1}, resState.Outputs)
 
 	resState2 := new(ScoreResourceState)
 	resState2.Id = "bar"
-	assert.NoError(t, prov.Provision(
-		context.Background(),
-		"my-resource2",
-		sharedState,
-		resState2,
-		composeProject,
-	))
+	assert.NoError(t, prov.Provision(context.Background(), "my-resource2", score.Resource{}, sharedState, resState2, composeProject))
 	assert.Equal(t, map[string]interface{}{"builtin://monotonic-number_last": 2}, sharedState)
 	assert.Equal(t, map[string]interface{}{"value": 2}, resState2.State)
 	assert.Equal(t, map[string]interface{}{"value": 2}, resState2.Outputs)
 
-	assert.NoError(t, prov.Provision(
-		context.Background(),
-		"my-resource",
-		sharedState,
-		resState,
-		composeProject,
-	))
+	assert.NoError(t, prov.Provision(context.Background(), "my-resource", score.Resource{}, sharedState, resState, composeProject))
 	assert.Equal(t, map[string]interface{}{"builtin://monotonic-number_last": 2}, sharedState)
 	assert.Equal(t, map[string]interface{}{"value": 1}, resState.State)
 	assert.Equal(t, map[string]interface{}{"value": 1}, resState.Outputs)

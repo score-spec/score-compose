@@ -66,18 +66,18 @@ func (s *State) provisionResource(
 			Type:     resource.Type,
 			Class:    resClass,
 			Id:       resId,
-			Provider: provider.String(),
+			Provider: provider.ProviderUri(),
 		}
 	}
 
 	// This is an undefined behavior here. We could potentially actively delete the old resource before provisioning a
 	// new one, but we don't know if the old provider is even there any more. Probably better to just fail.
-	if currentState.Provider != provider.String() {
+	if currentState.Provider != provider.ProviderUri() {
 		return fmt.Errorf("the resource was previous provisioned by a different provider - please reset all state and generate again")
 	}
 
 	// Call the provider to do its changes
-	if err := provider.Provision(ctx, resUid, s.SharedState, &currentState, project); err != nil {
+	if err := provider.Provision(ctx, resUid, resource, s.SharedState, &currentState, project); err != nil {
 		return err
 	}
 	if s.Resources == nil {
