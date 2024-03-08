@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	compose "github.com/compose-spec/compose-go/types"
+	compose "github.com/compose-spec/compose-go/v2/types"
 	"github.com/imdario/mergo"
 	score "github.com/score-spec/score-go/types"
 )

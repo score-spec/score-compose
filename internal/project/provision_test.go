@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	compose "github.com/compose-spec/compose-go/types"
+	compose "github.com/compose-spec/compose-go/v2/types"
 	score "github.com/score-spec/score-go/types"
 	"github.com/stretchr/testify/assert"
 
@@ -134,7 +134,7 @@ func TestProvisionResources_multiple(t *testing.T) {
 	}
 	assert.Equal(t, map[int]bool{1: true, 2: true, 3: true}, numbers)
 
-	assert.Equal(t, map[string]string{
+	assert.Equal(t, compose.Mapping{
 		"example.one": "1",
 		"example.two": "2",
 		"thing":       "3",

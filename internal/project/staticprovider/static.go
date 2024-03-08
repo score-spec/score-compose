@@ -3,7 +3,7 @@ package staticprovider
 import (
 	"context"
 
-	compose "github.com/compose-spec/compose-go/types"
+	compose "github.com/compose-spec/compose-go/v2/types"
 	score "github.com/score-spec/score-go/types"
 
 	"github.com/score-spec/score-compose/internal/project"

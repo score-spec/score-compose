@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	compose "github.com/compose-spec/compose-go/types"
+	compose "github.com/compose-spec/compose-go/v2/types"
 	score "github.com/score-spec/score-go/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -102,7 +102,7 @@ func TestMonotonicCountingProviderProvision(t *testing.T) {
 	assert.Equal(t, map[string]interface{}{"value": 1}, resState.State)
 	assert.Equal(t, map[string]interface{}{"value": 1}, resState.Outputs)
 
-	assert.Equal(t, map[string]string{
+	assert.Equal(t, compose.Mapping{
 		"foo": "1",
 		"bar": "2",
 	}, composeProject.Environment)

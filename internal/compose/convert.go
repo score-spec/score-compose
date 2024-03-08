@@ -14,7 +14,7 @@ import (
 	"sort"
 	"strings"
 
-	compose "github.com/compose-spec/compose-go/types"
+	compose "github.com/compose-spec/compose-go/v2/types"
 	score "github.com/score-spec/score-go/types"
 
 	"github.com/score-spec/score-compose/internal/project"
@@ -33,7 +33,7 @@ func ConvertSpec(spec *score.Workload, resources map[string]project.OutputLookup
 	}
 
 	var project = compose.Project{
-		Services: make(compose.Services, 0, len(spec.Containers)),
+		Services: make(compose.Services),
 	}
 
 	ctx, err := buildContext(spec.Metadata, resources)
@@ -67,6 +67,7 @@ func ConvertSpec(spec *score.Workload, resources map[string]project.OutputLookup
 	}
 	sort.Strings(containerNames)
 
+	var firstServiceName string
 	for _, containerName := range containerNames {
 		cSpec := spec.Containers[containerName]
 
@@ -157,10 +158,12 @@ func ConvertSpec(spec *score.Workload, resources map[string]project.OutputLookup
 		// if we are not the "first" service, then inherit the network from the first service
 		if len(project.Services) > 0 {
 			svc.Ports = nil
-			svc.NetworkMode = "service:" + project.Services[0].Name
+			svc.NetworkMode = "service:" + firstServiceName
+		} else {
+			firstServiceName = svc.Name
 		}
 
-		project.Services = append(project.Services, svc)
+		project.Services[svc.Name] = svc
 	}
 	return &project, nil
 }

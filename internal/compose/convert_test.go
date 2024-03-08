@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	compose "github.com/compose-spec/compose-go/types"
+	compose "github.com/compose-spec/compose-go/v2/types"
 	score "github.com/score-spec/score-go/types"
 	assert "github.com/stretchr/testify/assert"
 
@@ -70,7 +70,7 @@ func TestScoreConvert(t *testing.T) {
 			},
 			Project: &compose.Project{
 				Services: compose.Services{
-					{
+					"test-backend": {
 						Name:  "test-backend",
 						Image: "busybox",
 						Entrypoint: compose.ShellCommand{
@@ -139,7 +139,7 @@ func TestScoreConvert(t *testing.T) {
 			},
 			Project: &compose.Project{
 				Services: compose.Services{
-					{
+					"test-backend": {
 						Name:  "test-backend",
 						Image: "busybox",
 						Environment: compose.MappingWithEquals{
@@ -196,7 +196,7 @@ func TestScoreConvert(t *testing.T) {
 			},
 			Project: &compose.Project{
 				Services: compose.Services{
-					{
+					"test-backend": {
 						Name:  "test-backend",
 						Image: "busybox",
 						Environment: compose.MappingWithEquals{
@@ -207,7 +207,7 @@ func TestScoreConvert(t *testing.T) {
 							{Target: 81, Published: "8081"},
 						},
 					},
-					{
+					"test-frontend": {
 						Name:  "test-frontend",
 						Image: "busybox",
 						Environment: compose.MappingWithEquals{

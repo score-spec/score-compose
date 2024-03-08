@@ -17,7 +17,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/compose-spec/compose-go/types"
+	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/imdario/mergo"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/sjson"
@@ -220,9 +220,10 @@ func run(cmd *cobra.Command, args []string) error {
 		// We add the build context to all services and containers here and make a big assumption that all are
 		// using the image we are building here and now. If this is unexpected, users should use a more complex
 		// overrides file.
-		for idx := range proj.Services {
-			proj.Services[idx].Build = &types.BuildConfig{Context: buildCtx}
-			proj.Services[idx].Image = ""
+		for serviceName, service := range proj.Services {
+			service.Build = &types.BuildConfig{Context: buildCtx}
+			service.Image = ""
+			proj.Services[serviceName] = service
 		}
 	}
 
