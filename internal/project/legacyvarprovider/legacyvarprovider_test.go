@@ -49,9 +49,9 @@ func TestProvisionAndLookup(t *testing.T) {
 		Expected      string
 		ExpectedError string
 	}{
-		{Name: "basic", Keys: []string{"hello"}, Expected: "${FOO_HELLO}"},
-		{Name: "basic mixed case", Keys: []string{"HEllo"}, Expected: "${FOO_HELLO}"},
-		{Name: "2 keys", Keys: []string{"foo", "bar-baz**"}, Expected: "${FOO_FOO_BAR_BAZ__}"},
+		{Name: "basic", Keys: []string{"hello"}, Expected: "${FOO_HELLO?required}"},
+		{Name: "basic mixed case", Keys: []string{"HEllo"}, Expected: "${FOO_HELLO?required}"},
+		{Name: "2 keys", Keys: []string{"foo", "bar-baz**"}, Expected: "${FOO_FOO_BAR_BAZ__?required}"},
 		{Name: "no keys", Keys: []string{}, ExpectedError: "resource requires at least one lookup key"},
 	} {
 		t.Run(tc.Name, func(t *testing.T) {

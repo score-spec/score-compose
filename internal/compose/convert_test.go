@@ -284,10 +284,10 @@ func TestScoreConvert(t *testing.T) {
 			return "${" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "}", nil
 		},
 		"app-db": func(keys ...string) (interface{}, error) {
-			return "${APP_DB_" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "}", nil
+			return "${APP_DB_" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "?required}", nil
 		},
 		"some-dns": func(keys ...string) (interface{}, error) {
-			return "${SOME_DNS_" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "}", nil
+			return "${SOME_DNS_" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "?required}", nil
 		},
 	}
 

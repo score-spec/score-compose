@@ -27,7 +27,7 @@ func TestMapVar(t *testing.T) {
 			return "${" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "}", nil
 		},
 		"db": func(keys ...string) (interface{}, error) {
-			return "${DB_" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "}", nil
+			return "${DB_" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "?required}", nil
 		},
 		"static": (&project.ScoreResourceState{Outputs: map[string]interface{}{"x": "a"}}).LookupOutput,
 	})
@@ -78,7 +78,7 @@ func TestSubstitute(t *testing.T) {
 			return "${" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "}", nil
 		},
 		"db": func(keys ...string) (interface{}, error) {
-			return "${DB_" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "}", nil
+			return "${DB_" + strings.ReplaceAll(strings.ToUpper(strings.Join(keys, "_")), "-", "_") + "?required}", nil
 		},
 		"static": (&project.ScoreResourceState{Outputs: map[string]interface{}{"x": "a"}}).LookupOutput,
 	})
