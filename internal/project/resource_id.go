@@ -15,7 +15,11 @@ func GenerateResourceClassAndId(workloadName string, resName string, resource *s
 }
 
 func GenerateResourceId(workloadName string, resName string, resource *score.Resource) string {
-	// TODO: if we support shared resources - use a shared name
+	if resource.Id != nil {
+		return *resource.Id
+	}
+	// NOTE that the schema validation prevents the resource id from containing '.', so it cannot collide with these
+	// shared variables here.
 	return fmt.Sprintf("%s.%s", workloadName, resName)
 }
 

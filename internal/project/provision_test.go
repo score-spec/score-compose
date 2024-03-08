@@ -7,6 +7,8 @@ import (
 	compose "github.com/compose-spec/compose-go/types"
 	score "github.com/score-spec/score-go/types"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/score-spec/score-compose/internal/ref"
 )
 
 func TestProvision_nils(t *testing.T) {
@@ -48,24 +50,7 @@ func TestProvision_no_providers(t *testing.T) {
 	)
 }
 
-type dummyProvider struct {
-}
-
-func (d *dummyProvider) String() string {
-	return "dummy"
-}
-
-func (d *dummyProvider) Match(resType, resClass, resId string) bool {
-	return resType == "example"
-}
-
-func (d *dummyProvider) Provision(ctx context.Context, uid string, sharedState map[string]interface{}, state *ScoreResourceState, project *compose.Project) error {
-	state.Outputs = map[string]interface{}{"a": "b"}
-	sharedState["key"] = "value"
-	return nil
-}
-
-func TestProvisionResource(t *testing.T) {
+func TestProvisionResources_basic(t *testing.T) {
 	state := &State{}
 	assert.NoError(t, state.AppendWorkload(&score.Workload{
 		Metadata: score.WorkloadMetadata{"name": "example"},
@@ -75,13 +60,56 @@ func TestProvisionResource(t *testing.T) {
 			},
 		},
 	}, nil))
-	assert.NoError(t, state.ProvisionResources(context.Background(), []ConfiguredResourceProvider{new(dummyProvider)}, nil))
+	assert.NoError(t, state.ProvisionResources(context.Background(), []ConfiguredResourceProvider{&MonotonicCountingProvider{Type: "example"}}, nil))
 	assert.Equal(t, ScoreResourceState{
 		Type:     "example",
 		Class:    "default",
 		Id:       "example.something",
-		Outputs:  map[string]interface{}{"a": "b"},
-		Provider: "dummy",
+		State:    map[string]interface{}{"value": 1},
+		Outputs:  map[string]interface{}{"value": 1},
+		Provider: "builtin://monotonic-number",
 	}, state.Resources["example.default#example.something"])
-	assert.Equal(t, map[string]interface{}{"key": "value"}, state.SharedState)
+	assert.Equal(t, map[string]interface{}{"builtin://monotonic-number_last": 1}, state.SharedState)
+}
+
+func TestProvisionResources_multiple(t *testing.T) {
+	state := &State{}
+	composeProject := &compose.Project{Environment: map[string]string{}}
+	assert.NoError(t, state.AppendWorkload(&score.Workload{
+		Metadata: score.WorkloadMetadata{"name": "example"},
+		Resources: map[string]score.Resource{
+			"four": {
+				Type: "example",
+				Id:   ref.Ref("thing"),
+			},
+			"one": {
+				Type: "example",
+			},
+			"two": {
+				Type: "example",
+			},
+			"three": {
+				Type: "example",
+				Id:   ref.Ref("thing"),
+			},
+		},
+	}, nil))
+	assert.NoError(t, state.ProvisionResources(context.Background(), []ConfiguredResourceProvider{
+		&MonotonicCountingProvider{Type: "example"},
+	}, composeProject))
+
+	assert.Len(t, state.Resources, 3)
+	numbers := make(map[int]bool)
+	for _, resourceState := range state.Resources {
+		assert.Equal(t, "example", resourceState.Type)
+		assert.Equal(t, "default", resourceState.Class)
+		numbers[resourceState.Outputs["value"].(int)] = true
+	}
+	assert.Equal(t, map[int]bool{1: true, 2: true, 3: true}, numbers)
+
+	assert.Equal(t, map[string]string{
+		"thing":       "1",
+		"example.one": "2",
+		"example.two": "3",
+	}, composeProject.Environment)
 }

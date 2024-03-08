@@ -7,7 +7,7 @@ toolchain go1.21.0
 require (
 	github.com/compose-spec/compose-go v1.6.0
 	github.com/imdario/mergo v0.3.13
-	github.com/score-spec/score-go v1.1.0
+	github.com/score-spec/score-go v1.2.0
 	github.com/spf13/cobra v1.6.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.0

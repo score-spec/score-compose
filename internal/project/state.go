@@ -33,8 +33,12 @@ type ScoreResourceState struct {
 	// Provider is the resolved provider uri that should be found in the providers file. This is tracked so that
 	// we identify which provider was used for a particular instance of the resource.
 	Provider string `yaml:"provider"`
-	// Outputs is the current set of outputs for the resource. This is the output of calling the provider.
-	Outputs map[string]interface{} `yaml:"outputs"`
+	// State is the internal state local to this resource. It will be persisted to disk when possible.
+	State map[string]interface{} `yaml:"state"`
+
+	// Outputs is the current set of outputs for the resource. This is the output of calling the provider. It doesn't
+	// get persisted to disk.
+	Outputs map[string]interface{} `yaml:"-"`
 	// OutputLookupFunc is function that allows certain in-process providers to defer any output generation. If this is
 	// not provided, it will fallback to using what's in the outputs.
 	OutputLookupFunc OutputLookupFunc `yaml:"-"`

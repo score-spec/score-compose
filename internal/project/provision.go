@@ -3,6 +3,7 @@ package project
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	compose "github.com/compose-spec/compose-go/types"
 	score "github.com/score-spec/score-go/types"
@@ -19,7 +20,14 @@ func (s *State) ProvisionResources(
 		s.SharedState = make(map[string]interface{})
 	}
 	for _, workloadName := range s.SortedWorkloadNames() {
-		for resName, resource := range s.ScoreWorkloads[workloadName].Spec.Resources {
+		// for deterministic order - sort the res names
+		resNames := make([]string, 0, len(s.ScoreWorkloads[workloadName].Spec.Resources))
+		for resName := range s.ScoreWorkloads[workloadName].Spec.Resources {
+			resNames = append(resNames, resName)
+		}
+		slices.Sort(resNames)
+		for _, resName := range resNames {
+			resource := s.ScoreWorkloads[workloadName].Spec.Resources[resName]
 			if err := s.provisionResource(ctx, providers, project, workloadName, resName, resource); err != nil {
 				return fmt.Errorf("failed to provision resource '%s' in workload '%s': %w", resName, workloadName, err)
 			}
