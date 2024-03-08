@@ -24,7 +24,7 @@ func (e *EnvVarTracker) Accessed() map[string]string {
 // the env var tracker is a resource itself (an environment resource)
 var _ ResourceWithOutputs = (*EnvVarTracker)(nil)
 
-func (e *EnvVarTracker) LookupOutput(keys ...string) (interface{}, error) {
+func (e *EnvVarTracker) lookupOutput(required bool, keys ...string) (interface{}, error) {
 	if len(keys) == 0 {
 		panic("requires at least 1 key")
 	}
@@ -46,7 +46,14 @@ func (e *EnvVarTracker) LookupOutput(keys ...string) (interface{}, error) {
 	} else {
 		e.accessed[envVarKey] = ""
 	}
+	if required {
+		envVarKey += "?required"
+	}
 	return "${" + envVarKey + "}", nil
+}
+
+func (e *EnvVarTracker) LookupOutput(keys ...string) (interface{}, error) {
+	return e.lookupOutput(false, keys...)
 }
 
 func (e *EnvVarTracker) GenerateResource(resName string) ResourceWithOutputs {
@@ -69,5 +76,5 @@ func (e *envVarResourceTracker) LookupOutput(keys ...string) (interface{}, error
 	for i, k := range keys {
 		next[1+i] = k
 	}
-	return e.inner.LookupOutput(next...)
+	return e.inner.lookupOutput(true, next...)
 }

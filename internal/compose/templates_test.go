@@ -49,10 +49,10 @@ func TestMapVar(t *testing.T) {
 		{Input: "resources.env.DEBUG", Expected: "${DEBUG}"},
 		{Input: "resources.missing", ExpectedError: "invalid ref 'resources.missing': no known resource 'missing'"},
 		{Input: "resources.db", Expected: "db"},
-		{Input: "resources.db.host", Expected: "${DB_HOST}"},
-		{Input: "resources.db.port", Expected: "${DB_PORT}"},
-		{Input: "resources.db.name", Expected: "${DB_NAME}"},
-		{Input: "resources.db.name.user", Expected: "${DB_NAME_USER}"},
+		{Input: "resources.db.host", Expected: "${DB_HOST?required}"},
+		{Input: "resources.db.port", Expected: "${DB_PORT?required}"},
+		{Input: "resources.db.name", Expected: "${DB_NAME?required}"},
+		{Input: "resources.db.name.user", Expected: "${DB_NAME_USER?required}"},
 		{Input: "resources.static", Expected: "static"},
 		{Input: "resources.static.x", Expected: "a"},
 		{Input: "resources.static.y", ExpectedError: "invalid ref 'resources.static.y': key 'y' not found"},
@@ -108,7 +108,7 @@ func TestSubstitute(t *testing.T) {
 		{Input: "my name is ${metadata.thing\\.two}", ExpectedError: "invalid ref 'metadata.thing\\.two': key 'thing.two' not found"},
 		{
 			Input:    "postgresql://${resources.db.user}:${resources.db.password}@${resources.db.host}:${resources.db.port}/${resources.db.name}",
-			Expected: "postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}",
+			Expected: "postgresql://${DB_USER?required}:${DB_PASSWORD?required}@${DB_HOST?required}:${DB_PORT?required}/${DB_NAME?required}",
 		},
 	} {
 		t.Run(tc.Input, func(t *testing.T) {
