@@ -12,7 +12,7 @@ import (
 
 const (
 	DefaultRelativeStateDirectory = ".score-compose"
-	ConfigFileName                = "config.yaml"
+	StateFileName                 = "state.yaml"
 )
 
 // The StateDirectory holds the local state of the score-compose project, including any configuration, extensions,
@@ -20,8 +20,8 @@ const (
 type StateDirectory struct {
 	// The path to the .score-compose directory
 	Path string
-	// The current config read from the config.yaml file
-	Config Config
+	// The current State file
+	State State
 }
 
 type Config struct {
@@ -39,15 +39,15 @@ func (sd *StateDirectory) Persist() error {
 	out := new(bytes.Buffer)
 	enc := yaml.NewEncoder(out)
 	enc.SetIndent(2)
-	if err := enc.Encode(sd.Config); err != nil {
+	if err := enc.Encode(sd.State); err != nil {
 		return fmt.Errorf("failed to encode content: %w", err)
 	}
 
 	// important that we overwrite this file atomically via a inode move
-	if err := os.WriteFile(filepath.Join(sd.Path, ConfigFileName+".temp"), out.Bytes(), 0755); err != nil {
-		return fmt.Errorf("failed to write config: %w", err)
-	} else if err := os.Rename(filepath.Join(sd.Path, ConfigFileName+".temp"), filepath.Join(sd.Path, ConfigFileName)); err != nil {
-		return fmt.Errorf("failed to complete writing config: %w", err)
+	if err := os.WriteFile(filepath.Join(sd.Path, StateFileName+".temp"), out.Bytes(), 0755); err != nil {
+		return fmt.Errorf("failed to write state: %w", err)
+	} else if err := os.Rename(filepath.Join(sd.Path, StateFileName+".temp"), filepath.Join(sd.Path, StateFileName)); err != nil {
+		return fmt.Errorf("failed to complete writing state: %w", err)
 	}
 	return nil
 }
@@ -55,19 +55,19 @@ func (sd *StateDirectory) Persist() error {
 // LoadStateDirectory loads the state directory for the given directory (usually PWD).
 func LoadStateDirectory(directory string) (*StateDirectory, bool, error) {
 	d := filepath.Join(directory, DefaultRelativeStateDirectory)
-	content, err := os.ReadFile(filepath.Join(d, ConfigFileName))
+
+	stateContent, err := os.ReadFile(filepath.Join(d, StateFileName))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, false, nil
 		}
 		return nil, true, fmt.Errorf("config file couldn't be read: %w", err)
 	}
-
-	var out Config
-	dec := yaml.NewDecoder(bytes.NewReader(content))
+	var state State
+	dec := yaml.NewDecoder(bytes.NewReader(stateContent))
 	dec.KnownFields(true)
-	if err := dec.Decode(&out); err != nil {
+	if err := dec.Decode(&state); err != nil {
 		return nil, true, fmt.Errorf("config file couldn't be decoded: %w", err)
 	}
-	return &StateDirectory{d, out}, true, nil
+	return &StateDirectory{Path: d, State: state}, true, nil
 }

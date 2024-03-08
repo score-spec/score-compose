@@ -44,7 +44,7 @@ func TestInitNominal(t *testing.T) {
 	assert.NoError(t, err)
 	if assert.True(t, ok) {
 		assert.Equal(t, project.DefaultRelativeStateDirectory, sd.Path)
-		assert.Equal(t, filepath.Base(td), sd.Config.ComposeProjectName)
+		assert.Equal(t, filepath.Base(td), sd.State.ComposeProjectName)
 	}
 }
 
@@ -71,7 +71,7 @@ func TestInitNominal_custom_file_and_project(t *testing.T) {
 	assert.NoError(t, err)
 	if assert.True(t, ok) {
 		assert.Equal(t, project.DefaultRelativeStateDirectory, sd.Path)
-		assert.Equal(t, "bananas", sd.Config.ComposeProjectName)
+		assert.Equal(t, "bananas", sd.State.ComposeProjectName)
 	}
 }
 
@@ -103,6 +103,6 @@ func TestInitNominal_run_twice(t *testing.T) {
 	assert.NoError(t, err)
 	if assert.True(t, ok) {
 		assert.Equal(t, project.DefaultRelativeStateDirectory, sd.Path)
-		assert.Equal(t, "bananas", sd.Config.ComposeProjectName)
+		assert.Equal(t, "bananas", sd.State.ComposeProjectName)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -84,22 +85,30 @@ acts as a namespace when multiple score files and containers are used.
 			return fmt.Errorf("failed to load existing state directory: %w", err)
 		} else if ok {
 			slog.Info(fmt.Sprintf("Found existing state directory '%s'", sd.Path))
-			if initCmdComposeProject != "" && sd.Config.ComposeProjectName != initCmdComposeProject {
-				sd.Config.ComposeProjectName = initCmdComposeProject
+			if initCmdComposeProject != "" && sd.State.ComposeProjectName != initCmdComposeProject {
+				cleanedInitCmdComposeProject := cleanComposeProjectName(initCmdComposeProject)
+				if cleanedInitCmdComposeProject != initCmdComposeProject {
+					return fmt.Errorf("invalid value for --project, it must match ^[a-z0-9][a-z0-9_-]*$")
+				}
+				sd.State.ComposeProjectName = cleanedInitCmdComposeProject
 				if err := sd.Persist(); err != nil {
 					return fmt.Errorf("failed to persist new compose project name: %w", err)
 				}
 			}
 		} else {
-			slog.Info(fmt.Sprintf("Writing new state directory '%s'", project.DefaultRelativeStateDirectory))
 			wd, _ := os.Getwd()
 			sd := &project.StateDirectory{
-				Path:   project.DefaultRelativeStateDirectory,
-				Config: project.Config{ComposeProjectName: filepath.Base(wd)},
+				Path: project.DefaultRelativeStateDirectory,
+				State: project.State{
+					ComposeProjectName: cleanComposeProjectName(filepath.Base(wd)),
+					ScoreWorkloads:     map[string]project.ScoreWorkloadState{},
+					Resources:          map[string]project.ScoreResourceState{},
+				},
 			}
 			if initCmdComposeProject != "" {
-				sd.Config.ComposeProjectName = initCmdComposeProject
+				sd.State.ComposeProjectName = initCmdComposeProject
 			}
+			slog.Info(fmt.Sprintf("Writing new state directory '%s' with project name '%s'", project.DefaultRelativeStateDirectory, sd.State.ComposeProjectName))
 			if err := sd.Persist(); err != nil {
 				return fmt.Errorf("failed to persist new compose project name: %w", err)
 			}
@@ -122,6 +131,20 @@ acts as a namespace when multiple score files and containers are used.
 
 		return nil
 	},
+}
+
+func cleanComposeProjectName(input string) string {
+	input = strings.ToLower(input)
+	isFirst := true
+	input = strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || (!isFirst && (r == '_') || (r == '-')) {
+			isFirst = false
+			return r
+		}
+		isFirst = false
+		return -1
+	}, input)
+	return input
 }
 
 func init() {

@@ -9,9 +9,10 @@ import (
 // State is the mega-structure that contains the state of our workload specifications and resources.
 // Score specs are added to this structure and it stores the current resource set.
 type State struct {
-	ScoreWorkloads map[string]ScoreWorkloadState `yaml:"score_workloads"`
-	Resources      map[string]ScoreResourceState `yaml:"resources"`
-	SharedState    map[string]interface{}        `yaml:"shared_state"`
+	ComposeProjectName string                        `yaml:"compose_project"`
+	ScoreWorkloads     map[string]ScoreWorkloadState `yaml:"score_workloads"`
+	Resources          map[string]ScoreResourceState `yaml:"resources"`
+	SharedState        map[string]interface{}        `yaml:"shared_state"`
 }
 
 type ScoreWorkloadState struct {
