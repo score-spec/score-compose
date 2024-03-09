@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -79,27 +80,43 @@ acts as a namespace when multiple score files and containers are used.
 		initCmdScoreFile, _ := cmd.Flags().GetString("file")
 		initCmdComposeProject, _ := cmd.Flags().GetString("project")
 
+		// validate project
+		if initCmdComposeProject != "" {
+			cleanedInitCmdComposeProject := cleanComposeProjectName(initCmdComposeProject)
+			if cleanedInitCmdComposeProject != initCmdComposeProject {
+				return fmt.Errorf("invalid value for --project, it must match ^[a-z0-9][a-z0-9_-]*$")
+			}
+		}
+
 		sd, ok, err := project.LoadStateDirectory(".")
 		if err != nil {
 			return fmt.Errorf("failed to load existing state directory: %w", err)
 		} else if ok {
 			slog.Info(fmt.Sprintf("Found existing state directory '%s'", sd.Path))
-			if initCmdComposeProject != "" && sd.Config.ComposeProjectName != initCmdComposeProject {
-				sd.Config.ComposeProjectName = initCmdComposeProject
+			if initCmdComposeProject != "" && sd.State.ComposeProjectName != initCmdComposeProject {
+				sd.State.ComposeProjectName = initCmdComposeProject
 				if err := sd.Persist(); err != nil {
 					return fmt.Errorf("failed to persist new compose project name: %w", err)
 				}
 			}
 		} else {
+
 			slog.Info(fmt.Sprintf("Writing new state directory '%s'", project.DefaultRelativeStateDirectory))
 			wd, _ := os.Getwd()
 			sd := &project.StateDirectory{
-				Path:   project.DefaultRelativeStateDirectory,
-				Config: project.Config{ComposeProjectName: filepath.Base(wd)},
+				Path: project.DefaultRelativeStateDirectory,
+				State: project.State{
+					Workloads:          map[string]project.ScoreWorkloadState{},
+					Resources:          map[project.ResourceUid]project.ScoreResourceState{},
+					SharedState:        map[string]interface{}{},
+					ComposeProjectName: cleanComposeProjectName(filepath.Base(wd)),
+					MountsDirectory:    filepath.Join(project.DefaultRelativeStateDirectory, project.MountsDirectoryName),
+				},
 			}
 			if initCmdComposeProject != "" {
-				sd.Config.ComposeProjectName = initCmdComposeProject
+				sd.State.ComposeProjectName = initCmdComposeProject
 			}
+			slog.Info(fmt.Sprintf("Writing new state directory '%s' with project name '%s'", sd.Path, sd.State.ComposeProjectName))
 			if err := sd.Persist(); err != nil {
 				return fmt.Errorf("failed to persist new compose project name: %w", err)
 			}
@@ -129,4 +146,18 @@ func init() {
 	initCmd.Flags().StringP("project", "p", "", "Set the name of the docker compose project (defaults to the current directory name)")
 
 	rootCmd.AddCommand(initCmd)
+}
+
+func cleanComposeProjectName(input string) string {
+	input = strings.ToLower(input)
+	isFirst := true
+	input = strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || (!isFirst && ((r == '_') || (r == '-'))) {
+			isFirst = false
+			return r
+		}
+		isFirst = false
+		return -1
+	}, input)
+	return input
 }
