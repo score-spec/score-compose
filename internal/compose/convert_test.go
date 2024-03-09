@@ -11,9 +11,11 @@ import (
 	"errors"
 	"testing"
 
-	compose "github.com/compose-spec/compose-go/types"
+	compose "github.com/compose-spec/compose-go/v2/types"
 	score "github.com/score-spec/score-go/types"
 	assert "github.com/stretchr/testify/assert"
+
+	"github.com/score-spec/score-compose/internal/util"
 )
 
 func TestScoreConvert(t *testing.T) {
@@ -40,11 +42,11 @@ func TestScoreConvert(t *testing.T) {
 					Ports: score.WorkloadServicePorts{
 						"www": score.ServicePort{
 							Port:       80,
-							TargetPort: Ref(8080),
+							TargetPort: util.Ref(8080),
 						},
 						"admin": score.ServicePort{
 							Port:     8080,
-							Protocol: Ref(score.ServicePortProtocolUDP),
+							Protocol: util.Ref(score.ServicePortProtocolUDP),
 						},
 					},
 				},
@@ -66,7 +68,7 @@ func TestScoreConvert(t *testing.T) {
 			},
 			Project: &compose.Project{
 				Services: compose.Services{
-					{
+					"test-backend": {
 						Name:  "test-backend",
 						Image: "busybox",
 						Entrypoint: compose.ShellCommand{
@@ -113,7 +115,7 @@ func TestScoreConvert(t *testing.T) {
 							{
 								Source:   "data",
 								Target:   "/mnt/data",
-								ReadOnly: Ref(true),
+								ReadOnly: util.Ref(true),
 							},
 						},
 					},
@@ -135,7 +137,7 @@ func TestScoreConvert(t *testing.T) {
 			},
 			Project: &compose.Project{
 				Services: compose.Services{
-					{
+					"test-backend": {
 						Name:  "test-backend",
 						Image: "busybox",
 						Environment: compose.MappingWithEquals{
@@ -185,14 +187,14 @@ func TestScoreConvert(t *testing.T) {
 				},
 				Service: &score.WorkloadService{
 					Ports: map[string]score.ServicePort{
-						"frontend": {Port: 8080, TargetPort: Ref(80)},
-						"backend":  {Port: 8081, TargetPort: Ref(81)},
+						"frontend": {Port: 8080, TargetPort: util.Ref(80)},
+						"backend":  {Port: 8081, TargetPort: util.Ref(81)},
 					},
 				},
 			},
 			Project: &compose.Project{
 				Services: compose.Services{
-					{
+					"test-backend": {
 						Name:  "test-backend",
 						Image: "busybox",
 						Environment: compose.MappingWithEquals{
@@ -203,7 +205,7 @@ func TestScoreConvert(t *testing.T) {
 							{Target: 81, Published: "8081"},
 						},
 					},
-					{
+					"test-frontend": {
 						Name:  "test-frontend",
 						Image: "busybox",
 						Environment: compose.MappingWithEquals{
@@ -230,8 +232,8 @@ func TestScoreConvert(t *testing.T) {
 							{
 								Source:   "data",
 								Target:   "/mnt/data",
-								Path:     Ref("sub/path"),
-								ReadOnly: Ref(true),
+								Path:     util.Ref("sub/path"),
+								ReadOnly: util.Ref(true),
 							},
 						},
 					},

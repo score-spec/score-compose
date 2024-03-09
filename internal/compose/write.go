@@ -10,7 +10,7 @@ package compose
 import (
 	"io"
 
-	compose "github.com/compose-spec/compose-go/types"
+	compose "github.com/compose-spec/compose-go/v2/types"
 	yaml "gopkg.in/yaml.v3"
 )
 
