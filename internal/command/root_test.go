@@ -20,6 +20,7 @@ Usage:
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
+  generate    Convert one or more Score files into a Docker compose manifest
   help        Help about any command
   init        Initialise a new score-compose project with local state directory and score file
   run         Translate the SCORE file to docker-compose configuration
