@@ -44,7 +44,11 @@ func TestInitNominal(t *testing.T) {
 	assert.NoError(t, err)
 	if assert.True(t, ok) {
 		assert.Equal(t, project.DefaultRelativeStateDirectory, sd.Path)
-		assert.Equal(t, filepath.Base(td), sd.Config.ComposeProjectName)
+		assert.Equal(t, filepath.Base(td), sd.State.ComposeProjectName)
+		assert.Equal(t, filepath.Join(project.DefaultRelativeStateDirectory, "mounts"), sd.State.MountsDirectory)
+		assert.Equal(t, map[string]project.ScoreWorkloadState{}, sd.State.Workloads)
+		assert.Equal(t, map[project.ResourceUid]project.ScoreResourceState{}, sd.State.Resources)
+		assert.Equal(t, map[string]interface{}{}, sd.State.SharedState)
 	}
 }
 
@@ -71,8 +75,23 @@ func TestInitNominal_custom_file_and_project(t *testing.T) {
 	assert.NoError(t, err)
 	if assert.True(t, ok) {
 		assert.Equal(t, project.DefaultRelativeStateDirectory, sd.Path)
-		assert.Equal(t, "bananas", sd.Config.ComposeProjectName)
+		assert.Equal(t, "bananas", sd.State.ComposeProjectName)
 	}
+}
+
+func TestInitNominal_bad_project(t *testing.T) {
+	td := t.TempDir()
+
+	wd, _ := os.Getwd()
+	require.NoError(t, os.Chdir(td))
+	defer func() {
+		require.NoError(t, os.Chdir(wd))
+	}()
+
+	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--project", "-this-is-invalid-"})
+	assert.EqualError(t, err, "invalid value for --project, it must match ^[a-z0-9][a-z0-9_-]*$")
+	assert.Equal(t, "", stdout)
+	assert.Equal(t, "", stderr)
 }
 
 func TestInitNominal_run_twice(t *testing.T) {
@@ -103,6 +122,10 @@ func TestInitNominal_run_twice(t *testing.T) {
 	assert.NoError(t, err)
 	if assert.True(t, ok) {
 		assert.Equal(t, project.DefaultRelativeStateDirectory, sd.Path)
-		assert.Equal(t, "bananas", sd.Config.ComposeProjectName)
+		assert.Equal(t, "bananas", sd.State.ComposeProjectName)
+		assert.Equal(t, filepath.Join(project.DefaultRelativeStateDirectory, "mounts"), sd.State.MountsDirectory)
+		assert.Equal(t, map[string]project.ScoreWorkloadState{}, sd.State.Workloads)
+		assert.Equal(t, map[project.ResourceUid]project.ScoreResourceState{}, sd.State.Resources)
+		assert.Equal(t, map[string]interface{}{}, sd.State.SharedState)
 	}
 }

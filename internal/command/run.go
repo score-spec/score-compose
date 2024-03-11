@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"os"
 	"sort"
 	"strings"
@@ -27,6 +28,7 @@ import (
 	score "github.com/score-spec/score-go/types"
 
 	"github.com/score-spec/score-compose/internal/compose"
+	"github.com/score-spec/score-compose/internal/project"
 )
 
 const (
@@ -169,10 +171,37 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("validating workload spec: %w", err)
 	}
 
+	// Build a fake score-compose init state. We don't actually need to store or persist this because we're not doing
+	// anything iterative or stateful.
+	state := &project.State{MountsDirectory: "/dev/null"}
+	state, err = state.WithWorkload(&spec, &scoreFile)
+	if err != nil {
+		return fmt.Errorf("failed to add score file to state: %w", err)
+	}
+
+	// Prime the resources with initial state and validate any issues
+	state, err = state.WithPrimedResources()
+	if err != nil {
+		return fmt.Errorf("failed to prime resources: %w", err)
+	}
+
+	// Instead of actually calling the resource provisioning system, we skip it and fill in the supported resources
+	// ourselves.
+	vars := new(compose.EnvVarTracker)
+	state, err = fillInLegacyResourceOutputFunctions(spec.Metadata["name"].(string), state, vars)
+	if err != nil {
+		return fmt.Errorf("failed to provision resources: %w", err)
+	}
+
+	workloadResourceOutputs, err := state.GetResourceOutputForWorkload(spec.Metadata["name"].(string))
+	if err != nil {
+		return fmt.Errorf("failed to gather resource outputs: %w", err)
+	}
+
 	// Build docker-compose configuration
 	//
 	slog.Info("Building docker-compose configuration")
-	proj, vars, err := compose.ConvertSpec(&spec)
+	proj, err := compose.ConvertSpec(&spec, workloadResourceOutputs)
 	if err != nil {
 		return fmt.Errorf("building docker-compose configuration: %w", err)
 	}
@@ -238,4 +267,29 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func fillInLegacyResourceOutputFunctions(workloadName string, state *project.State, evt *compose.EnvVarTracker) (*project.State, error) {
+	out := *state
+	out.Resources = maps.Clone(state.Resources)
+	for resName, res := range state.Workloads[workloadName].Spec.Resources {
+		resUid := project.NewResourceUid(workloadName, resName, res.Type, res.Class, res.Id)
+		resState := state.Resources[resUid]
+		if resUid.Type() == "environment" {
+			if resUid.Class() != "default" {
+				return nil, fmt.Errorf("resources '%s': '%s.%s' is not supported in score-compose", resUid, resUid.Type(), resUid.Class())
+			}
+			resState.OutputLookupFunc = evt.LookupOutput
+		} else if resUid.Type() == "volume" && resUid.Class() == "default" {
+			resState.OutputLookupFunc = func(keys ...string) (interface{}, error) {
+				return nil, fmt.Errorf("resource has no outputs")
+			}
+		} else {
+			slog.Warn(fmt.Sprintf("resources.%s: '%s.%s' is not directly supported in score-compose, references will be converted to environment variables", resName, resUid.Type(), resUid.Class()))
+			fake := evt.GenerateResource(resName)
+			resState.OutputLookupFunc = fake.LookupOutput
+		}
+		out.Resources[resUid] = resState
+	}
+	return &out, nil
 }

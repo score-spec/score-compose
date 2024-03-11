@@ -12,6 +12,8 @@ import (
 
 	score "github.com/score-spec/score-go/types"
 	assert "github.com/stretchr/testify/assert"
+
+	"github.com/score-spec/score-compose/internal/project"
 )
 
 func TestMapVar(t *testing.T) {
@@ -26,10 +28,10 @@ func TestMapVar(t *testing.T) {
 		}
 		return "", false
 	}
-	ctx, err := buildContext(meta, map[string]ResourceWithOutputs{
-		"env":    evt,
-		"db":     evt.GenerateResource("db"),
-		"static": resourceWithStaticOutputs{"x": "a"},
+	ctx, err := buildContext(meta, map[string]project.OutputLookupFunc{
+		"env":    evt.LookupOutput,
+		"db":     evt.GenerateResource("db").LookupOutput,
+		"static": resourceWithStaticOutputs{"x": "a"}.LookupOutput,
 	})
 	assert.NoError(t, err)
 
@@ -88,9 +90,9 @@ func TestSubstitute(t *testing.T) {
 		}
 		return "", false
 	}
-	ctx, err := buildContext(meta, map[string]ResourceWithOutputs{
-		"env": evt,
-		"db":  evt.GenerateResource("db"),
+	ctx, err := buildContext(meta, map[string]project.OutputLookupFunc{
+		"env": evt.LookupOutput,
+		"db":  evt.GenerateResource("db").LookupOutput,
 	})
 	assert.NoError(t, err)
 

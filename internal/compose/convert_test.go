@@ -15,6 +15,7 @@ import (
 	score "github.com/score-spec/score-go/types"
 	assert "github.com/stretchr/testify/assert"
 
+	"github.com/score-spec/score-compose/internal/project"
 	"github.com/score-spec/score-compose/internal/util"
 )
 
@@ -279,7 +280,13 @@ func TestScoreConvert(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			proj, vars, err := ConvertSpec(tt.Source)
+			evt := new(EnvVarTracker)
+			resourceOutputs := map[string]project.OutputLookupFunc{
+				"env":      evt.LookupOutput,
+				"app-db":   evt.GenerateResource("app-db").LookupOutput,
+				"some-dns": evt.GenerateResource("some-dns").LookupOutput,
+			}
+			proj, err := ConvertSpec(tt.Source, resourceOutputs)
 
 			if tt.Error != nil {
 				// On Error
@@ -290,7 +297,7 @@ func TestScoreConvert(t *testing.T) {
 				//
 				assert.NoError(t, err)
 				assert.Equal(t, tt.Project, proj)
-				assert.Equal(t, tt.Vars, vars.Accessed())
+				assert.Equal(t, tt.Vars, evt.Accessed())
 			}
 		})
 	}
