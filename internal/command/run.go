@@ -30,6 +30,7 @@ import (
 	"github.com/score-spec/score-compose/internal/compose"
 	"github.com/score-spec/score-compose/internal/project"
 	"github.com/score-spec/score-compose/internal/provisioners"
+	"github.com/score-spec/score-compose/internal/provisioners/envprov"
 )
 
 const (
@@ -188,8 +189,7 @@ func run(cmd *cobra.Command, args []string) error {
 
 	// Instead of actually calling the resource provisioning system, we skip it and fill in the supported resources
 	// ourselves.
-	vars := new(compose.EnvVarTracker)
-	provisionerList, err := buildLegacyProvisioners(spec.Metadata["name"].(string), state, vars)
+	provisionerList, envProvisioner, err := buildLegacyProvisioners(spec.Metadata["name"].(string), state)
 	if err != nil {
 		return err
 	}
@@ -259,7 +259,7 @@ func run(cmd *cobra.Command, args []string) error {
 		// Write .env file
 		//
 		envVars := make([]string, 0)
-		for key, val := range vars.Accessed() {
+		for key, val := range envProvisioner.Accessed() {
 			var envVar = fmt.Sprintf("%s=%v\n", key, val)
 			envVars = append(envVars, envVar)
 		}
@@ -275,55 +275,35 @@ func run(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func buildLegacyProvisioners(workloadName string, state *project.State, evt *compose.EnvVarTracker) ([]provisioners.Provisioner, error) {
-	out := make([]provisioners.Provisioner, 0)
+func buildLegacyProvisioners(workloadName string, state *project.State) ([]provisioners.Provisioner, *envprov.Provisioner, error) {
+	envProv := new(envprov.Provisioner)
+	out := []provisioners.Provisioner{envProv}
 	for resName, res := range state.Workloads[workloadName].Spec.Resources {
 		resUid := project.NewResourceUid(workloadName, resName, res.Type, res.Class, res.Id)
 		if resUid.Type() == "environment" {
-			if resUid.Class() != "default" {
-				return nil, fmt.Errorf("resources '%s': '%s.%s' is not supported in score-compose", resUid, resUid.Type(), resUid.Class())
-			}
-			out = append(out, &legacyProvisioner{
-				ProvisionerUri:   "builtin://environment",
-				MatchResourceUid: resUid,
-				OutputLookupFunc: evt.LookupOutput,
-			})
+			// handled by env prov which is already added above
 		} else if resUid.Type() == "volume" && resUid.Class() == "default" {
-			out = append(out, &legacyProvisioner{
-				ProvisionerUri:   "builtin://legacy-volume",
-				MatchResourceUid: resUid,
-				OutputLookupFunc: func(keys ...string) (interface{}, error) {
-					return nil, fmt.Errorf("resource has no outputs")
-				},
-			})
+			out = append(out, &legacyVolumeProvisioner{MatchResourceUid: resUid})
 		} else {
 			slog.Warn(fmt.Sprintf("resources.%s: '%s.%s' is not directly supported in score-compose, references will be converted to environment variables", resName, resUid.Type(), resUid.Class()))
-			out = append(out, &legacyProvisioner{
-				ProvisionerUri:   "builtin://legacy-var",
-				MatchResourceUid: resUid,
-				OutputLookupFunc: evt.GenerateResource(resName).LookupOutput,
-			})
+			out = append(out, envProv.GenerateSubProvisioner(resName, resUid))
 		}
 	}
-	return out, nil
+	return out, envProv, nil
 }
 
-type legacyProvisioner struct {
-	ProvisionerUri   string
+type legacyVolumeProvisioner struct {
 	MatchResourceUid project.ResourceUid
-	OutputLookupFunc project.OutputLookupFunc
 }
 
-func (l *legacyProvisioner) Uri() string {
-	return l.ProvisionerUri
+func (l *legacyVolumeProvisioner) Uri() string {
+	return "builtin://legacy-volume"
 }
 
-func (l *legacyProvisioner) Match(resUid project.ResourceUid) bool {
+func (l *legacyVolumeProvisioner) Match(resUid project.ResourceUid) bool {
 	return l.MatchResourceUid == resUid
 }
 
-func (l *legacyProvisioner) Provision(ctx context.Context, input *provisioners.Input) (*provisioners.ProvisionOutput, error) {
-	return &provisioners.ProvisionOutput{
-		OutputLookupFunc: l.OutputLookupFunc,
-	}, nil
+func (l *legacyVolumeProvisioner) Provision(ctx context.Context, input *provisioners.Input) (*provisioners.ProvisionOutput, error) {
+	return &provisioners.ProvisionOutput{ResourceOutputs: map[string]interface{}{}}, nil
 }

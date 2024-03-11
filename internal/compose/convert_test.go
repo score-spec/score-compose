@@ -16,6 +16,7 @@ import (
 	assert "github.com/stretchr/testify/assert"
 
 	"github.com/score-spec/score-compose/internal/project"
+	"github.com/score-spec/score-compose/internal/provisioners/envprov"
 	"github.com/score-spec/score-compose/internal/util"
 )
 
@@ -280,12 +281,13 @@ func TestScoreConvert(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			evt := new(EnvVarTracker)
-			resourceOutputs := map[string]project.OutputLookupFunc{
-				"env":      evt.LookupOutput,
-				"app-db":   evt.GenerateResource("app-db").LookupOutput,
-				"some-dns": evt.GenerateResource("some-dns").LookupOutput,
-			}
+			evt := new(envprov.Provisioner)
+			resourceOutputs := map[string]project.OutputLookupFunc{"env": evt.LookupOutput}
+			po, _ := evt.GenerateSubProvisioner("app-db", "").Provision(nil, nil)
+			resourceOutputs["app-db"] = po.OutputLookupFunc
+			po, _ = evt.GenerateSubProvisioner("some-dns", "").Provision(nil, nil)
+			resourceOutputs["some-dns"] = po.OutputLookupFunc
+
 			proj, err := ConvertSpec(tt.Source, resourceOutputs)
 
 			if tt.Error != nil {
