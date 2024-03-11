@@ -62,6 +62,7 @@
       labels:
         dev.score.compose.res.uid: {{ .Uid }}
       image: redis:7
+      restart: always
       entrypoint: ["redis-server"]
       command: ["/usr/local/etc/redis/redis.conf"]
       volumes:
@@ -76,3 +77,76 @@
           nocopy: true
   info_logs: |
     - "To connect to redis: \"docker run -it --network {{ .ComposeProjectName }}_default --rm redis redis-cli -h {{ .State.serviceName | squote }} -a {{ .State.password | squote }}\""
+
+# The default postgres provisioner adds a postgres instance and then ensures that the required databases are created on
+# startup.
+- uri: template://default-provisioners/postgres
+  # By default, match all redis types regardless of class and id. If you want to override this, create another
+  # provisioner definition with a higher priority.
+  type: postgres
+  # Init template has the random service name and password if needed later
+  init: |
+    randomServiceName: pg-{{ randAlphaNum 6 }}
+    randomDatabase: db-{{ randAlpha 8 }}
+    randomUsername: user-{{ randAlpha 8 }}
+    randomPassword: {{ randAlphaNum 16 | quote }}
+    sk: default-provisioners-postgres-instance
+  state: |
+    database: {{ dig "database" .Init.randomDatabase .State | quote }}
+    username: {{ dig "username" .Init.randomUsername .State | quote }}
+    password: {{ dig "password" .Init.randomPassword .State | quote }}
+  shared: |
+    {{ .Init.sk }}:
+      instanceServiceName: {{ dig .Init.sk "instanceServiceName" .Init.randomServiceName .Shared | quote }}
+      instancePassword: {{ dig .Init.sk "instancePassword" .Init.randomPassword .Shared | quote }}
+  outputs: |
+    host: {{ dig .Init.sk "instanceServiceName" "" .Shared }}
+    port: 5432
+    name: {{ .State.database }}
+    database: {{ .State.database }}
+    username: {{ .State.username }}
+    password: {{ .State.password }}
+  directories: |
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}-db-scripts: false
+  files: |
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}-db-scripts/{{ .State.database }}.sql: |
+      SELECT 'CREATE DATABASE "{{ .State.database }}"' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '{{ .State.database }}')\gexec
+      SELECT $$CREATE USER "{{ .State.username }}" WITH PASSWORD '{{ .State.password }}'$$ WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .State.username }}')\gexec
+      GRANT ALL PRIVILEGES ON DATABASE "{{ .State.database }}" TO "{{ .State.username }}";
+  volumes: |
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}-data:
+      driver: local
+  services: |
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
+      image: postgres:16-alpine
+      restart: always
+      environment:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: {{ dig .Init.sk "instancePassword" "" .Shared | quote }}
+      volumes:
+      - type: volume
+        source: {{ dig .Init.sk "instanceServiceName" "" .Shared }}-data
+        target: /var/lib/postgresql/data
+      healthcheck:
+        test: ["CMD", "pg_isready", "-U", "postgres"]
+        interval: 2s
+        timeout: 2s
+        retries: 10
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}-init:
+      image: postgres:16-alpine
+      entrypoint: ["/bin/sh"]
+      environment:
+        POSTGRES_PASSWORD: {{ dig .Init.sk "instancePassword" "" .Shared | quote }}
+      command:
+      - "-c"
+      - |
+        cd /db-scripts
+        ls db-*.sql | xargs cat | psql "postgresql://postgres:$${POSTGRES_PASSWORD}@{{ dig .Init.sk "instanceServiceName" "" .Shared }}:5432/postgres"
+      depends_on:
+        {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
+          condition: service_healthy
+          restart: true
+      volumes:
+      - type: bind
+        source: {{ .MountsDirectory }}/{{ dig .Init.sk "instanceServiceName" "" .Shared }}-db-scripts
+        target: /db-scripts
