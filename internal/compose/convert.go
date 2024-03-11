@@ -14,8 +14,10 @@ import (
 	"sort"
 	"strings"
 
-	compose "github.com/compose-spec/compose-go/types"
+	compose "github.com/compose-spec/compose-go/v2/types"
 	score "github.com/score-spec/score-go/types"
+
+	"github.com/score-spec/score-compose/internal/util"
 )
 
 // ConvertSpec converts SCORE specification into docker-compose configuration.
@@ -30,7 +32,7 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, *EnvVarTracker, error)
 	}
 
 	var project = compose.Project{
-		Services: make(compose.Services, 0, len(spec.Containers)),
+		Services: make(compose.Services),
 	}
 
 	// Track any uses of the environment resource or resources that are overridden with an env provider using the tracker.
@@ -39,7 +41,7 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, *EnvVarTracker, error)
 	// The first thing we must do is validate or create the resources this workload depends on.
 	// NOTE: this will soon be replaced by a much more sophisticated resource provisioning system!
 	for resourceName, resourceSpec := range spec.Resources {
-		resClass := DerefOr(resourceSpec.Class, "default")
+		resClass := util.DerefOr(resourceSpec.Class, "default")
 		if resourceSpec.Type == "environment" {
 			if resClass != "default" {
 				return nil, nil, fmt.Errorf("resources.%s: '%s.%s' is not supported in score-compose", resourceName, resourceSpec.Type, resClass)
@@ -70,7 +72,7 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, *EnvVarTracker, error)
 			}
 			ports = append(ports, compose.ServicePortConfig{
 				Published: pubPort,
-				Target:    uint32(DerefOr(pSpec.TargetPort, pSpec.Port)),
+				Target:    uint32(util.DerefOr(pSpec.TargetPort, pSpec.Port)),
 				Protocol:  protocol,
 			})
 		}
@@ -85,6 +87,7 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, *EnvVarTracker, error)
 	}
 	sort.Strings(containerNames)
 
+	var firstService string
 	for _, containerName := range containerNames {
 		cSpec := spec.Containers[containerName]
 
@@ -129,7 +132,7 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, *EnvVarTracker, error)
 					Type:     "volume",
 					Source:   resolvedVolumeSource,
 					Target:   vol.Target,
-					ReadOnly: DerefOr(vol.ReadOnly, false),
+					ReadOnly: util.DerefOr(vol.ReadOnly, false),
 				}
 			}
 		}
@@ -173,12 +176,13 @@ func ConvertSpec(spec *score.Workload) (*compose.Project, *EnvVarTracker, error)
 		}
 
 		// if we are not the "first" service, then inherit the network from the first service
-		if len(project.Services) > 0 {
+		if firstService == "" {
+			firstService = svc.Name
+		} else {
 			svc.Ports = nil
-			svc.NetworkMode = "service:" + project.Services[0].Name
+			svc.NetworkMode = "service:" + firstService
 		}
-
-		project.Services = append(project.Services, svc)
+		project.Services[svc.Name] = svc
 	}
 	return &project, envVarTracker, nil
 }

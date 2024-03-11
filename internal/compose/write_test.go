@@ -12,7 +12,7 @@ import (
 	"bytes"
 	"testing"
 
-	compose "github.com/compose-spec/compose-go/types"
+	compose "github.com/compose-spec/compose-go/v2/types"
 	assert "github.com/stretchr/testify/assert"
 )
 
@@ -27,7 +27,7 @@ func TestYamlEncode(t *testing.T) {
 			Name: "Should encode the docker-compose spec",
 			Source: &compose.Project{
 				Services: compose.Services{
-					{
+					"test": {
 						Name:  "test",
 						Image: "busybox",
 						Command: compose.ShellCommand{
