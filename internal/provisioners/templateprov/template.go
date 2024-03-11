@@ -9,7 +9,9 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
+	"github.com/compose-spec/compose-go/v2/loader"
 	compose "github.com/compose-spec/compose-go/v2/types"
+	"github.com/mitchellh/mapstructure"
 	"gopkg.in/yaml.v3"
 
 	"github.com/score-spec/score-compose/internal/project"
@@ -89,7 +91,7 @@ func (p *Provisioner) Match(resUid project.ResourceUid) bool {
 	return true
 }
 
-func renderTemplateAndDecode(raw string, data interface{}, out interface{}) error {
+func renderTemplateAndDecode(raw string, data interface{}, out interface{}, withComposeExtensions bool) error {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return nil
@@ -103,13 +105,20 @@ func renderTemplateAndDecode(raw string, data interface{}, out interface{}) erro
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 	buffContents := buff.String()
-	if strings.TrimSpace(buffContents) == "" {
+	if strings.TrimSpace(buff.String()) == "" {
 		return nil
 	}
-	dec := yaml.NewDecoder(strings.NewReader(buffContents))
-	dec.KnownFields(true)
-	if err := dec.Decode(out); err != nil {
+	var intermediate interface{}
+	if err := yaml.Unmarshal([]byte(buffContents), &intermediate); err != nil {
 		slog.Debug(fmt.Sprintf("template output was '%s' from template '%s'", buffContents, raw))
+		return fmt.Errorf("failed to decode output: %w", err)
+	}
+	if withComposeExtensions {
+		err = loader.Transform(intermediate, &out)
+	} else {
+		err = mapstructure.Decode(intermediate, &out)
+	}
+	if err != nil {
 		return fmt.Errorf("failed to decode output: %w", err)
 	}
 	return nil
@@ -150,55 +159,55 @@ func (p *Provisioner) Provision(ctx context.Context, input *provisioners.Input) 
 	}
 
 	init := make(map[string]interface{})
-	if err := renderTemplateAndDecode(p.InitTemplate, &data, &init); err != nil {
+	if err := renderTemplateAndDecode(p.InitTemplate, &data, &init, false); err != nil {
 		return nil, fmt.Errorf("init template failed: %w", err)
 	}
 	data.Init = init
 
 	out.ResourceState = make(map[string]interface{})
-	if err := renderTemplateAndDecode(p.StateTemplate, &data, &out.ResourceState); err != nil {
+	if err := renderTemplateAndDecode(p.StateTemplate, &data, &out.ResourceState, false); err != nil {
 		return nil, fmt.Errorf("state template failed: %w", err)
 	}
 	data.State = out.ResourceState
 
 	out.SharedState = make(map[string]interface{})
-	if err := renderTemplateAndDecode(p.SharedStateTemplate, &data, &out.SharedState); err != nil {
+	if err := renderTemplateAndDecode(p.SharedStateTemplate, &data, &out.SharedState, false); err != nil {
 		return nil, fmt.Errorf("shared template failed: %w", err)
 	}
 	data.Shared = util.PatchMap(data.Shared, out.SharedState)
 
 	out.ResourceOutputs = make(map[string]interface{})
-	if err := renderTemplateAndDecode(p.OutputsTemplate, &data, &out.ResourceOutputs); err != nil {
+	if err := renderTemplateAndDecode(p.OutputsTemplate, &data, &out.ResourceOutputs, false); err != nil {
 		return nil, fmt.Errorf("outputs template failed: %w", err)
 	}
 
 	out.RelativeDirectories = make(map[string]bool)
-	if err := renderTemplateAndDecode(p.RelativeDirectoriesTemplate, &data, &out.RelativeDirectories); err != nil {
+	if err := renderTemplateAndDecode(p.RelativeDirectoriesTemplate, &data, &out.RelativeDirectories, false); err != nil {
 		return nil, fmt.Errorf("directories template failed: %w", err)
 	}
 
 	out.RelativeFileContents = make(map[string]*string)
-	if err := renderTemplateAndDecode(p.RelativeFilesTemplate, &data, &out.RelativeFileContents); err != nil {
+	if err := renderTemplateAndDecode(p.RelativeFilesTemplate, &data, &out.RelativeFileContents, false); err != nil {
 		return nil, fmt.Errorf("files template failed: %w", err)
 	}
 
 	out.ComposeNetworks = make(map[string]compose.NetworkConfig)
-	if err := renderTemplateAndDecode(p.ComposeNetworksTemplate, &data, &out.ComposeNetworks); err != nil {
+	if err := renderTemplateAndDecode(p.ComposeNetworksTemplate, &data, &out.ComposeNetworks, true); err != nil {
 		return nil, fmt.Errorf("networks template failed: %w", err)
 	}
 
 	out.ComposeServices = make(map[string]compose.ServiceConfig)
-	if err := renderTemplateAndDecode(p.ComposeServicesTemplate, &data, &out.ComposeServices); err != nil {
+	if err := renderTemplateAndDecode(p.ComposeServicesTemplate, &data, &out.ComposeServices, true); err != nil {
 		return nil, fmt.Errorf("services template failed: %w", err)
 	}
 
 	out.ComposeVolumes = make(map[string]compose.VolumeConfig)
-	if err := renderTemplateAndDecode(p.ComposeVolumesTemplate, &data, &out.ComposeVolumes); err != nil {
+	if err := renderTemplateAndDecode(p.ComposeVolumesTemplate, &data, &out.ComposeVolumes, true); err != nil {
 		return nil, fmt.Errorf("volumes template failed: %w", err)
 	}
 
 	var infoLogs []string
-	if err := renderTemplateAndDecode(p.InfoLogsTemplate, &data, &infoLogs); err != nil {
+	if err := renderTemplateAndDecode(p.InfoLogsTemplate, &data, &infoLogs, false); err != nil {
 		return nil, fmt.Errorf("info logs template failed: %w", err)
 	}
 	for _, log := range infoLogs {

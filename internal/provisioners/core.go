@@ -63,6 +63,16 @@ type Provisioner interface {
 // ApplyToStateAndProject takes the outputs of a provisioning request and applies to the state, file tree, and docker
 // compose project.
 func (po *ProvisionOutput) ApplyToStateAndProject(state *project.State, resUid project.ResourceUid, project *compose.Project) (*project.State, error) {
+	slog.Debug(
+		fmt.Sprintf("Provisioned resource '%s'", resUid),
+		"outputs", po.ResourceOutputs,
+		"#directories", len(po.RelativeDirectories),
+		"#files", len(po.RelativeFileContents),
+		"#volumes", len(po.ComposeVolumes),
+		"#networks", len(po.ComposeNetworks),
+		"#services", len(po.ComposeServices),
+	)
+
 	out := *state
 	out.Resources = maps.Clone(state.Resources)
 
