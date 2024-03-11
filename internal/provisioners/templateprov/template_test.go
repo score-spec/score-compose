@@ -27,11 +27,12 @@ b: {{ .Type }}
 a: {{ .Init.a }}
 b: stuff
 `,
-		"outputs": `
-b: {{ .State.b | upper }}
-`,
 		"shared": `
 c: 1
+`,
+		"outputs": `
+b: {{ .State.b | upper }}
+c: {{ .Shared.c }}
 `,
 		"directories": `{"blah": true}`,
 		"files":       `{"blah/foo": "content"}`,
@@ -66,8 +67,8 @@ some-svc:
 		"a": "thing.default#w.r",
 		"b": "stuff",
 	}, out.ResourceState)
-	assert.Equal(t, map[string]interface{}{"b": "STUFF"}, out.ResourceOutputs)
 	assert.Equal(t, map[string]interface{}{"c": 1}, out.SharedState)
+	assert.Equal(t, map[string]interface{}{"b": "STUFF", "c": 1}, out.ResourceOutputs)
 	assert.Equal(t, map[string]bool{"blah": true}, out.RelativeDirectories)
 	assert.Equal(t, map[string]*string{"blah/foo": util.Ref("content")}, out.RelativeFileContents)
 	assert.Equal(t, map[string]compose.NetworkConfig{"default": {Driver: "default"}}, out.ComposeNetworks)

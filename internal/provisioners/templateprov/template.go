@@ -14,24 +14,43 @@ import (
 
 	"github.com/score-spec/score-compose/internal/project"
 	"github.com/score-spec/score-compose/internal/provisioners"
+	"github.com/score-spec/score-compose/internal/util"
 )
 
+// Provisioner is the decoded template provisioner.
+// A template provisioner provisions a resource by evaluating a series of Go text/templates that have access to some
+// input parameters, previous state, and utility functions. Each parameter is expected to return a JSON object.
 type Provisioner struct {
 	ProvisionerUri string  `yaml:"uri"`
 	ResType        string  `yaml:"type"`
 	ResClass       *string `yaml:"class,omitempty"`
 	ResId          *string `yaml:"id,omitempty"`
 
-	InitTemplate        string `yaml:"init,omitempty"`
-	StateTemplate       string `yaml:"state,omitempty"`
-	OutputsTemplate     string `yaml:"outputs,omitempty"`
+	// The InitTemplate is always evaluated first, it is used as temporary or working set data that may be needed in the
+	// later templates. It has access to the resource inputs and previous state.
+	InitTemplate string `yaml:"init,omitempty"`
+	// StateTemplate generates the new state of the resource based on the init and previous state.
+	StateTemplate string `yaml:"state,omitempty"`
+	// SharedStateTemplate generates modifications to the shared state, based on the init and current state.
 	SharedStateTemplate string `yaml:"shared,omitempty"`
+	// OutputsTemplate generates the outputs of the resource, based on the init and current state.
+	OutputsTemplate string `yaml:"outputs,omitempty"`
 
+	// RelativeDirectoriesTemplate generates a set of directories to create (true) or delete (false). These may then
+	// be used in mounting requests for volumes or service mounts.
 	RelativeDirectoriesTemplate string `yaml:"directories,omitempty"`
-	RelativeFilesTemplate       string `yaml:"files,omitempty"`
+	// RelativeFilesTemplate generates a set of file contents to write (non nil) or delete (nil) from the mounts
+	// directory. These will then be used during service bind mounting.
+	RelativeFilesTemplate string `yaml:"files,omitempty"`
 
+	// ComposeNetworksTemplate generates a set of networks to add to the compose project. These will replace any with
+	// the same name already.
 	ComposeNetworksTemplate string `yaml:"networks,omitempty"`
-	ComposeVolumesTemplate  string `yaml:"volumes,omitempty"`
+	// ComposeVolumesTemplate generates a set of volumes to add to the compose project. These will replace any with
+	// the same name already.
+	ComposeVolumesTemplate string `yaml:"volumes,omitempty"`
+	// ComposeServicesTemplate generates a set of services to add to the compose project. These will replace any with
+	// the same name already.
 	ComposeServicesTemplate string `yaml:"services,omitempty"`
 }
 
@@ -92,6 +111,7 @@ func renderTemplateAndDecode(raw string, data interface{}, out interface{}) erro
 	return nil
 }
 
+// Data is the structure sent to each template during rendering.
 type Data struct {
 	Uid      string
 	Type     string
@@ -135,14 +155,15 @@ func (p *Provisioner) Provision(ctx context.Context, input *provisioners.Input) 
 	}
 	data.State = out.ResourceState
 
-	out.ResourceOutputs = make(map[string]interface{})
-	if err := renderTemplateAndDecode(p.OutputsTemplate, &data, &out.ResourceOutputs); err != nil {
-		return nil, fmt.Errorf("outputs template failed: %w", err)
-	}
-
 	out.SharedState = make(map[string]interface{})
 	if err := renderTemplateAndDecode(p.SharedStateTemplate, &data, &out.SharedState); err != nil {
 		return nil, fmt.Errorf("shared template failed: %w", err)
+	}
+	data.Shared = util.PatchMap(data.Shared, out.SharedState)
+
+	out.ResourceOutputs = make(map[string]interface{})
+	if err := renderTemplateAndDecode(p.OutputsTemplate, &data, &out.ResourceOutputs); err != nil {
+		return nil, fmt.Errorf("outputs template failed: %w", err)
 	}
 
 	out.RelativeDirectories = make(map[string]bool)
