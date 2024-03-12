@@ -1,0 +1,78 @@
+# The default volume provisioner provided by score-compose allows basic volume resources to be created in the resources
+# system. The volume resource just creates an ephemeral Docker volume with a random string as the name, and source
+# attribute that we can reference.
+- uri: template://default-provisioners/volume
+  # By default, match all classes and ids of volume. If you want to override this, create another provisioner definition
+  # with a higher priority.
+  type: volume
+  init: |
+    randomVolumeName: {{ .Id | replace "." "-" }}-{{ randAlphaNum 6 }}
+  # Store the random volume name if we haven't chosen one yet, otherwise use the one that exists already
+  state: |
+    name: {{ dig "name" .Init.randomVolumeName .State }}
+  # Return a source value with the volume name. This can be used in volume resource references now.
+  outputs: |
+    source: {{ .State.name }}
+  # Add a volume to the docker compose file. We assume our name is unique here. We also apply a label to help ensure
+  # that we can track the volume back to the workload and resource that created it.
+  volumes: |
+    {{ .State.name }}:
+      name: {{ .State.name }}
+      driver: local
+      labels:
+        dev.score.compose.res.uid: {{ .Uid }}
+
+# The default redis provisioner adds a redis service to the project which returns a host, port, username, and password.
+- uri: template://default-provisioners/redis
+  # By default, match all redis types regardless of class and id. If you want to override this, create another
+  # provisioner definition with a higher priority.
+  type: redis
+  # Init template has the default port and a random service name and password if needed later
+  init: |
+    port: 6379
+    randomServiceName: redis-{{ randAlphaNum 6 }}
+    randomPassword: {{ randAlphaNum 16 | quote }}
+  # The only state we need to persist is the chosen random service name and password
+  state: |
+    serviceName: {{ dig "serviceName" .Init.randomServiceName .State | quote }}
+    password: {{ dig "password" .Init.randomPassword .State | quote }}
+  # Return the outputs schema that consumers expect
+  outputs: |
+    host: {{ .State.serviceName }}
+    port: {{ .Init.port }}
+    username: default
+    password: {{ .State.password | quote }}
+  # write the config file to the mounts directory
+  files: |
+    {{ .State.serviceName }}/redis.conf: |
+      requirepass {{ .State.password }}
+      port {{ .Init.port }}
+      save 60 1
+      loglevel warning
+  # add a volume for persistence of the redis data
+  volumes: |
+    {{ .State.serviceName }}-data:
+      name: {{ .State.serviceName }}-data
+      driver: local
+      labels:
+        dev.score.compose.res.uid: {{ .Uid }}
+  # And the redis service itself with volumes bound in
+  services: |
+    {{ .State.serviceName }}:
+      labels:
+        dev.score.compose.res.uid: {{ .Uid }}
+      image: redis:7
+      entrypoint: ["redis-server"]
+      command: ["/usr/local/etc/redis/redis.conf"]
+      volumes:
+      - type: bind
+        source: {{ .MountsDirectory }}/{{ .State.serviceName }}/redis.conf
+        target: /usr/local/etc/redis/redis.conf
+        read_only: true
+      - type: volume
+        source: {{ .State.serviceName }}-data
+        target: /data
+        volume:
+          nocopy: true
+  info_logs: |
+    - "To connect to redis: \"docker run -it --network {{ .ComposeProjectName }}_default --rm redis redis-cli -h {{ .State.serviceName | squote }} -a {{ .State.password | squote }}\""

@@ -1,6 +1,7 @@
 package command
 
 import (
+	_ "embed"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -11,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/score-spec/score-compose/internal/project"
+	"github.com/score-spec/score-compose/internal/provisioners/loader"
 )
 
 const DefaultScoreFileContent = `# Score provides a developer-centric and platform-agnostic 
@@ -49,6 +51,9 @@ service:
 
 resources: {}
 `
+
+//go:embed default.provisioners.yaml
+var defaultProvisionersContent string
 
 var initCmd = &cobra.Command{
 	Use:   "init",
@@ -103,7 +108,7 @@ acts as a namespace when multiple score files and containers are used.
 
 			slog.Info(fmt.Sprintf("Writing new state directory '%s'", project.DefaultRelativeStateDirectory))
 			wd, _ := os.Getwd()
-			sd := &project.StateDirectory{
+			sd = &project.StateDirectory{
 				Path: project.DefaultRelativeStateDirectory,
 				State: project.State{
 					Workloads:          map[string]project.ScoreWorkloadState{},
@@ -120,6 +125,12 @@ acts as a namespace when multiple score files and containers are used.
 			if err := sd.Persist(); err != nil {
 				return fmt.Errorf("failed to persist new compose project name: %w", err)
 			}
+
+			dst := "99-default" + loader.DefaultSuffix
+			slog.Info(fmt.Sprintf("Writing default provisioners yaml file '%s'", dst))
+			if err := os.WriteFile(filepath.Join(sd.Path, dst), []byte(defaultProvisionersContent), 0644); err != nil {
+				return fmt.Errorf("failed to write provisioners: %w", err)
+			}
 		}
 
 		if _, err := os.ReadFile(initCmdScoreFile); err != nil {
@@ -135,6 +146,13 @@ acts as a namespace when multiple score files and containers are used.
 		} else {
 			slog.Info(fmt.Sprintf("Found existing Score file '%s'", initCmdScoreFile))
 		}
+
+		if provs, err := loader.LoadProvisionersFromDirectory(sd.Path, loader.DefaultSuffix); err != nil {
+			return fmt.Errorf("failed to load existing provisioners: %w", err)
+		} else {
+			slog.Debug(fmt.Sprintf("Successfully loaded %d resource provisioners", len(provs)))
+		}
+
 		slog.Info(fmt.Sprintf("Read more about the Score specification at https://docs.score.dev/docs/"))
 
 		return nil
