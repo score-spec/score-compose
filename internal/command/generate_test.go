@@ -39,7 +39,9 @@ Examples:
   score-compose generate score.yaml --override-file=./overrides.score.yaml --override-property=metadata.key=value
 
 Flags:
+      --build stringArray               An optional build context to use for the given container --build=container=./dir or --build=container={'"context":"./dir"}
   -h, --help                            help for generate
+      --image string                    An optional container image to use for any container with image == '.'
   -o, --output string                   The output file to write the composed compose file to (default "compose.yaml")
       --override-property stringArray   An optional set of path=key overrides to set or remove
       --overrides-file string           An optional file of Score overrides to merge in
@@ -155,6 +157,99 @@ services:
 	assert.True(t, ok)
 	assert.Len(t, sd.State.Workloads, 1)
 	assert.Len(t, sd.State.Resources, 1)
+}
+
+func TestInitAndGenerate_with_image_override(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	// write new score file
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: .
+`), 0644))
+
+	t.Run("generate but fail due to missing override", func(t *testing.T) {
+		stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{
+			"generate", "-o", "compose-output.yaml", "--", "score.yaml",
+		})
+		assert.EqualError(t, err, "failed to convert 'example' because container 'example' has no image and neither --image nor --build was provided")
+	})
+
+	t.Run("generate with image", func(t *testing.T) {
+		// generate with image
+		stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{
+			"generate", "-o", "compose-output.yaml", "--image", "busybox:latest", "--", "score.yaml",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, "", stdout)
+		raw, err := os.ReadFile(filepath.Join(td, "compose-output.yaml"))
+		assert.NoError(t, err)
+		expectedOutput := `name: "001"
+services:
+    example-example:
+        image: busybox:latest
+`
+		assert.Equal(t, expectedOutput, string(raw))
+		// generate again just for luck
+		stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "-o", "compose-output.yaml"})
+		assert.NoError(t, err)
+		assert.Equal(t, "", stdout)
+		raw, err = os.ReadFile(filepath.Join(td, "compose-output.yaml"))
+		assert.NoError(t, err)
+		assert.Equal(t, expectedOutput, string(raw))
+	})
+
+	t.Run("generate with raw build context", func(t *testing.T) {
+		// generate with build context
+		stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{
+			"generate", "-o", "compose-output.yaml", "--build", "example=./dir", "--", "score.yaml",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, "", stdout)
+		raw, err := os.ReadFile(filepath.Join(td, "compose-output.yaml"))
+		assert.NoError(t, err)
+		expectedOutput := `name: "001"
+services:
+    example-example:
+        build:
+            context: ./dir
+`
+		assert.Equal(t, expectedOutput, string(raw))
+		// generate again just for luck
+		stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "-o", "compose-output.yaml"})
+		assert.NoError(t, err)
+		assert.Equal(t, "", stdout)
+		raw, err = os.ReadFile(filepath.Join(td, "compose-output.yaml"))
+		assert.NoError(t, err)
+		assert.Equal(t, expectedOutput, string(raw))
+	})
+
+	t.Run("generate with json build context", func(t *testing.T) {
+		stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{
+			"generate", "-o", "compose-output.yaml", "--build", `example={"context":"./dir","args":{"DEBUG":"true"}}`, "--", "score.yaml",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, "", stdout)
+		raw, err := os.ReadFile(filepath.Join(td, "compose-output.yaml"))
+		assert.NoError(t, err)
+		expectedOutput := `name: "001"
+services:
+    example-example:
+        build:
+            context: ./dir
+            args:
+                DEBUG: "true"
+`
+		assert.Equal(t, expectedOutput, string(raw))
+	})
+
 }
 
 func TestGenerateRedisResource(t *testing.T) {

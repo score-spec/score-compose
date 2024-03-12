@@ -288,7 +288,7 @@ func TestScoreConvert(t *testing.T) {
 			po, _ = evt.GenerateSubProvisioner("some-dns", "").Provision(nil, nil)
 			resourceOutputs["some-dns"] = po.OutputLookupFunc
 
-			proj, err := ConvertSpec(tt.Source, resourceOutputs)
+			proj, err := ConvertSpec(tt.Source, nil, resourceOutputs)
 
 			if tt.Error != nil {
 				// On Error
