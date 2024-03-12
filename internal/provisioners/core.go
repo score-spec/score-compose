@@ -35,6 +35,7 @@ type Input struct {
 
 	// -- configuration --
 
+	ComposeProjectName string `json:"compose_project_name"`
 	MountDirectoryPath string `json:"mount_directory_path"`
 }
 
@@ -180,6 +181,7 @@ func ProvisionResources(ctx context.Context, state *project.State, provisioners 
 			ResourceMetadata:   resState.Metadata,
 			ResourceState:      resState.State,
 			SharedState:        out.SharedState,
+			ComposeProjectName: state.ComposeProjectName,
 			MountDirectoryPath: state.MountsDirectory,
 		})
 		if err != nil {

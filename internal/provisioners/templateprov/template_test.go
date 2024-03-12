@@ -26,6 +26,7 @@ b: {{ .Type }}
 		"state": `
 a: {{ .Init.a }}
 b: stuff
+p: {{ .ComposeProjectName }}
 `,
 		"shared": `
 c: 1
@@ -63,6 +64,7 @@ some-svc:
 		ResourceMetadata:   map[string]interface{}{"mk": "mv"},
 		ResourceState:      map[string]interface{}{"sk": "sv"},
 		SharedState:        map[string]interface{}{"ssk": "ssv"},
+		ComposeProjectName: "test",
 		MountDirectoryPath: td,
 	})
 	require.NoError(t, err)
@@ -70,6 +72,7 @@ some-svc:
 	assert.Equal(t, map[string]interface{}{
 		"a": "thing.default#w.r",
 		"b": "stuff",
+		"p": "test",
 	}, out.ResourceState)
 	assert.Equal(t, map[string]interface{}{"c": 1}, out.SharedState)
 	assert.Equal(t, map[string]interface{}{"b": "STUFF", "c": 1}, out.ResourceOutputs)

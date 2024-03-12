@@ -128,7 +128,8 @@ type Data struct {
 	State  map[string]interface{}
 	Shared map[string]interface{}
 
-	MountsDirectory string
+	ComposeProjectName string
+	MountsDirectory    string
 }
 
 func (p *Provisioner) Provision(ctx context.Context, input *provisioners.Input) (*provisioners.ProvisionOutput, error) {
@@ -136,15 +137,16 @@ func (p *Provisioner) Provision(ctx context.Context, input *provisioners.Input) 
 
 	// The data payload that gets passed into each template
 	data := Data{
-		Uid:             input.ResourceUid,
-		Type:            input.ResourceType,
-		Class:           input.ResourceClass,
-		Id:              input.ResourceId,
-		Params:          input.ResourceParams,
-		Metadata:        input.ResourceMetadata,
-		State:           input.ResourceState,
-		Shared:          input.SharedState,
-		MountsDirectory: input.MountDirectoryPath,
+		Uid:                input.ResourceUid,
+		Type:               input.ResourceType,
+		Class:              input.ResourceClass,
+		Id:                 input.ResourceId,
+		Params:             input.ResourceParams,
+		Metadata:           input.ResourceMetadata,
+		State:              input.ResourceState,
+		Shared:             input.SharedState,
+		ComposeProjectName: input.ComposeProjectName,
+		MountsDirectory:    input.MountDirectoryPath,
 	}
 
 	init := make(map[string]interface{})
