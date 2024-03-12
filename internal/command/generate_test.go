@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -154,4 +155,109 @@ services:
 	assert.True(t, ok)
 	assert.Len(t, sd.State.Workloads, 1)
 	assert.Len(t, sd.State.Resources, 1)
+}
+
+func TestGenerateRedisResource(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: foo
+    variables:
+      CONN_STR_1: "redis://${resources.cache1.username}:${resources.cache1.password}@${resources.cache1.host}:${resources.cache1.port}"
+      CONN_STR_2: "redis://${resources.cache2.username}:${resources.cache2.password}@${resources.cache2.host}:${resources.cache2.port}"
+resources:
+  cache1:
+    type: redis
+  cache2:
+    type: redis
+`), 0644))
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	// check that state was persisted
+	sd, ok, err := project.LoadStateDirectory(td)
+	assert.NoError(t, err)
+	assert.True(t, ok)
+	assert.Len(t, sd.State.Workloads, 1)
+	assert.Len(t, sd.State.Resources, 2)
+	assert.Contains(t, sd.State.Resources["redis.default#example.cache1"].State, "serviceName")
+	assert.Contains(t, sd.State.Resources["redis.default#example.cache1"].State, "password")
+	assert.Contains(t, sd.State.Resources["redis.default#example.cache2"].State, "serviceName")
+	assert.NotEqual(t, sd.State.Resources["redis.default#example.cache1"].State, sd.State.Resources["redis.default#example.cache2"].State)
+	assert.Len(t, sd.State.SharedState, 0)
+
+	t.Run("validate compose spec", func(t *testing.T) {
+		if os.Getenv("NO_DOCKER") != "" {
+			t.Skip("NO_DOCKER is set")
+			return
+		}
+		dockerCmd, err := exec.LookPath("docker")
+		require.NoError(t, err)
+		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "convert", "--quiet", "--dry-run")
+		cmd.Dir = td
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		assert.NoError(t, cmd.Run())
+	})
+}
+
+func TestGeneratePostgresResource(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: foo
+    variables:
+      CONN_STR_1: "postgres://${resources.db1.username}:${resources.db1.password}@${resources.db1.host}:${resources.db1.port}/${resources.db1.name}"
+      CONN_STR_2: "postgres://${resources.db2.username}:${resources.db2.password}@${resources.db2.host}:${resources.db2.port}/${resources.db2.name}"
+resources:
+  db1:
+    type: postgres
+  db2:
+    type: postgres
+`), 0644))
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	// check that state was persisted
+	sd, ok, err := project.LoadStateDirectory(td)
+	assert.NoError(t, err)
+	assert.True(t, ok)
+	assert.Len(t, sd.State.Workloads, 1)
+	assert.Len(t, sd.State.Resources, 2)
+	assert.Contains(t, sd.State.Resources["postgres.default#example.db1"].State, "database")
+	assert.Contains(t, sd.State.Resources["postgres.default#example.db1"].State, "username")
+	assert.Contains(t, sd.State.Resources["postgres.default#example.db1"].State, "password")
+	assert.Contains(t, sd.State.Resources["postgres.default#example.db2"].State, "database")
+	assert.NotEqual(t, sd.State.Resources["postgres.default#example.db1"].State, sd.State.Resources["postgres.default#example.db2"].State)
+	assert.Contains(t, sd.State.SharedState, "default-provisioners-postgres-instance")
+
+	t.Run("validate compose spec", func(t *testing.T) {
+		if os.Getenv("NO_DOCKER") != "" {
+			t.Skip("NO_DOCKER is set")
+			return
+		}
+		dockerCmd, err := exec.LookPath("docker")
+		require.NoError(t, err)
+		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "convert", "--quiet", "--dry-run")
+		cmd.Dir = td
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		assert.NoError(t, cmd.Run())
+	})
 }
