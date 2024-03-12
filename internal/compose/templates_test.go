@@ -14,6 +14,7 @@ import (
 	assert "github.com/stretchr/testify/assert"
 
 	"github.com/score-spec/score-compose/internal/project"
+	"github.com/score-spec/score-compose/internal/provisioners/envprov"
 )
 
 func TestMapVar(t *testing.T) {
@@ -21,16 +22,17 @@ func TestMapVar(t *testing.T) {
 		"name":  "test-name",
 		"other": map[string]interface{}{"key": "value"},
 	}
-	evt := new(EnvVarTracker)
-	evt.lookup = func(key string) (string, bool) {
+	evt := new(envprov.Provisioner)
+	evt.LookupFunc = func(key string) (string, bool) {
 		if key == "DEBUG" {
 			return "something", true
 		}
 		return "", false
 	}
+	po, _ := evt.GenerateSubProvisioner("db", "").Provision(nil, nil)
 	ctx, err := buildContext(meta, map[string]project.OutputLookupFunc{
 		"env":    evt.LookupOutput,
-		"db":     evt.GenerateResource("db").LookupOutput,
+		"db":     po.OutputLookupFunc,
 		"static": resourceWithStaticOutputs{"x": "a"}.LookupOutput,
 	})
 	assert.NoError(t, err)
@@ -83,16 +85,17 @@ func TestSubstitute(t *testing.T) {
 	var meta = score.WorkloadMetadata{
 		"name": "test-name",
 	}
-	evt := new(EnvVarTracker)
-	evt.lookup = func(key string) (string, bool) {
+	evt := new(envprov.Provisioner)
+	evt.LookupFunc = func(key string) (string, bool) {
 		if key == "DEBUG" {
 			return "something", true
 		}
 		return "", false
 	}
+	po, _ := evt.GenerateSubProvisioner("db", "").Provision(nil, nil)
 	ctx, err := buildContext(meta, map[string]project.OutputLookupFunc{
 		"env": evt.LookupOutput,
-		"db":  evt.GenerateResource("db").LookupOutput,
+		"db":  po.OutputLookupFunc,
 	})
 	assert.NoError(t, err)
 

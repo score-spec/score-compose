@@ -94,18 +94,23 @@ func ConvertSpec(spec *score.Workload, resources map[string]project.OutputLookup
 					return nil, fmt.Errorf("containers.%s.volumes[%d].path: can't mount named volume with sub path '%s': not supported", containerName, idx, *vol.Path)
 				}
 
-				// TODO: deprecate this - volume should be linked directly
 				resolvedVolumeSource, err := ctx.Substitute(vol.Source)
 				if err != nil {
 					return nil, fmt.Errorf("containers.%s.volumes[%d].source: %w", containerName, idx, err)
-				} else if resolvedVolumeSource != vol.Source {
-					slog.Warn(fmt.Sprintf("containers.%s.volumes[%d].source: interpolation will be deprecated in the future", containerName, idx))
 				}
 
 				if res, ok := spec.Resources[resolvedVolumeSource]; !ok {
 					return nil, fmt.Errorf("containers.%s.volumes[%d].source: resource '%s' does not exist", containerName, idx, resolvedVolumeSource)
 				} else if res.Type != "volume" {
 					return nil, fmt.Errorf("containers.%s.volumes[%d].source: resource '%s' is not a volume", containerName, idx, resolvedVolumeSource)
+				}
+
+				if outputFunc, ok := resources[resolvedVolumeSource]; ok {
+					if v, err := outputFunc("source"); err != nil {
+						slog.Warn(fmt.Sprintf("containers.%s.volumes[%d].source: failed to find 'source' key in volume resource '%s': %v", containerName, idx, resolvedVolumeSource, err))
+					} else if sv, ok := v.(string); ok {
+						resolvedVolumeSource = sv
+					}
 				}
 
 				volumes[idx] = compose.ServiceVolumeConfig{
