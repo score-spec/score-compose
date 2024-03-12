@@ -5,6 +5,7 @@ import (
 	"maps"
 	"reflect"
 
+	compose "github.com/compose-spec/compose-go/v2/types"
 	score "github.com/score-spec/score-go/types"
 )
 
@@ -23,6 +24,9 @@ type ScoreWorkloadState struct {
 	Spec score.Workload `yaml:"spec"`
 	// File is the source score file if known.
 	File *string `yaml:"file,omitempty"`
+	// BuildConfigs is a stored set of container build configs for this workload. Any known container should inherit
+	// the appropriate config when being converted.
+	BuildConfigs map[string]compose.BuildConfig
 }
 
 type ScoreResourceState struct {
@@ -56,7 +60,7 @@ type OutputLookupFunc func(keys ...string) (interface{}, error)
 // WithWorkload returns a new copy of State with the workload added, if the workload already exists with the same name
 // then it will be replaced.
 // This is not a deep copy, but any writes are executed in a copy-on-write manner to avoid modifying the source.
-func (s *State) WithWorkload(spec *score.Workload, filePath *string) (*State, error) {
+func (s *State) WithWorkload(spec *score.Workload, filePath *string, contexts map[string]compose.BuildConfig) (*State, error) {
 	out := *s
 	if s.Workloads == nil {
 		out.Workloads = make(map[string]ScoreWorkloadState)
@@ -64,8 +68,9 @@ func (s *State) WithWorkload(spec *score.Workload, filePath *string) (*State, er
 		out.Workloads = maps.Clone(s.Workloads)
 	}
 	out.Workloads[spec.Metadata["name"].(string)] = ScoreWorkloadState{
-		Spec: *spec,
-		File: filePath,
+		Spec:         *spec,
+		File:         filePath,
+		BuildConfigs: maps.Clone(contexts),
 	}
 	return &out, nil
 }

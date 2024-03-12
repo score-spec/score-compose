@@ -176,7 +176,7 @@ func run(cmd *cobra.Command, args []string) error {
 	// Build a fake score-compose init state. We don't actually need to store or persist this because we're not doing
 	// anything iterative or stateful.
 	state := &project.State{MountsDirectory: "/dev/null"}
-	state, err = state.WithWorkload(&spec, &scoreFile)
+	state, err = state.WithWorkload(&spec, &scoreFile, nil)
 	if err != nil {
 		return fmt.Errorf("failed to add score file to state: %w", err)
 	}
@@ -207,7 +207,7 @@ func run(cmd *cobra.Command, args []string) error {
 	// Build docker-compose configuration
 	//
 	slog.Info("Building docker-compose configuration")
-	proj, err := compose.ConvertSpec(&spec, workloadResourceOutputs)
+	proj, err := compose.ConvertSpec(&spec, nil, workloadResourceOutputs)
 	if err != nil {
 		return fmt.Errorf("building docker-compose configuration: %w", err)
 	}

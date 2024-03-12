@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -26,6 +27,8 @@ import (
 const (
 	generateCmdOverridesFileFlag    = "overrides-file"
 	generateCmdOverridePropertyFlag = "override-property"
+	generateCmdImageFlag            = "image"
+	generateCmdBuildFlag            = "build"
 )
 
 var generateCommand = &cobra.Command{
@@ -124,7 +127,44 @@ arguments.
 				return fmt.Errorf("failed to convert '%s' to structure: %w", workloadName, err)
 			}
 
-			currentState, err = currentState.WithWorkload(&out, nil)
+			// Gather container build contexts, these will be stored and added to the generated compose output later
+			containerBuildContexts := make(map[string]types.BuildConfig)
+			if v, _ := cmd.Flags().GetStringArray(generateCmdBuildFlag); len(v) > 0 {
+				for _, buildFlag := range v {
+					parts := strings.SplitN(buildFlag, "=", 2)
+					if len(parts) != 2 {
+						return fmt.Errorf("invalid --%s '%s': expected 2 =-separated parts", generateCmdBuildFlag, buildFlag)
+					} else if _, ok := out.Containers[parts[0]]; !ok {
+						return fmt.Errorf("invalid --%s '%s': unknown container '%s'", generateCmdBuildFlag, buildFlag, parts[0])
+					}
+					if strings.HasPrefix(parts[1], "{") {
+						var out types.BuildConfig
+						dec := json.NewDecoder(strings.NewReader(parts[1]))
+						dec.DisallowUnknownFields()
+						if err := dec.Decode(&out); err != nil {
+							return fmt.Errorf("invalid --%s '%s': %w", generateCmdBuildFlag, buildFlag, err)
+						}
+						containerBuildContexts[parts[0]] = out
+					} else {
+						containerBuildContexts[parts[0]] = types.BuildConfig{Context: parts[1]}
+					}
+				}
+			}
+
+			// Apply image if container image is .
+			for containerName, container := range out.Containers {
+				if container.Image == "." {
+					if v, _ := cmd.Flags().GetString(generateCmdImageFlag); v != "" {
+						container.Image = v
+						slog.Info("Set container image for workload '%s' container '%s' to %s from --%s", workloadName, containerName, v, generateCmdImageFlag)
+						out.Containers[containerName] = container
+					} else if _, ok := containerBuildContexts[containerName]; !ok {
+						return fmt.Errorf("failed to convert '%s' because container '%s' has no image and neither --%s nor --%s was provided", workloadName, containerName, generateCmdImageFlag, generateCmdBuildFlag)
+					}
+				}
+			}
+
+			currentState, err = currentState.WithWorkload(&out, nil, containerBuildContexts)
 			if err != nil {
 				return fmt.Errorf("failed to add workload '%s': %w", workloadName, err)
 			}
@@ -171,7 +211,7 @@ arguments.
 			}
 
 			slog.Info(fmt.Sprintf("Converting workload '%s' to Docker compose", workloadName))
-			converted, err := compose.ConvertSpec(&workloadState.Spec, outputFunctions)
+			converted, err := compose.ConvertSpec(&workloadState.Spec, workloadState.BuildConfigs, outputFunctions)
 			if err != nil {
 				return fmt.Errorf("failed to convert workload '%s' to Docker compose: %w", workloadName, err)
 			}
@@ -249,6 +289,8 @@ func init() {
 	generateCommand.Flags().StringP("output", "o", "compose.yaml", "The output file to write the composed compose file to")
 	generateCommand.Flags().String(generateCmdOverridesFileFlag, "", "An optional file of Score overrides to merge in")
 	generateCommand.Flags().StringArray(generateCmdOverridePropertyFlag, []string{}, "An optional set of path=key overrides to set or remove")
+	generateCommand.Flags().String(generateCmdImageFlag, "", "An optional container image to use for any container with image == '.'")
+	generateCommand.Flags().StringArray(generateCmdBuildFlag, []string{}, "An optional build context to use for the given container --build=container=./dir or --build=container={'\"context\":\"./dir\"}")
 	rootCmd.AddCommand(generateCommand)
 }
 

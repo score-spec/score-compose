@@ -22,7 +22,7 @@ import (
 )
 
 // ConvertSpec converts SCORE specification into docker-compose configuration.
-func ConvertSpec(spec *score.Workload, resources map[string]project.OutputLookupFunc) (*compose.Project, error) {
+func ConvertSpec(spec *score.Workload, containerBuildConfigs map[string]compose.BuildConfig, resources map[string]project.OutputLookupFunc) (*compose.Project, error) {
 	workloadName, ok := spec.Metadata["name"].(string)
 	if !ok || len(workloadName) == 0 {
 		return nil, errors.New("workload metadata is missing a name")
@@ -158,6 +158,12 @@ func ConvertSpec(spec *score.Workload, resources map[string]project.OutputLookup
 			Environment: env,
 			Ports:       ports,
 			Volumes:     volumes,
+		}
+
+		if bc, ok := containerBuildConfigs[containerName]; ok {
+			slog.Info(fmt.Sprintf("containers.%s: overriding container build config to context=%s", containerName, bc.Context))
+			svc.Build = &bc
+			svc.Image = ""
 		}
 
 		// if we are not the "first" service, then inherit the network from the first service

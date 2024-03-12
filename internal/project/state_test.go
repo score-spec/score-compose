@@ -19,7 +19,7 @@ func mustLoadWorkload(t *testing.T, spec string) *score.Workload {
 func mustAddWorkload(t *testing.T, s *State, spec string) *State {
 	t.Helper()
 	w := mustLoadWorkload(t, spec)
-	n, err := s.WithWorkload(w, nil)
+	n, err := s.WithWorkload(w, nil, nil)
 	require.NoError(t, err)
 	return n
 }
@@ -37,7 +37,7 @@ containers:
 resources:
   foo:
     type: thing
-`), nil)
+`), nil, nil)
 		require.NoError(t, err)
 		assert.Len(t, start.Workloads, 0)
 		assert.Len(t, next.Workloads, 1)
@@ -59,7 +59,7 @@ containers:
 resources:
   foo:
     type: thing
-`), nil)
+`), nil, nil)
 		require.NoError(t, err)
 		next2, err := next1.WithWorkload(mustLoadWorkload(t, `
 metadata:
@@ -67,7 +67,7 @@ metadata:
 containers:
   hello-world:
     image: hi
-`), nil)
+`), nil, nil)
 		require.NoError(t, err)
 
 		assert.Len(t, start.Workloads, 0)
