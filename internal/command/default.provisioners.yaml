@@ -74,3 +74,5 @@
         target: /data
         volume:
           nocopy: true
+  info_logs: |
+    - "To connect to redis: \"docker run -it --network {{ .ComposeProjectName }}_default --rm redis redis-cli -h {{ .State.serviceName | squote }} -a {{ .State.password | squote }}\""
