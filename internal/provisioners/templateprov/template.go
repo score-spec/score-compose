@@ -52,6 +52,10 @@ type Provisioner struct {
 	// ComposeServicesTemplate generates a set of services to add to the compose project. These will replace any with
 	// the same name already.
 	ComposeServicesTemplate string `yaml:"services,omitempty"`
+
+	// InfoLogsTemplate allows the provisioner to return informational messages for the user which may help connecting or
+	// testing the provisioned resource
+	InfoLogsTemplate string `yaml:"info_logs,omitempty"`
 }
 
 func Parse(raw map[string]interface{}) (*Provisioner, error) {
@@ -183,12 +187,20 @@ func (p *Provisioner) Provision(ctx context.Context, input *provisioners.Input) 
 
 	out.ComposeServices = make(map[string]compose.ServiceConfig)
 	if err := renderTemplateAndDecode(p.ComposeServicesTemplate, &data, &out.ComposeServices); err != nil {
-		return nil, fmt.Errorf("networks template failed: %w", err)
+		return nil, fmt.Errorf("services template failed: %w", err)
 	}
 
 	out.ComposeVolumes = make(map[string]compose.VolumeConfig)
 	if err := renderTemplateAndDecode(p.ComposeVolumesTemplate, &data, &out.ComposeVolumes); err != nil {
 		return nil, fmt.Errorf("volumes template failed: %w", err)
+	}
+
+	var infoLogs []string
+	if err := renderTemplateAndDecode(p.InfoLogsTemplate, &data, &infoLogs); err != nil {
+		return nil, fmt.Errorf("info logs template failed: %w", err)
+	}
+	for _, log := range infoLogs {
+		slog.Info(fmt.Sprintf("%s: %s", input.ResourceUid, log))
 	}
 
 	return out, nil

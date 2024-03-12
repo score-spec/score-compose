@@ -48,6 +48,10 @@ some-vol:
 some-svc:
   name: foo
 `,
+		"info_logs": `
+- This is a message
+- This is another message
+`,
 	})
 	require.NoError(t, err)
 	out, err := p.Provision(context.Background(), &provisioners.Input{
