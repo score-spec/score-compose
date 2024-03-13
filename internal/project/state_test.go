@@ -118,17 +118,25 @@ resources:
 		require.NoError(t, err)
 		assert.Len(t, start.Resources, 0)
 		assert.Equal(t, map[ResourceUid]ScoreResourceState{
-			"thing.default#example.one": {Type: "thing", Class: "default", Id: "example.one", State: map[string]interface{}{}},
-			"thing2.banana#example.two": {Type: "thing2", Class: "banana", Id: "example.two", State: map[string]interface{}{}},
+			"thing.default#example.one": {
+				Type: "thing", Class: "default", Id: "example.one", State: map[string]interface{}{},
+				SourceWorkload: "example",
+			},
+			"thing2.banana#example.two": {
+				Type: "thing2", Class: "banana", Id: "example.two", State: map[string]interface{}{},
+				SourceWorkload: "example",
+			},
 			"thing3.apple#dog": {
 				Type: "thing3", Class: "apple", Id: "dog", State: map[string]interface{}{},
-				Metadata: map[string]interface{}{"annotations": score.ResourceMetadata{"foo": "bar"}},
-				Params:   map[string]interface{}{"color": "green"},
+				Metadata:       map[string]interface{}{"annotations": score.ResourceMetadata{"foo": "bar"}},
+				Params:         map[string]interface{}{"color": "green"},
+				SourceWorkload: "example",
 			},
 			"thing4.default#elephant": {
 				Type: "thing4", Class: "default", Id: "elephant", State: map[string]interface{}{},
-				Metadata: map[string]interface{}{"x": "y"},
-				Params:   map[string]interface{}{"color": "blue"},
+				Metadata:       map[string]interface{}{"x": "y"},
+				Params:         map[string]interface{}{"color": "blue"},
+				SourceWorkload: "example",
 			},
 		}, next.Resources)
 	})
@@ -198,11 +206,133 @@ resources:
 			assert.Len(t, start.Resources, 0)
 			assert.Len(t, next.Resources, 3)
 			assert.Equal(t, map[ResourceUid]ScoreResourceState{
-				"thing.default#example1.one": {Type: "thing", Class: "default", Id: "example1.one", State: map[string]interface{}{}},
-				"thing.default#example2.one": {Type: "thing", Class: "default", Id: "example2.one", State: map[string]interface{}{}},
-				"thing2.default#dog":         {Type: "thing2", Class: "default", Id: "dog", State: map[string]interface{}{}},
+				"thing.default#example1.one": {
+					Type: "thing", Class: "default", Id: "example1.one", State: map[string]interface{}{},
+					SourceWorkload: "example1",
+				},
+				"thing.default#example2.one": {
+					Type: "thing", Class: "default", Id: "example2.one", State: map[string]interface{}{},
+					SourceWorkload: "example2",
+				},
+				"thing2.default#dog": {
+					Type: "thing2", Class: "default", Id: "dog", State: map[string]interface{}{},
+					SourceWorkload: "example1",
+				},
 			}, next.Resources)
 		})
+	})
+
+}
+
+func TestGetSortedResourceUids(t *testing.T) {
+
+	t.Run("empty", func(t *testing.T) {
+		s, err := new(State).WithWorkload(&score.Workload{
+			Metadata: map[string]interface{}{"name": "eg"},
+		}, nil, nil)
+		assert.NoError(t, err)
+		ru, err := s.GetSortedResourceUids()
+		assert.NoError(t, err)
+		assert.Empty(t, ru)
+	})
+
+	t.Run("one", func(t *testing.T) {
+		s, err := new(State).WithWorkload(&score.Workload{
+			Metadata: map[string]interface{}{"name": "eg"},
+			Resources: map[string]score.Resource{
+				"res": {Type: "thing", Params: map[string]interface{}{}},
+			},
+		}, nil, nil)
+		assert.NoError(t, err)
+		ru, err := s.GetSortedResourceUids()
+		assert.NoError(t, err)
+		assert.Equal(t, []ResourceUid{"thing.default#eg.res"}, ru)
+	})
+
+	t.Run("one cycle", func(t *testing.T) {
+		s, err := new(State).WithWorkload(&score.Workload{
+			Metadata: map[string]interface{}{"name": "eg"},
+			Resources: map[string]score.Resource{
+				"res": {Type: "thing", Params: map[string]interface{}{"a": "${resources.res.blah}"}},
+			},
+		}, nil, nil)
+		assert.NoError(t, err)
+		_, err = s.GetSortedResourceUids()
+		assert.EqualError(t, err, "a cycle exists involving resource param placeholders")
+	})
+
+	t.Run("two unrelated", func(t *testing.T) {
+		s, err := new(State).WithWorkload(&score.Workload{
+			Metadata: map[string]interface{}{"name": "eg"},
+			Resources: map[string]score.Resource{
+				"res1": {Type: "thing", Params: map[string]interface{}{}},
+				"res2": {Type: "thing", Params: map[string]interface{}{}},
+			},
+		}, nil, nil)
+		assert.NoError(t, err)
+		ru, err := s.GetSortedResourceUids()
+		assert.NoError(t, err)
+		assert.Equal(t, []ResourceUid{"thing.default#eg.res1", "thing.default#eg.res2"}, ru)
+	})
+
+	t.Run("two linked", func(t *testing.T) {
+		s, err := new(State).WithWorkload(&score.Workload{
+			Metadata: map[string]interface{}{"name": "eg"},
+			Resources: map[string]score.Resource{
+				"res1": {Type: "thing", Params: map[string]interface{}{"x": "${resources.res2.blah}"}},
+				"res2": {Type: "thing", Params: map[string]interface{}{}},
+			},
+		}, nil, nil)
+		assert.NoError(t, err)
+		ru, err := s.GetSortedResourceUids()
+		assert.NoError(t, err)
+		assert.Equal(t, []ResourceUid{"thing.default#eg.res2", "thing.default#eg.res1"}, ru)
+	})
+
+	t.Run("two cycle", func(t *testing.T) {
+		s, err := new(State).WithWorkload(&score.Workload{
+			Metadata: map[string]interface{}{"name": "eg"},
+			Resources: map[string]score.Resource{
+				"res1": {Type: "thing", Params: map[string]interface{}{"x": "${resources.res2.blah}"}},
+				"res2": {Type: "thing", Params: map[string]interface{}{"y": "${resources.res1.blah}"}},
+			},
+		}, nil, nil)
+		assert.NoError(t, err)
+		_, err = s.GetSortedResourceUids()
+		assert.EqualError(t, err, "a cycle exists involving resource param placeholders")
+	})
+
+	t.Run("three linked", func(t *testing.T) {
+		s, err := new(State).WithWorkload(&score.Workload{
+			Metadata: map[string]interface{}{"name": "eg"},
+			Resources: map[string]score.Resource{
+				"res1": {Type: "thing", Params: map[string]interface{}{"x": "${resources.res2.blah}"}},
+				"res2": {Type: "thing", Params: map[string]interface{}{}},
+				"res3": {Type: "thing", Params: map[string]interface{}{"x": "${resources.res1.blah}"}},
+			},
+		}, nil, nil)
+		assert.NoError(t, err)
+		ru, err := s.GetSortedResourceUids()
+		assert.NoError(t, err)
+		assert.Equal(t, []ResourceUid{"thing.default#eg.res2", "thing.default#eg.res1", "thing.default#eg.res3"}, ru)
+	})
+
+	t.Run("complex", func(t *testing.T) {
+		s, err := new(State).WithWorkload(&score.Workload{
+			Metadata: map[string]interface{}{"name": "eg"},
+			Resources: map[string]score.Resource{
+				"res1": {Type: "thing", Params: map[string]interface{}{"a": "${resources.res2.blah} ${resources.res3.blah} ${resources.res4.blah} ${resources.res5.blah} ${resources.res6.blah}"}},
+				"res2": {Type: "thing", Params: map[string]interface{}{"a": "${resources.res3.blah} ${resources.res4.blah} ${resources.res5.blah} ${resources.res6.blah}"}},
+				"res3": {Type: "thing", Params: map[string]interface{}{"a": "${resources.res4.blah} ${resources.res5.blah} ${resources.res6.blah}"}},
+				"res4": {Type: "thing", Params: map[string]interface{}{"a": "${resources.res5.blah} ${resources.res6.blah}"}},
+				"res5": {Type: "thing", Params: map[string]interface{}{"a": "${resources.res6.blah}"}},
+				"res6": {Type: "thing", Params: map[string]interface{}{}},
+			},
+		}, nil, nil)
+		assert.NoError(t, err)
+		ru, err := s.GetSortedResourceUids()
+		assert.NoError(t, err)
+		assert.Equal(t, []ResourceUid{"thing.default#eg.res6", "thing.default#eg.res5", "thing.default#eg.res4", "thing.default#eg.res3", "thing.default#eg.res2", "thing.default#eg.res1"}, ru)
 	})
 
 }

@@ -446,3 +446,74 @@ services:
 		assert.NoError(t, cmd.Run())
 	})
 }
+
+func TestInitAndGenerate_with_dependent_resources(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	// write custom providers
+	assert.NoError(t, os.WriteFile(filepath.Join(td, ".score-compose", "00-custom.provisioners.yaml"), []byte(`
+- uri: template://foo
+  type: foo
+  outputs: |
+    blah: value
+  services: |
+    foo-service:
+      image: foo-image
+- uri: template://bar
+  type: bar
+  services: |
+    bar-service:
+      image: {{ .Params.x }}
+`), 0644))
+
+	// write custom score file
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: busybox
+resources:
+  first:
+    type: foo
+  second:
+    type: bar
+    params:
+      x: ${resources.first.blah}
+`), 0644))
+
+	// generate
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	raw, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+	assert.NoError(t, err)
+	assert.Equal(t, `name: "001"
+services:
+    bar-service:
+        image: value
+    example-example:
+        depends_on:
+            wait-for-resources:
+                condition: service_started
+                required: false
+        image: busybox
+    foo-service:
+        image: foo-image
+    wait-for-resources:
+        command:
+            - echo
+        depends_on:
+            bar-service:
+                condition: service_started
+                required: true
+            foo-service:
+                condition: service_started
+                required: true
+        image: alpine
+`, string(raw))
+}

@@ -1,6 +1,7 @@
 package provisioners
 
 import (
+	"context"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 	"testing"
 
 	compose "github.com/compose-spec/compose-go/v2/types"
+	score "github.com/score-spec/score-go/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -96,4 +98,51 @@ func TestApplyToStateAndProject(t *testing.T) {
 		}, paths)
 	})
 
+}
+
+func TestProvisionResourcesWithResourceParams(t *testing.T) {
+	state := new(project.State)
+	state, _ = state.WithWorkload(&score.Workload{
+		Metadata: map[string]interface{}{"name": "w1"},
+		Resources: map[string]score.Resource{
+			"a": {Type: "a", Params: map[string]interface{}{"x": "${resources.b.key}"}},
+			"b": {Type: "b"},
+		},
+	}, nil, nil)
+	state, _ = state.WithPrimedResources()
+	p := []Provisioner{
+		NewEphemeralProvisioner("ephemeral://blah", "a.default#w1.a", func(ctx context.Context, input *Input) (*ProvisionOutput, error) {
+			assert.Equal(t, map[string]interface{}{"x": "value"}, input.ResourceParams)
+			return &ProvisionOutput{}, nil
+		}),
+		NewEphemeralProvisioner("ephemeral://blah", "b.default#w1.b", func(ctx context.Context, input *Input) (*ProvisionOutput, error) {
+			return &ProvisionOutput{ResourceOutputs: map[string]interface{}{"key": "value"}}, nil
+		}),
+	}
+	after, err := ProvisionResources(context.Background(), state, p, nil)
+	if assert.NoError(t, err) {
+		assert.Len(t, after.Resources, 2)
+	}
+}
+
+func TestProvisionResourcesWithResourceParams_fail(t *testing.T) {
+	state := new(project.State)
+	state, _ = state.WithWorkload(&score.Workload{
+		Metadata: map[string]interface{}{"name": "w1"},
+		Resources: map[string]score.Resource{
+			"a": {Type: "a", Params: map[string]interface{}{"x": "${resources.b.unknown}"}},
+			"b": {Type: "b"},
+		},
+	}, nil, nil)
+	state, _ = state.WithPrimedResources()
+	p := []Provisioner{
+		NewEphemeralProvisioner("ephemeral://blah", "a.default#w1.a", func(ctx context.Context, input *Input) (*ProvisionOutput, error) {
+			return &ProvisionOutput{}, nil
+		}),
+		NewEphemeralProvisioner("ephemeral://blah", "b.default#w1.b", func(ctx context.Context, input *Input) (*ProvisionOutput, error) {
+			return &ProvisionOutput{ResourceOutputs: map[string]interface{}{}}, nil
+		}),
+	}
+	_, err := ProvisionResources(context.Background(), state, p, nil)
+	assert.EqualError(t, err, "failed to substitute params for resource 'a.default#w1.a': x: invalid ref 'resources.b.unknown': key 'unknown' not found")
 }
