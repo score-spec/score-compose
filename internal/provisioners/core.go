@@ -60,6 +60,29 @@ type Provisioner interface {
 	Provision(ctx context.Context, input *Input) (*ProvisionOutput, error)
 }
 
+type ephemeralProvisioner struct {
+	uri       string
+	matchUid  project.ResourceUid
+	provision func(ctx context.Context, input *Input) (*ProvisionOutput, error)
+}
+
+func (e *ephemeralProvisioner) Uri() string {
+	return e.uri
+}
+
+func (e *ephemeralProvisioner) Match(resUid project.ResourceUid) bool {
+	return resUid == e.matchUid
+}
+
+func (e *ephemeralProvisioner) Provision(ctx context.Context, input *Input) (*ProvisionOutput, error) {
+	return e.provision(ctx, input)
+}
+
+// NewEphemeralProvisioner is mostly used for internal testing and uses the given provisioner function to provision an exact resource.
+func NewEphemeralProvisioner(uri string, matchUid project.ResourceUid, inner func(ctx context.Context, input *Input) (*ProvisionOutput, error)) Provisioner {
+	return &ephemeralProvisioner{uri: uri, matchUid: matchUid, provision: inner}
+}
+
 // ApplyToStateAndProject takes the outputs of a provisioning request and applies to the state, file tree, and docker
 // compose project.
 func (po *ProvisionOutput) ApplyToStateAndProject(state *project.State, resUid project.ResourceUid, project *compose.Project) (*project.State, error) {
@@ -170,7 +193,14 @@ func (po *ProvisionOutput) ApplyToStateAndProject(state *project.State, resUid p
 func ProvisionResources(ctx context.Context, state *project.State, provisioners []Provisioner, composeProject *compose.Project) (*project.State, error) {
 	out := state
 
-	for resUid, resState := range state.Resources {
+	// provision in sorted order
+	orderedResources, err := out.GetSortedResourceUids()
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine sort order for provisioning: %w", err)
+	}
+
+	for _, resUid := range orderedResources {
+		resState := out.Resources[resUid]
 		provisionerIndex := slices.IndexFunc(provisioners, func(provisioner Provisioner) bool {
 			return provisioner.Match(resUid)
 		})
@@ -182,17 +212,31 @@ func ProvisionResources(ctx context.Context, state *project.State, provisioners 
 			return nil, fmt.Errorf("resource '%s' was previously provisioned by a different provider - undefined behavior", resUid)
 		}
 
+		var params map[string]interface{}
+		if resState.Params != nil && len(resState.Params) > 0 {
+			resOutputs, err := out.GetResourceOutputForWorkload(resState.SourceWorkload)
+			if err != nil {
+				return nil, fmt.Errorf("failed to find resource params for resource '%s': %w", resUid, err)
+			}
+			sf := project.BuildSubstitutionFunction(out.Workloads[resState.SourceWorkload].Spec.Metadata, resOutputs)
+			rawParams, err := project.Substitute(resState.Params, sf)
+			if err != nil {
+				return nil, fmt.Errorf("failed to substitute params for resource '%s': %w", resUid, err)
+			}
+			params = rawParams.(map[string]interface{})
+		}
+
 		output, err := provisioner.Provision(ctx, &Input{
 			ResourceUid:        string(resUid),
 			ResourceType:       resUid.Type(),
 			ResourceClass:      resUid.Class(),
 			ResourceId:         resUid.Id(),
-			ResourceParams:     resState.Params,
+			ResourceParams:     params,
 			ResourceMetadata:   resState.Metadata,
 			ResourceState:      resState.State,
 			SharedState:        out.SharedState,
-			ComposeProjectName: state.ComposeProjectName,
-			MountDirectoryPath: state.MountsDirectory,
+			ComposeProjectName: out.ComposeProjectName,
+			MountDirectoryPath: out.MountsDirectory,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("resource '%s': failed to provision: %w", resUid, err)

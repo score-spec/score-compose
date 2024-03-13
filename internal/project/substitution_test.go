@@ -5,38 +5,41 @@ Copyright 2022 The Apache Software Foundation
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
 */
-package compose
+package project
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	score "github.com/score-spec/score-go/types"
-	assert "github.com/stretchr/testify/assert"
-
-	"github.com/score-spec/score-compose/internal/project"
-	"github.com/score-spec/score-compose/internal/provisioners/envprov"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestMapVar(t *testing.T) {
-	var meta = score.WorkloadMetadata{
+var substitutionFunction func(string) (string, error)
+
+func init() {
+	substitutionFunction = BuildSubstitutionFunction(score.WorkloadMetadata{
 		"name":  "test-name",
 		"other": map[string]interface{}{"key": "value"},
-	}
-	evt := new(envprov.Provisioner)
-	evt.LookupFunc = func(key string) (string, bool) {
-		if key == "DEBUG" {
-			return "something", true
-		}
-		return "", false
-	}
-	po, _ := evt.GenerateSubProvisioner("db", "").Provision(nil, nil)
-	ctx, err := buildContext(meta, map[string]project.OutputLookupFunc{
-		"env":    evt.LookupOutput,
-		"db":     po.OutputLookupFunc,
-		"static": resourceWithStaticOutputs{"x": "a"}.LookupOutput,
+	}, map[string]OutputLookupFunc{
+		"env": func(keys ...string) (interface{}, error) {
+			if len(keys) != 1 {
+				return nil, fmt.Errorf("fail")
+			}
+			return "${" + keys[0] + "}", nil
+		},
+		"db": func(keys ...string) (interface{}, error) {
+			if len(keys) < 1 {
+				return nil, fmt.Errorf("fail")
+			}
+			return "${DB_" + strings.ToUpper(strings.Join(keys, "_")) + "?required}", nil
+		},
+		"static": mapLookupOutput(map[string]interface{}{"x": "a"}),
 	})
-	assert.NoError(t, err)
+}
 
+func TestSubstitutionFunction(t *testing.T) {
 	for _, tc := range []struct {
 		Input         string
 		Expected      string
@@ -62,7 +65,7 @@ func TestMapVar(t *testing.T) {
 		{Input: "resources.static.y", ExpectedError: "invalid ref 'resources.static.y': key 'y' not found"},
 	} {
 		t.Run(tc.Input, func(t *testing.T) {
-			res, err := ctx.mapVar(tc.Input)
+			res, err := substitutionFunction(tc.Input)
 			if tc.ExpectedError != "" {
 				assert.EqualError(t, err, tc.ExpectedError)
 			} else {
@@ -71,34 +74,9 @@ func TestMapVar(t *testing.T) {
 			}
 		})
 	}
-
-	assert.Equal(t, map[string]string{
-		"DEBUG":        "something",
-		"DB_HOST":      "",
-		"DB_NAME":      "",
-		"DB_NAME_USER": "",
-		"DB_PORT":      "",
-	}, evt.Accessed())
 }
 
-func TestSubstitute(t *testing.T) {
-	var meta = score.WorkloadMetadata{
-		"name": "test-name",
-	}
-	evt := new(envprov.Provisioner)
-	evt.LookupFunc = func(key string) (string, bool) {
-		if key == "DEBUG" {
-			return "something", true
-		}
-		return "", false
-	}
-	po, _ := evt.GenerateSubProvisioner("db", "").Provision(nil, nil)
-	ctx, err := buildContext(meta, map[string]project.OutputLookupFunc{
-		"env": evt.LookupOutput,
-		"db":  po.OutputLookupFunc,
-	})
-	assert.NoError(t, err)
-
+func TestSubstituteString(t *testing.T) {
 	for _, tc := range []struct {
 		Input         string
 		Expected      string
@@ -117,7 +95,7 @@ func TestSubstitute(t *testing.T) {
 		},
 	} {
 		t.Run(tc.Input, func(t *testing.T) {
-			res, err := ctx.Substitute(tc.Input)
+			res, err := SubstituteString(tc.Input, substitutionFunction)
 			if tc.ExpectedError != "" {
 				if !assert.EqualError(t, err, tc.ExpectedError) {
 					assert.Equal(t, "", res)
@@ -128,12 +106,35 @@ func TestSubstitute(t *testing.T) {
 			}
 		})
 	}
+}
 
-	assert.Equal(t, map[string]string{
-		"DB_HOST":     "",
-		"DB_NAME":     "",
-		"DB_PASSWORD": "",
-		"DB_PORT":     "",
-		"DB_USER":     "",
-	}, evt.Accessed())
+func TestSubstituteMap_success(t *testing.T) {
+	input := map[string]interface{}{
+		"a": "1",
+		"b": "${metadata.name}",
+		"c": []interface{}{"1", "${metadata.name}", map[string]interface{}{"d": "${metadata.name}"}},
+		"d": map[string]interface{}{
+			"e": "1",
+			"f": "${metadata.name}",
+		},
+	}
+	output, err := Substitute(input, substitutionFunction)
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]interface {
+	}{
+		"a": "1",
+		"b": "test-name",
+		"c": []interface{}{"1", "test-name", map[string]interface{}{"d": "test-name"}},
+		"d": map[string]interface{}{
+			"e": "1",
+			"f": "test-name",
+		},
+	}, output)
+}
+
+func TestSubstituteMap_fail(t *testing.T) {
+	_, err := Substitute(map[string]interface{}{
+		"a": []interface{}{map[string]interface{}{"b": "${metadata.unknown}"}},
+	}, substitutionFunction)
+	assert.EqualError(t, err, "a: 0: b: invalid ref 'metadata.unknown': key 'unknown' not found")
 }

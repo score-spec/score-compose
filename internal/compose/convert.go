@@ -32,13 +32,10 @@ func ConvertSpec(spec *score.Workload, containerBuildConfigs map[string]compose.
 		return nil, errors.New("workload does not have any containers to convert into a compose service")
 	}
 
-	var project = compose.Project{
-		Services: make(compose.Services),
-	}
+	substitutionFunction := project.BuildSubstitutionFunction(spec.Metadata, resources)
 
-	ctx, err := buildContext(spec.Metadata, resources)
-	if err != nil {
-		return nil, fmt.Errorf("preparing context: %w", err)
+	var composeProject = compose.Project{
+		Services: make(compose.Services),
 	}
 
 	var ports []compose.ServicePortConfig
@@ -73,7 +70,7 @@ func ConvertSpec(spec *score.Workload, containerBuildConfigs map[string]compose.
 
 		var env = make(compose.MappingWithEquals, len(cSpec.Variables))
 		for key, val := range cSpec.Variables {
-			resolved, err := ctx.Substitute(val)
+			resolved, err := project.SubstituteString(val, substitutionFunction)
 			if err != nil {
 				return nil, fmt.Errorf("containers.%s.variables.%s: %w", containerName, key, err)
 			}
@@ -94,7 +91,7 @@ func ConvertSpec(spec *score.Workload, containerBuildConfigs map[string]compose.
 					return nil, fmt.Errorf("containers.%s.volumes[%d].path: can't mount named volume with sub path '%s': not supported", containerName, idx, *vol.Path)
 				}
 
-				resolvedVolumeSource, err := ctx.Substitute(vol.Source)
+				resolvedVolumeSource, err := project.SubstituteString(vol.Source, substitutionFunction)
 				if err != nil {
 					return nil, fmt.Errorf("containers.%s.volumes[%d].source: %w", containerName, idx, err)
 				}
@@ -173,7 +170,7 @@ func ConvertSpec(spec *score.Workload, containerBuildConfigs map[string]compose.
 			svc.Ports = nil
 			svc.NetworkMode = "service:" + firstService
 		}
-		project.Services[svc.Name] = svc
+		composeProject.Services[svc.Name] = svc
 	}
-	return &project, nil
+	return &composeProject, nil
 }
