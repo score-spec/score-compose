@@ -9,6 +9,9 @@ package compose
 
 import (
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	compose "github.com/compose-spec/compose-go/v2/types"
@@ -288,7 +291,7 @@ func TestScoreConvert(t *testing.T) {
 			po, _ = evt.GenerateSubProvisioner("some-dns", "").Provision(nil, nil)
 			resourceOutputs["some-dns"] = po.OutputLookupFunc
 
-			proj, err := ConvertSpec(tt.Source, nil, resourceOutputs)
+			proj, err := ConvertSpec(new(project.State), tt.Source, nil, resourceOutputs)
 
 			if tt.Error != nil {
 				// On Error
@@ -303,4 +306,90 @@ func TestScoreConvert(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConvertFilesIntoVolumes_nominal(t *testing.T) {
+	td := t.TempDir()
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "original.txt"), []byte(`first ${metadata.name} second`), 0644))
+	out, err := convertFilesIntoVolumes(
+		"my-workload", "my-container",
+		[]score.ContainerFilesElem{
+			{Target: "/ant.txt", Source: util.Ref(filepath.Join(td, "original.txt"))},
+			{Target: "/bat.txt", Source: util.Ref(filepath.Join(td, "original.txt")), NoExpand: util.Ref(true)},
+			{Target: "/cat.txt", Source: util.Ref(filepath.Join(td, "original.txt")), NoExpand: util.Ref(false)},
+			{Target: "/dog.txt", Content: util.Ref("third ${metadata.name} fourth")},
+			{Target: "/eel.txt", Content: util.Ref("third ${metadata.name} fourth"), NoExpand: util.Ref(true)},
+			{Target: "/fox.txt", Content: util.Ref("third ${metadata.name} fourth"), NoExpand: util.Ref(false)},
+		}, td, func(s string) (string, error) {
+			switch s {
+			case "metadata.name":
+				return "blah", nil
+			default:
+				return "", fmt.Errorf("unknown key")
+			}
+		},
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, []compose.ServiceVolumeConfig{
+		{Type: "bind", Target: "/ant.txt", Source: filepath.Join(td, "files", "my-workload-files-0-ant.txt")},
+		{Type: "bind", Target: "/bat.txt", Source: filepath.Join(td, "files", "my-workload-files-1-bat.txt")},
+		{Type: "bind", Target: "/cat.txt", Source: filepath.Join(td, "files", "my-workload-files-2-cat.txt")},
+		{Type: "bind", Target: "/dog.txt", Source: filepath.Join(td, "files", "my-workload-files-3-dog.txt")},
+		{Type: "bind", Target: "/eel.txt", Source: filepath.Join(td, "files", "my-workload-files-4-eel.txt")},
+		{Type: "bind", Target: "/fox.txt", Source: filepath.Join(td, "files", "my-workload-files-5-fox.txt")},
+	}, out)
+	for k, v := range map[string]string{
+		"my-workload-files-0-ant.txt": "first blah second",
+		"my-workload-files-1-bat.txt": "first ${metadata.name} second",
+		"my-workload-files-2-cat.txt": "first blah second",
+		"my-workload-files-3-dog.txt": "third blah fourth",
+		"my-workload-files-4-eel.txt": "third ${metadata.name} fourth",
+		"my-workload-files-5-fox.txt": "third blah fourth",
+	} {
+		t.Run(k, func(t *testing.T) {
+			raw, err := os.ReadFile(filepath.Join(td, "files", k))
+			assert.NoError(t, err)
+			assert.Equal(t, v, string(raw))
+		})
+	}
+
+}
+
+func TestConvertFilesIntoVolumes_file_missing(t *testing.T) {
+	td := t.TempDir()
+	_, err := convertFilesIntoVolumes(
+		"my-workload", "my-container",
+		[]score.ContainerFilesElem{
+			{Target: "/ant.txt", Source: util.Ref(filepath.Join(td, "original.txt"))},
+		}, td, func(s string) (string, error) {
+			return "", fmt.Errorf("unknown key")
+		},
+	)
+	assert.EqualError(t, err, fmt.Sprintf("containers.my-container.files[0].source: failed to read: open %s/original.txt: no such file or directory", td))
+}
+
+func TestConvertFilesIntoVolumes_source_missing(t *testing.T) {
+	td := t.TempDir()
+	_, err := convertFilesIntoVolumes(
+		"my-workload", "my-container",
+		[]score.ContainerFilesElem{
+			{Target: "/ant.txt"},
+		}, td, func(s string) (string, error) {
+			return "", fmt.Errorf("unknown key")
+		},
+	)
+	assert.EqualError(t, err, "containers.my-container.files[0]: missing 'content' or 'source'")
+}
+
+func TestConvertFilesIntoVolumes_expand_bad(t *testing.T) {
+	td := t.TempDir()
+	_, err := convertFilesIntoVolumes(
+		"my-workload", "my-container",
+		[]score.ContainerFilesElem{
+			{Target: "/ant.txt", Content: util.Ref("${metadata.blah}")},
+		}, td, func(s string) (string, error) {
+			return "", fmt.Errorf("unknown key")
+		},
+	)
+	assert.EqualError(t, err, "containers.my-container.files[0]: failed to substitute in content: unknown key")
 }

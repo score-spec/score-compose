@@ -207,7 +207,7 @@ func run(cmd *cobra.Command, args []string) error {
 	// Build docker-compose configuration
 	//
 	slog.Info("Building docker-compose configuration")
-	proj, err := compose.ConvertSpec(&spec, nil, workloadResourceOutputs)
+	proj, err := compose.ConvertSpec(state, &spec, nil, workloadResourceOutputs)
 	if err != nil {
 		return fmt.Errorf("building docker-compose configuration: %w", err)
 	}

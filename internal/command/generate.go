@@ -213,7 +213,7 @@ arguments.
 			}
 
 			slog.Info(fmt.Sprintf("Converting workload '%s' to Docker compose", workloadName))
-			converted, err := compose.ConvertSpec(&workloadState.Spec, workloadState.BuildConfigs, outputFunctions)
+			converted, err := compose.ConvertSpec(currentState, &workloadState.Spec, workloadState.BuildConfigs, outputFunctions)
 			if err != nil {
 				return fmt.Errorf("failed to convert workload '%s' to Docker compose: %w", workloadName, err)
 			}

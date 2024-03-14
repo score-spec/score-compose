@@ -264,7 +264,7 @@ containers:
       content: bananas
 `), 0600))
 	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", filepath.Join(td, "score.yaml"), "--output", filepath.Join(td, "compose.yaml")})
-	assert.EqualError(t, err, "building docker-compose configuration: containers.container-one1.files: not supported")
+	assert.EqualError(t, err, "building docker-compose configuration: files are not supported")
 	assert.Equal(t, "", stdout)
 	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 }
