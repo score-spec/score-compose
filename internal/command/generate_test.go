@@ -252,6 +252,39 @@ services:
 
 }
 
+func TestInitAndGenerate_with_files(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: foo
+    files:
+    - target: /blah.txt
+      source: ./original.txt
+`), 0644))
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "original.txt"), []byte(`first ${metadata.name} second`), 0644))
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	raw, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+	assert.NoError(t, err)
+	assert.Equal(t, `name: "001"
+services:
+    example-example:
+        image: foo
+        volumes:
+            - type: bind
+              source: .score-compose/mounts/files/example-files-0-blah.txt
+              target: /blah.txt
+`, string(raw))
+}
+
 func TestGenerateRedisResource(t *testing.T) {
 	td := changeToTempDir(t)
 	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})

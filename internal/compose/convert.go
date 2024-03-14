@@ -11,6 +11,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -22,7 +24,7 @@ import (
 )
 
 // ConvertSpec converts SCORE specification into docker-compose configuration.
-func ConvertSpec(spec *score.Workload, containerBuildConfigs map[string]compose.BuildConfig, resources map[string]project.OutputLookupFunc) (*compose.Project, error) {
+func ConvertSpec(state *project.State, spec *score.Workload, containerBuildConfigs map[string]compose.BuildConfig, resources map[string]project.OutputLookupFunc) (*compose.Project, error) {
 	workloadName, ok := spec.Metadata["name"].(string)
 	if !ok || len(workloadName) == 0 {
 		return nil, errors.New("workload metadata is missing a name")
@@ -118,16 +120,20 @@ func ConvertSpec(spec *score.Workload, containerBuildConfigs map[string]compose.
 				}
 			}
 		}
+
+		if len(cSpec.Files) > 0 {
+			newVolumes, err := convertFilesIntoVolumes(workloadName, containerName, cSpec.Files, state.MountsDirectory, substitutionFunction)
+			if err != nil {
+				return nil, err
+			}
+			volumes = append(volumes, newVolumes...)
+		}
+
 		// NOTE: Sorting is necessary for DeepEqual call within our Unit Tests to work reliably
 		sort.Slice(volumes, func(i, j int) bool {
 			return volumes[i].Source < volumes[j].Source
 		})
 		// END (NOTE)
-
-		// Files are not supported just yet
-		if len(cSpec.Files) > 0 {
-			return nil, fmt.Errorf("containers.%s.files: not supported", containerName)
-		}
 
 		// Docker compose without swarm/stack mode doesn't really support resource limits. There are optimistic
 		// workarounds but they vary between specific versions of the CLI. Better to just ignore.
@@ -173,4 +179,52 @@ func ConvertSpec(spec *score.Workload, containerBuildConfigs map[string]compose.
 		composeProject.Services[svc.Name] = svc
 	}
 	return &composeProject, nil
+}
+
+// convertFilesIntoVolumes converts the lists of files into a list of bind mounts in the mounts directory.
+func convertFilesIntoVolumes(workloadName string, containerName string, input []score.ContainerFilesElem, mountsDirectory string, substitutionFunction func(string) (string, error)) ([]compose.ServiceVolumeConfig, error) {
+	if mountsDirectory == "" || mountsDirectory == "/dev/null" {
+		return nil, fmt.Errorf("files are not supported")
+	}
+
+	output := make([]compose.ServiceVolumeConfig, 0, len(input))
+	var err error
+
+	filesDir := filepath.Join(mountsDirectory, "files")
+	if err = os.MkdirAll(filesDir, 0755); err != nil && !errors.Is(err, os.ErrExist) {
+		return nil, fmt.Errorf("failed to ensure the files directory exists")
+	}
+	for idx, file := range input {
+		var content []byte
+		if file.Content != nil {
+			content = []byte(*file.Content)
+		} else if file.Source != nil {
+			content, err = os.ReadFile(*file.Source)
+			if err != nil {
+				return nil, fmt.Errorf("containers.%s.files[%d].source: failed to read: %w", containerName, idx, err)
+			}
+		} else {
+			return nil, fmt.Errorf("containers.%s.files[%d]: missing 'content' or 'source'", containerName, idx)
+		}
+		if file.NoExpand == nil || !*file.NoExpand {
+			stringContent, err := project.SubstituteString(string(content), substitutionFunction)
+			if err != nil {
+				return nil, fmt.Errorf("containers.%s.files[%d]: failed to substitute in content: %w", containerName, idx, err)
+			}
+			content = []byte(stringContent)
+		}
+		newName := fmt.Sprintf("%s-files-%d-%s", workloadName, idx, strings.Trim(filepath.Base(file.Target), string(filepath.Separator)))
+		slog.Debug(fmt.Sprintf("Writing %d bytes of content for %s containers.%s.files[%d] to %s", len(content), workloadName, containerName, idx, filepath.Join(filesDir, newName)))
+		if err := os.WriteFile(filepath.Join(filesDir, newName), content, 0644); err != nil {
+			return nil, fmt.Errorf("containers.%s.files[%d]: failed to write to disk: %w", containerName, idx, err)
+		}
+
+		output = append(output, compose.ServiceVolumeConfig{
+			Type:   "bind",
+			Source: filepath.Join(filesDir, newName),
+			Target: file.Target,
+		})
+	}
+
+	return output, nil
 }
