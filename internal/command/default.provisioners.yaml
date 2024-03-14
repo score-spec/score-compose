@@ -152,6 +152,8 @@
       - |
         cd /db-scripts
         ls db-*.sql | xargs cat | psql "postgresql://postgres:$${POSTGRES_PASSWORD}@{{ dig .Init.sk "instanceServiceName" "" .Shared }}:5432/postgres"
+      labels:
+        dev.score.compose.labels.is-init-container: "true"
       depends_on:
         {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
           condition: service_healthy
