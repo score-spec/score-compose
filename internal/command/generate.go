@@ -164,6 +164,8 @@ arguments.
 			slog.Info(fmt.Sprintf("Provisioned %d resources", len(currentState.Resources)))
 		}
 
+		waitServiceName, hasWaitService := injectWaitService(superProject)
+
 		for workloadName, workloadState := range currentState.Workloads {
 			outputFunctions, err := currentState.GetResourceOutputForWorkload(workloadName)
 			if err != nil {
@@ -179,6 +181,12 @@ arguments.
 			for serviceName, service := range converted.Services {
 				if _, ok := superProject.Services[serviceName]; ok {
 					return fmt.Errorf("failed to add converted workload '%s': duplicate service name '%s'", workloadName, serviceName)
+				}
+				if hasWaitService {
+					if service.DependsOn == nil {
+						service.DependsOn = make(types.DependsOnConfig)
+					}
+					service.DependsOn[waitServiceName] = types.ServiceDependency{Condition: "service_started"}
 				}
 				superProject.Services[serviceName] = service
 			}
@@ -288,4 +296,38 @@ func parseAndApplyOverrideProperty(entry string, flagName string, spec map[strin
 		}
 	}
 	return nil
+}
+
+// injectWaitService injects a service into the compose project which waits for all other services to be started,
+// healthy, or complete depending on their definition. The workload services may then wait for this.
+// This will return an empty string and false if there are no applicable services.
+func injectWaitService(p *types.Project) (string, bool) {
+	if len(p.Services) == 0 {
+		return "", false
+	}
+	newService := types.ServiceConfig{
+		Name:      "wait-for-resources",
+		Image:     "alpine",
+		Command:   types.ShellCommand{"echo"},
+		DependsOn: make(types.DependsOnConfig),
+	}
+	for otherServiceName, otherService := range p.Services {
+		condition := "service_started"
+		if otherService.HealthCheck != nil {
+			condition = "service_healthy"
+		} else if v := otherService.Labels["dev.score.compose.labels.is-init-container"]; v == "true" {
+			// annoyingly we can't tell based on the definition whether a service is designed to stop or not,
+			// so we'll use this label as a best effort indicator.
+			condition = "service_completed_successfully"
+		}
+		newService.DependsOn[otherServiceName] = types.ServiceDependency{
+			Condition: condition,
+			Required:  true,
+		}
+	}
+	if p.Services == nil {
+		p.Services = make(types.Services)
+	}
+	p.Services[newService.Name] = newService
+	return newService.Name, true
 }
