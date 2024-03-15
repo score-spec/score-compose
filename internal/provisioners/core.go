@@ -82,6 +82,7 @@ type NetworkService struct {
 
 // ProvisionOutput is the output returned from a provisioner implementation.
 type ProvisionOutput struct {
+	ProvisionerUri       string                           `json:"-"`
 	ResourceState        map[string]interface{}           `json:"resource_state"`
 	ResourceOutputs      map[string]interface{}           `json:"resource_outputs"`
 	SharedState          map[string]interface{}           `json:"shared_state"`
@@ -144,6 +145,9 @@ func (po *ProvisionOutput) ApplyToStateAndProject(state *project.State, resUid p
 	if !ok {
 		return nil, fmt.Errorf("failed to apply to state - unknown res uid")
 	}
+
+	// Update the provisioner string
+	existing.ProvisionerUri = po.ProvisionerUri
 
 	// State must ALWAYS be updated. If we don't get state back, we assume it's now empty.
 	if po.ResourceState != nil {
@@ -317,6 +321,7 @@ func ProvisionResources(ctx context.Context, state *project.State, provisioners 
 			return nil, fmt.Errorf("resource '%s': failed to provision: %w", resUid, err)
 		}
 
+		output.ProvisionerUri = provisioner.Uri()
 		out, err = output.ApplyToStateAndProject(out, resUid, composeProject)
 		if err != nil {
 			return nil, fmt.Errorf("resource '%s': failed to apply outputs: %w", resUid, err)
