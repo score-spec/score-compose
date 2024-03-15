@@ -52,7 +52,7 @@ See the [examples](./examples) for more examples of using Score and provisioning
 - [03-files](examples/03-files) - mounting local files into the running Workload
 - [04-multiple-workloads](examples/04-multiple-workloads) - examples of multiple containers and workloads together
 - [05-volume-mounts](examples/05-volume-mounts) - an example of an "empty-dir" volume resource with `type: volume`
-- [06-resource-provisioning](examples/06-resource-provisioning) - detailed example and information about resource provisioning and the operation of the `template://` provisioner
+- [06-resource-provisioning](examples/06-resource-provisioning) - detailed example and information about resource provisioning and the operation of the `template://` and `cmd://` provisioners
 - [07-overrides](examples/07-overrides) - details of how to override aspects of the input Score file and output Docker compose files
 
 If you're getting started, you can use `score-compose init` to create a basic `score.yaml` file in the current directory along with a `.score-compose/` working directory.

@@ -84,7 +84,7 @@ Each entry in the file has the following common fields, other fields may also ex
   id: <optional resource id>
 ```
 
-More provisioner types will be added in the future.
+The uri of each provisioner is a combination of it's implementation (either `template://` or `cmd://`) and a unique identifier.
 
 ### The `template://` provisioner
 
@@ -124,3 +124,23 @@ type Data struct {
 ```
 
 Browse the default provisioners for inspiration or more clues to how these work!
+
+### The `cmd://` provisioner
+
+The command provisioner implementation can be used to execute an external binary or script to provision the resource. The provision IO structures are serialised to json and send on standard-input to the new process, any stdout content is decoded as json and is used as the outputs of the provisioner.
+
+The uri of the provisioner encodes the binary to be executed:
+
+- `cmd://python` will execute the `python` binary on the PATH
+- `cmd://../my-script` will execute `../my-script`
+- `cmd://./my-script` will execute `my-script` in the current directory
+- and `cmd://~/my-script` will execute the `my-script` binary in the home directory
+
+Additional arguments can be provided via the `args` configuration key, for example a basic provisioner can be created using python inline scripts:
+
+```
+- uri: "cmd://python"
+  args: ["-c", "print({\"resource_outputs\":{}})"]
+```
+
+The JSON structures are the `Input` and `ProvisionOutput` structures in [internal/provisioners/core.go](https://github.com/score-spec/score-compose/blob/3cee56c624a70821a55af44a15513ebf8b594f9a/internal/provisioners/core.go#L35).
