@@ -221,13 +221,9 @@ arguments.
 		waitServiceName, hasWaitService := injectWaitService(superProject)
 
 		for workloadName, workloadState := range currentState.Workloads {
-			outputFunctions, err := currentState.GetResourceOutputForWorkload(workloadName)
-			if err != nil {
-				return err
-			}
 
 			slog.Info(fmt.Sprintf("Converting workload '%s' to Docker compose", workloadName))
-			converted, err := compose.ConvertSpec(currentState, &workloadState.Spec, workloadState.BuildConfigs, outputFunctions)
+			converted, err := compose.ConvertSpec(currentState, &workloadState.Spec)
 			if err != nil {
 				return fmt.Errorf("failed to convert workload '%s' to Docker compose: %w", workloadName, err)
 			}

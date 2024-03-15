@@ -151,6 +151,8 @@ type Data struct {
 	State  map[string]interface{}
 	Shared map[string]interface{}
 
+	WorkloadServices map[string]provisioners.NetworkService
+
 	ComposeProjectName string
 	MountsDirectory    string
 }
@@ -168,6 +170,7 @@ func (p *Provisioner) Provision(ctx context.Context, input *provisioners.Input) 
 		Metadata:           input.ResourceMetadata,
 		State:              input.ResourceState,
 		Shared:             input.SharedState,
+		WorkloadServices:   input.WorkloadServices,
 		ComposeProjectName: input.ComposeProjectName,
 		MountsDirectory:    input.MountDirectoryPath,
 	}

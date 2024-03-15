@@ -31,7 +31,7 @@ import (
 )
 
 // ConvertSpec converts SCORE specification into docker-compose configuration.
-func ConvertSpec(state *project.State, spec *score.Workload, containerBuildConfigs map[string]compose.BuildConfig, resources map[string]project.OutputLookupFunc) (*compose.Project, error) {
+func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, error) {
 	workloadName, ok := spec.Metadata["name"].(string)
 	if !ok || len(workloadName) == 0 {
 		return nil, errors.New("workload metadata is missing a name")
@@ -41,27 +41,15 @@ func ConvertSpec(state *project.State, spec *score.Workload, containerBuildConfi
 		return nil, errors.New("workload does not have any containers to convert into a compose service")
 	}
 
-	substitutionFunction := project.BuildSubstitutionFunction(spec.Metadata, resources)
+	resourceOutputs, err := state.GetResourceOutputForWorkload(workloadName)
+	if err != nil {
+		return nil, err
+	}
+
+	substitutionFunction := project.BuildSubstitutionFunction(spec.Metadata, resourceOutputs)
 
 	var composeProject = compose.Project{
 		Services: make(compose.Services),
-	}
-
-	var ports []compose.ServicePortConfig
-	if spec.Service != nil && len(spec.Service.Ports) > 0 {
-		ports = []compose.ServicePortConfig{}
-		for _, pSpec := range spec.Service.Ports {
-			var pubPort = fmt.Sprintf("%v", pSpec.Port)
-			var protocol string
-			if pSpec.Protocol != nil {
-				protocol = strings.ToLower(string(*pSpec.Protocol))
-			}
-			ports = append(ports, compose.ServicePortConfig{
-				Published: pubPort,
-				Target:    uint32(util.DerefOr(pSpec.TargetPort, pSpec.Port)),
-				Protocol:  protocol,
-			})
-		}
 	}
 
 	// When multiple containers are specified we need to identify one container as the "main" container which will own
@@ -86,12 +74,6 @@ func ConvertSpec(state *project.State, spec *score.Workload, containerBuildConfi
 			env[key] = &resolved
 		}
 
-		// NOTE: Sorting is necessary for DeepEqual call within our Unit Tests to work reliably
-		sort.Slice(ports, func(i, j int) bool {
-			return ports[i].Published < ports[j].Published
-		})
-		// END (NOTE)
-
 		var volumes []compose.ServiceVolumeConfig
 		if len(cSpec.Volumes) > 0 {
 			volumes = make([]compose.ServiceVolumeConfig, len(cSpec.Volumes))
@@ -111,7 +93,7 @@ func ConvertSpec(state *project.State, spec *score.Workload, containerBuildConfi
 					return nil, fmt.Errorf("containers.%s.volumes[%d].source: resource '%s' is not a volume", containerName, idx, resolvedVolumeSource)
 				}
 
-				if outputFunc, ok := resources[resolvedVolumeSource]; ok {
+				if outputFunc, ok := resourceOutputs[resolvedVolumeSource]; ok {
 					if v, err := outputFunc("source"); err != nil {
 						slog.Warn(fmt.Sprintf("containers.%s.volumes[%d].source: failed to find 'source' key in volume resource '%s': %v", containerName, idx, resolvedVolumeSource, err))
 					} else if sv, ok := v.(string); ok {
@@ -166,11 +148,10 @@ func ConvertSpec(state *project.State, spec *score.Workload, containerBuildConfi
 			Entrypoint:  cSpec.Command,
 			Command:     cSpec.Args,
 			Environment: env,
-			Ports:       ports,
 			Volumes:     volumes,
 		}
 
-		if bc, ok := containerBuildConfigs[containerName]; ok {
+		if bc, ok := state.Workloads[workloadName].BuildConfigs[containerName]; ok {
 			slog.Info(fmt.Sprintf("containers.%s: overriding container build config to context=%s", containerName, bc.Context))
 			svc.Build = &bc
 			svc.Image = ""

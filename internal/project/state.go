@@ -32,6 +32,9 @@ type State struct {
 	SharedState        map[string]interface{}             `yaml:"shared_state"`
 	ComposeProjectName string                             `yaml:"compose_project"`
 	MountsDirectory    string                             `yaml:"mounts_directory"`
+
+	// IsDeprecatedPortPublishingEnabled enables the old score-compose run mechanism of publishing service ports
+	IsDeprecatedPortPublishingEnabled bool `yaml:"-"`
 }
 
 type ScoreWorkloadState struct {
@@ -41,7 +44,7 @@ type ScoreWorkloadState struct {
 	File *string `yaml:"file,omitempty"`
 	// BuildConfigs is a stored set of container build configs for this workload. Any known container should inherit
 	// the appropriate config when being converted.
-	BuildConfigs map[string]compose.BuildConfig
+	BuildConfigs map[string]compose.BuildConfig `yaml:"build_configs,omitempty"`
 }
 
 type ScoreResourceState struct {

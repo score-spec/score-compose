@@ -93,17 +93,6 @@ func TestScoreConvert(t *testing.T) {
 						Environment: compose.MappingWithEquals{
 							"CONNECTION_STRING": stringPtr("test connection string"),
 						},
-						Ports: []compose.ServicePortConfig{
-							{
-								Published: "80",
-								Target:    8080,
-							},
-							{
-								Published: "8080",
-								Target:    8080,
-								Protocol:  "udp",
-							},
-						},
 					},
 				},
 			},
@@ -212,10 +201,6 @@ func TestScoreConvert(t *testing.T) {
 						Environment: compose.MappingWithEquals{
 							"PORT": stringPtr("81"),
 						},
-						Ports: []compose.ServicePortConfig{
-							{Target: 80, Published: "8080"},
-							{Target: 81, Published: "8081"},
-						},
 					},
 					"test-frontend": {
 						Name:  "test-frontend",
@@ -291,14 +276,25 @@ func TestScoreConvert(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			evt := new(envprov.Provisioner)
-			resourceOutputs := map[string]project.OutputLookupFunc{"env": evt.LookupOutput}
-			po, _ := evt.GenerateSubProvisioner("app-db", "").Provision(nil, nil)
-			resourceOutputs["app-db"] = po.OutputLookupFunc
-			po, _ = evt.GenerateSubProvisioner("some-dns", "").Provision(nil, nil)
-			resourceOutputs["some-dns"] = po.OutputLookupFunc
 
-			proj, err := ConvertSpec(new(project.State), tt.Source, nil, resourceOutputs)
+			state := &project.State{
+				Workloads: map[string]project.ScoreWorkloadState{
+					"test": {Spec: score.Workload{Resources: map[string]score.Resource{
+						"env":      {Type: "environment"},
+						"app-db":   {Type: "thing"},
+						"some-dns": {Type: "thing"},
+					}}},
+				},
+				Resources: map[project.ResourceUid]project.ScoreResourceState{},
+			}
+			evt := new(envprov.Provisioner)
+			state.Resources["environment.default#test.env"] = project.ScoreResourceState{OutputLookupFunc: evt.LookupOutput}
+			po, _ := evt.GenerateSubProvisioner("app-db", "").Provision(nil, nil)
+			state.Resources["thing.default#test.app-db"] = project.ScoreResourceState{OutputLookupFunc: po.OutputLookupFunc}
+			po, _ = evt.GenerateSubProvisioner("some-dns", "").Provision(nil, nil)
+			state.Resources["thing.default#test.some-dns"] = project.ScoreResourceState{OutputLookupFunc: po.OutputLookupFunc}
+
+			proj, err := ConvertSpec(state, tt.Source)
 
 			if tt.Error != nil {
 				// On Error
