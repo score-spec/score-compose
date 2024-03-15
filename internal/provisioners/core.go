@@ -23,8 +23,10 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	compose "github.com/compose-spec/compose-go/v2/types"
+	score "github.com/score-spec/score-go/types"
 
 	"github.com/score-spec/score-compose/internal/project"
 	"github.com/score-spec/score-compose/internal/util"
@@ -42,6 +44,14 @@ type Input struct {
 	ResourceParams   map[string]interface{} `json:"resource_params"`
 	ResourceMetadata map[string]interface{} `json:"resource_metadata"`
 
+	// -- aspects of the workloads --
+
+	// SourceWorkload is the name of the workload that first defined this resource or carries the params definition.
+	SourceWorkload string `json:"source_workload"`
+	// WorkloadServices is a map from workload name to the network NetworkService of another workload which defines
+	// the hostname and the set of ports it exposes.
+	WorkloadServices map[string]NetworkService `json:"workload_services"`
+
 	// -- current state --
 
 	ResourceState map[string]interface{} `json:"resource_state"`
@@ -51,6 +61,23 @@ type Input struct {
 
 	ComposeProjectName string `json:"compose_project_name"`
 	MountDirectoryPath string `json:"mount_directory_path"`
+}
+
+type ServicePort struct {
+	// Name is the name of the port from the workload specification
+	Name string `json:"name"`
+	// Port is the numeric port intended to be published
+	Port int `json:"port"`
+	// TargetPort is the port on the workload that hosts the actual traffic
+	TargetPort int `json:"target_port"`
+	// Protocol is TCP or UDP.
+	Protocol score.ServicePortProtocol `json:"protocol"`
+}
+
+// NetworkService describes how to contact ports exposed by another workload
+type NetworkService struct {
+	ServiceName string                 `yaml:"service_name"`
+	Ports       map[string]ServicePort `json:"ports"`
 }
 
 // ProvisionOutput is the output returned from a provisioner implementation.
@@ -204,6 +231,36 @@ func (po *ProvisionOutput) ApplyToStateAndProject(state *project.State, resUid p
 	return &out, nil
 }
 
+func buildWorkloadServices(state *project.State) map[string]NetworkService {
+	out := make(map[string]NetworkService, len(state.Workloads))
+	for workloadName, workloadState := range state.Workloads {
+		// the hostname of a workload is the <workload name>-<first container name>
+		var firstContainerName string
+		for name := range workloadState.Spec.Containers {
+			if firstContainerName == "" || strings.Compare(name, firstContainerName) < 0 {
+				firstContainerName = name
+			}
+		}
+		// setup ports exposure
+		ns := NetworkService{
+			ServiceName: workloadName + "-" + firstContainerName,
+			Ports:       make(map[string]ServicePort),
+		}
+		if workloadState.Spec.Service != nil {
+			for s, port := range (*workloadState.Spec.Service).Ports {
+				ns.Ports[s] = ServicePort{
+					Name:       s,
+					Port:       port.Port,
+					TargetPort: util.DerefOr(port.TargetPort, port.Port),
+					Protocol:   util.DerefOr(port.Protocol, score.ServicePortProtocolTCP),
+				}
+			}
+		}
+		out[workloadName] = ns
+	}
+	return out
+}
+
 func ProvisionResources(ctx context.Context, state *project.State, provisioners []Provisioner, composeProject *compose.Project) (*project.State, error) {
 	out := state
 
@@ -212,6 +269,8 @@ func ProvisionResources(ctx context.Context, state *project.State, provisioners 
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine sort order for provisioning: %w", err)
 	}
+
+	workloadServices := buildWorkloadServices(state)
 
 	for _, resUid := range orderedResources {
 		resState := out.Resources[resUid]
@@ -248,6 +307,8 @@ func ProvisionResources(ctx context.Context, state *project.State, provisioners 
 			ResourceParams:     params,
 			ResourceMetadata:   resState.Metadata,
 			ResourceState:      resState.State,
+			SourceWorkload:     resState.SourceWorkload,
+			WorkloadServices:   workloadServices,
 			SharedState:        out.SharedState,
 			ComposeProjectName: out.ComposeProjectName,
 			MountDirectoryPath: out.MountsDirectory,

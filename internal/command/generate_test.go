@@ -152,9 +152,6 @@ services:
             EXAMPLE_VARIABLE: example-value
             THING: ${THING}
         image: nginx:latest
-        ports:
-            - target: 80
-              published: "8080"
 `
 	assert.Equal(t, expectedOutput, string(raw))
 	// generate again just for luck
@@ -563,4 +560,111 @@ services:
                 required: true
         image: alpine
 `, string(raw))
+}
+
+func TestInitAndGenerateWithNetworkServicesAcrossWorkloads(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	// write custom providers
+	assert.NoError(t, os.WriteFile(filepath.Join(td, ".score-compose", "00-custom.provisioners.yaml"), []byte(`
+- uri: template://default-provisioners/workload-port
+  type: workload-port
+  init: |
+    {{ if not .Params.workload }}{{ fail "'workload' param required" }}{{ end }}
+    {{ if not .Params.port }}{{ fail "'port' param required - the name of the remote port" }}{{ end }}
+    {{ $x := index .WorkloadServices .Params.workload }}
+    {{ if not $x.ServiceName }}{{ fail "unknown workload" }}{{ end }}
+    {{ $y := index $x.Ports .Params.port }}
+    {{ if not $y.Name }}{{ fail "unknown port" }}{{ end }}
+  state: |
+    {{ $x := index .WorkloadServices .Params.workload }}
+    hostname: {{ $x.ServiceName | quote }}
+    {{ $y := index $x.Ports .Params.port }}
+    port: {{ $y.TargetPort }}
+`),
+		0644,
+	))
+
+	t.Run("fail unknown workload", func(t *testing.T) {
+		assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: busybox
+resources:
+  first:
+    type: workload-port
+    params:
+      workload: example-2
+      port: web
+`), 0644))
+
+		// generate
+		stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+		assert.EqualError(t, err, "failed to provision: resource 'workload-port.default#example.first': failed to provision: init template failed: failed to execute template: template: :4:30: executing \"\" at <fail \"unknown workload\">: error calling fail: unknown workload")
+	})
+
+	t.Run("fail unknown port", func(t *testing.T) {
+		assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: busybox
+resources:
+  first:
+    type: workload-port
+    params:
+      workload: example
+      port: web
+`), 0644))
+
+		// generate
+		stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+		assert.EqualError(t, err, "failed to provision: resource 'workload-port.default#example.first': failed to provision: init template failed: failed to execute template: template: :6:23: executing \"\" at <fail \"unknown port\">: error calling fail: unknown port")
+	})
+
+	t.Run("succeed", func(t *testing.T) {
+		assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: busybox
+service:
+  ports:
+    web:
+      port: 8080
+      targetPort: 80
+resources:
+  first:
+    type: workload-port
+    params:
+      workload: example
+      port: web
+`), 0644))
+
+		// generate
+		stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+		assert.NoError(t, err)
+
+		// check that state was persisted
+		sd, ok, err := project.LoadStateDirectory(td)
+		assert.NoError(t, err)
+		assert.True(t, ok)
+		assert.Len(t, sd.State.Workloads, 1)
+		assert.Len(t, sd.State.Resources, 1)
+		assert.Equal(t, map[string]interface{}{
+			"hostname": "example-example",
+			"port":     80,
+		}, sd.State.Resources["workload-port.default#example.first"].State)
+	})
+
 }

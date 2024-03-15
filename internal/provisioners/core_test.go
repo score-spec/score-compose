@@ -114,6 +114,46 @@ func TestApplyToStateAndProject(t *testing.T) {
 
 }
 
+func TestProvisionResourcesWithNetworkService(t *testing.T) {
+	state := new(project.State)
+	state, _ = state.WithWorkload(&score.Workload{
+		Metadata: map[string]interface{}{"name": "w1"},
+		Service: &score.WorkloadService{
+			Ports: score.WorkloadServicePorts{
+				"web":  {Port: 80},
+				"grpc": {Port: 9000, TargetPort: util.Ref(9001), Protocol: util.Ref(score.ServicePortProtocolUDP)},
+			},
+		},
+		Containers: map[string]score.Container{
+			"container-a": {},
+			"container-b": {},
+		},
+		Resources: map[string]score.Resource{
+			"a": {Type: "thing"},
+		},
+	}, nil, nil)
+	state, _ = state.WithPrimedResources()
+	p := []Provisioner{
+		NewEphemeralProvisioner("ephemeral://blah", "thing.default#w1.a", func(ctx context.Context, input *Input) (*ProvisionOutput, error) {
+			assert.Equal(t, "w1", input.SourceWorkload)
+			assert.Equal(t, map[string]NetworkService{
+				"w1": {
+					ServiceName: "w1-container-a",
+					Ports: map[string]ServicePort{
+						"web":  {Name: "web", Port: 80, TargetPort: 80, Protocol: score.ServicePortProtocolTCP},
+						"grpc": {Name: "grpc", Port: 9000, TargetPort: 9001, Protocol: score.ServicePortProtocolUDP},
+					},
+				},
+			}, input.WorkloadServices)
+			return &ProvisionOutput{}, nil
+		}),
+	}
+	after, err := ProvisionResources(context.Background(), state, p, nil)
+	if assert.NoError(t, err) {
+		assert.Len(t, after.Resources, 1)
+	}
+}
+
 func TestProvisionResourcesWithResourceParams(t *testing.T) {
 	state := new(project.State)
 	state, _ = state.WithWorkload(&score.Workload{

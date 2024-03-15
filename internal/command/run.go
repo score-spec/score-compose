@@ -38,6 +38,7 @@ import (
 	"github.com/score-spec/score-compose/internal/project"
 	"github.com/score-spec/score-compose/internal/provisioners"
 	"github.com/score-spec/score-compose/internal/provisioners/envprov"
+	"github.com/score-spec/score-compose/internal/util"
 )
 
 const (
@@ -206,17 +207,36 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to provision resources: %w", err)
 	}
 
-	workloadResourceOutputs, err := state.GetResourceOutputForWorkload(spec.Metadata["name"].(string))
-	if err != nil {
-		return fmt.Errorf("failed to gather resource outputs: %w", err)
-	}
-
 	// Build docker-compose configuration
 	//
 	slog.Info("Building docker-compose configuration")
-	proj, err := compose.ConvertSpec(state, &spec, nil, workloadResourceOutputs)
+	proj, err := compose.ConvertSpec(state, &spec)
 	if err != nil {
 		return fmt.Errorf("building docker-compose configuration: %w", err)
+	}
+
+	// Deprecated behavior of the run command which used to publish ports
+	// Todo: remove this once score-compose run is removed
+	if spec.Service != nil && len(spec.Service.Ports) > 0 {
+		ports := make([]types.ServicePortConfig, 0)
+		for _, pSpec := range spec.Service.Ports {
+			var pubPort = fmt.Sprintf("%v", pSpec.Port)
+			var protocol string
+			if pSpec.Protocol != nil {
+				protocol = strings.ToLower(string(*pSpec.Protocol))
+			}
+			ports = append(ports, types.ServicePortConfig{
+				Published: pubPort,
+				Target:    uint32(util.DerefOr(pSpec.TargetPort, pSpec.Port)),
+				Protocol:  protocol,
+			})
+		}
+		for serviceName, service := range proj.Services {
+			if service.NetworkMode == "" {
+				service.Ports = ports
+				proj.Services[serviceName] = service
+			}
+		}
 	}
 
 	// Override 'image' reference with 'build' instructions
