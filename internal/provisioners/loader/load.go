@@ -26,6 +26,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/score-spec/score-compose/internal/provisioners"
+	"github.com/score-spec/score-compose/internal/provisioners/cmdprov"
 	"github.com/score-spec/score-compose/internal/provisioners/templateprov"
 )
 
@@ -49,6 +50,13 @@ func LoadProvisioners(raw []byte) ([]provisioners.Provisioner, error) {
 		switch u.Scheme {
 		case "template":
 			if p, err := templateprov.Parse(m); err != nil {
+				return nil, fmt.Errorf("%d: %s: failed to parse: %w", i, uri, err)
+			} else {
+				slog.Debug(fmt.Sprintf("Loaded provisioner %s", p.Uri()))
+				out = append(out, p)
+			}
+		case "cmd":
+			if p, err := cmdprov.Parse(m); err != nil {
 				return nil, fmt.Errorf("%d: %s: failed to parse: %w", i, uri, err)
 			} else {
 				slog.Debug(fmt.Sprintf("Loaded provisioner %s", p.Uri()))
