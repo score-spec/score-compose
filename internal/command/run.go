@@ -85,6 +85,9 @@ func run(cmd *cobra.Command, args []string) error {
 	// Silence usage message if args are parsed correctly
 	cmd.SilenceUsage = true
 
+	// Log a deprecation warning
+	slog.Warn("\n-----\nDeprecation notice: 'score-compose run' will be deprecated in the future - we recommend that you migrate to 'score-compose init' and 'score-compose generate'\n-----")
+
 	// Open source file
 	//
 	slog.Info(fmt.Sprintf("Reading Score file '%s'", scoreFile))
