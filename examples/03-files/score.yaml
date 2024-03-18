@@ -1,0 +1,16 @@
+apiVersion: score.dev/v1b1
+
+metadata:
+  name: hello-world
+
+containers:
+  hello:
+    image: busybox
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do cat /fileA.txt; cat /fileB.txt; sleep 5; done"]
+    files:
+      - target: /fileA.txt
+        source: fileA.txt
+      - target: /fileB.txt
+        content: |
+          I am ${metadata.name}

@@ -1,6 +1,8 @@
 # score-compose
 
-`score-compose` is an implementation of the Score Workload specification for [Docker compose](https://docs.docker.com/compose/).
+`score-compose` is an implementation of the Score Workload specification for [Docker compose](https://docs.docker.com/compose/). `score-compose` is a reference implementation for [Score](https://docs.score.dev/) and is used in many cases for local development.
+
+`score-compose` supports most aspects of the Score Workload specification and supports a powerful resource provisioning system for supplying and customising the dynamic configuration of attached services such as databases, queues, storage, and other network or storage APIs.
 
 ## ![Score](docs/images/logo.svg) Score overview
 
@@ -10,6 +12,29 @@ Score aims to improve developer productivity and experience by reducing the risk
 
 The `score.yaml` specification file can be executed against a _Score Implementation CLI_, a conversion tool for application developers to generate environment specific configuration. In combination with environment specific parameters, the CLI tool can run your workload in the target environment by generating a platform-specific configuration file. The `score-compose` CLI is a reference implementation used to generate `docker-compose.yaml` files.
 
+## Feature support
+
+`score-compose` supports as many Score features as possible, however there are certain parts that don't fit well in a local Docker case and are not supported:
+
+| Feature                                                             | Support | Impact                                                                                                                                                                                                                                                                                                                                              | 
+|---------------------------------------------------------------------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `containers.*.resources.limits` / `containers.*.resources.requests` | none    | **Limits will be validated but ignored.** While the compose specification has some support for this, it is requires particular Docker versions that cannot be relied on. *This should have no impact on Workload execution*.                                                                                                                        |
+| `containers.*.livenessProbe` / `containers.*.readinessProbe`        | none    | **Probes will be validated but ignored.** The Score specification only details K8s-like HTTP probes, but the compose specification only supports direct command execution. We cannot convert between the two reliably. *This should have no impact on Workload execution*. Tracked in [#86](https://github.com/score-spec/score-compose/issues/86). |
+| `containers.*.files[*].mode`                                        | none    | **Mode will be ignored.** We haven't implemented this yet. Tracked in [#88](https://github.com/score-spec/score-compose/issues/88).                                                                                                                                                                                                                 |
+| `containers.*.volumes[*].path`                                      | none    | **Volume mounts with `path` will be rejected.** Docker compose doesn't support sub-path mounts for Docker volumes.                                                                                                                                                                                                                                  |
+
+## Resource support
+
+`score-compose` comes with out-of-the-box support for:
+
+| Type        | Class   | Params | Output                                                                                      |
+|-------------|---------|--------|---------------------------------------------------------------------------------------------|
+| environment | default | (none) | `${KEY}`                                                                                    |
+| service     | !       | !      | Not supported yet, tracked in [#87](https://github.com/score-spec/score-compose/issues/87). |
+| volume      | *       | (none) | `source`                                                                                    |
+| redis       | *       | (none) | `host`, `port`, `username`, `password`                                                      | 
+| postgres    | *       | (none) | `host`, `port`, `name` (aka `database`), `username`, `password`                             |
+
 ## ![Installation](docs/images/install.svg) Installation
 
 To install `score-compose`, follow the instructions as described in our [installation guide](https://docs.score.dev/docs/get-started/install/).
@@ -17,6 +42,18 @@ To install `score-compose`, follow the instructions as described in our [install
 You will also need a recent version of Docker and the Compose plugin installed. [Read more here](https://docs.docker.com/compose/install/).
 
 ## ![Get Started](docs/images/overview.svg) Get Started
+
+**NOTE**: the following examples and guides relate to `score-compose >= 0.11.0`, check your version using `score-compose --version` and re-install if you're behind!
+
+See the [examples](./examples) for more examples of using Score and provisioning resources:
+
+- [01-hello](examples/01-hello) - a basic example of a Score Workload
+- [02-environment](examples/02-environment) - an example of environment variables and the `type: environment` resource
+- [03-files](examples/03-files) - mounting local files into the running Workload
+- [04-multiple-workloads](examples/04-multiple-workloads) - examples of multiple containers and workloads together
+- [05-volume-mounts](examples/05-volume-mounts) - an example of an "empty-dir" volume resource with `type: volume`
+- [06-resource-provisioning](examples/06-resource-provisioning) - detailed example and information about resource provisioning and the operation of the `template://` provisioner
+- [07-overrides](examples/07-overrides) - details of how to override aspects of the input Score file and output Docker compose files
 
 If you're getting started, you can use `score-compose init` to create a basic `score.yaml` file in the current directory along with a `.score-compose/` working directory.
 
@@ -44,25 +81,45 @@ Global Flags:
   -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
 ```
 
-Once you have a `score.yaml` file created, modify it by following [this guide](https://docs.score.dev/docs/get-started/score-compose-hello-world/), and use `score-compose run` to convert it into a Docker compose manifest:
+Once you have a `score.yaml` file created, modify it by following [this guide](https://docs.score.dev/docs/get-started/score-compose-hello-world/), and use `score-compose generate` to convert it into a Docker compose manifest:
 
 ```
-Translate the SCORE file to docker-compose configuration
+The generate command will convert Score files in the current Score compose project into a combined Docker compose
+manifest. All resources and links between Workloads will be resolved and provisioned as required.
+
+By default this command looks for score.yaml in the current directory, but can take explicit file names as positional
+arguments.
+
+"score-compose init" MUST be run first. An error will be thrown if the project directory is not present.
 
 Usage:
-  score-compose run [--file=score.yaml] [--output=compose.yaml] [flags]
+  score-compose generate [flags]
+
+Examples:
+
+  # Specify Score files
+  score-compose generate score.yaml *.score.yaml
+
+  # Regenerate without adding new score files
+  score-compose generate
+
+  # Provide overrides when one score file is provided
+  score-compose generate score.yaml --override-file=./overrides.score.yaml --override-property=metadata.key=value
 
 Flags:
-      --build string           Replaces 'image' name with compose 'build' instruction
-      --env-file string        Location to store sample .env file
-  -f, --file string            Source SCORE file (default "./score.yaml")
-  -h, --help                   help for run
-  -o, --output string          Output file
-      --overrides string       Overrides SCORE file (default "./overrides.score.yaml")
-  -p, --property stringArray   Overrides selected property value
-      --skip-validation        DEPRECATED: Disables Score file schema validation
-      --verbose                Enable diagnostic messages (written to STDERR)
+      --build stringArray               An optional build context to use for the given container --build=container=./dir or --build=container={'"context":"./dir"}
+  -h, --help                            help for generate
+      --image string                    An optional container image to use for any container with image == '.'
+  -o, --output string                   The output file to write the composed compose file to (default "compose.yaml")
+      --override-property stringArray   An optional set of path=key overrides to set or remove
+      --overrides-file string           An optional file of Score overrides to merge in
+
+Global Flags:
+      --quiet           Mute any logging output
+  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
 ```
+
+**NOTE**: The `score-compose run` command still exists but should be considered deprecated as it does not support resource provisioning.
 
 ## ![Get involved](docs/images/get-involved.svg) Get involved
 

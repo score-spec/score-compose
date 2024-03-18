@@ -1,0 +1,14 @@
+apiVersion: score.dev/v1b1
+
+metadata:
+  name: hello-world
+
+containers:
+  first:
+    image: "nginx:latest"
+    variables:
+      NGINX_PORT: "8080"
+  second:
+    image: "nginx:latest"
+    variables:
+      NGINX_PORT: "8081"

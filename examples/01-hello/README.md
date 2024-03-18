@@ -18,31 +18,39 @@ containers:
 To convert `score.yaml` file into runnable `compose.yaml` use a `score-compose` CLI tool:
 
 ```console
-$ score-compose run -f ./score.yaml -o ./compose.yaml
+$ score-compose init
+$ score-compose generate score.yaml
 ```
 
-Output `compose.yaml` file would contain a single service definition:
-
-```yaml
-services:
-  hello-world:
-    command:
-      - -c
-      - 'while true; do echo Hello World!; sleep 5; done'
-    entrypoint:
-      - /bin/sh
-    image: busybox
-```
-
-Running this service with `docker-compose`:
+The `init` will create the `.score-compose` directory. The `generate` command will add the input `score.yaml` workload to the `.score-compose/state.yaml` state file and regenerate the output `compose.yaml`.
 
 ```console
-$ docker-compose -f ./compose.yaml up hello-world
-
-[+] Running 2/2
- ⠿ Network compose_default          Created                                                                                                                                               0.0s
- ⠿ Container compose-hello-world-1  Created                                                                                                                                               0.1s
-Attaching to compose-hello-world-1
-compose-hello-world-1  | Hello World!
-compose-hello-world-1  | Hello World!
+$ cat compose.yaml
+name: 01-hello
+services:
+    hello-world-hello:
+        command:
+            - -c
+            - while true; do echo Hello World!; sleep 5; done
+        entrypoint:
+            - /bin/sh
+        image: busybox
 ```
+
+This `compose.yaml` can then be run directly, and you can watch the output of the logs.
+
+```console
+$ docker compose up -d
+[+] Running 1/2
+ ⠼ Network 01-hello_default                Created
+ ✔ Container 01-hello-hello-world-hello-1  Started
+$ docker logs -f 01-hello-hello-world-hello-1
+Hello World!
+Hello World!
+Hello World!
+Hello World!
+^C%
+$ docker compose down
+```
+
+If you make modifications to the `score.yaml` file, run `score-compose generate score.yaml` to regenerate the output.

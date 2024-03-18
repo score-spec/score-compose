@@ -240,6 +240,9 @@ func run(cmd *cobra.Command, args []string) error {
 				proj.Services[serviceName] = service
 			}
 		}
+		sort.Slice(ports, func(i, j int) bool {
+			return ports[i].Published < ports[j].Published
+		})
 	}
 
 	// Override 'image' reference with 'build' instructions
