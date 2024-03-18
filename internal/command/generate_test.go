@@ -72,15 +72,18 @@ Global Flags:
 	assert.Equal(t, "", stderr)
 }
 
-func changeToTempDir(t *testing.T) string {
+func changeToDir(t *testing.T, dir string) string {
 	t.Helper()
-	td := t.TempDir()
 	wd, _ := os.Getwd()
-	require.NoError(t, os.Chdir(td))
+	require.NoError(t, os.Chdir(dir))
 	t.Cleanup(func() {
 		require.NoError(t, os.Chdir(wd))
 	})
-	return td
+	return dir
+}
+
+func changeToTempDir(t *testing.T) string {
+	return changeToDir(t, t.TempDir())
 }
 
 func TestGenerateWithoutInit(t *testing.T) {

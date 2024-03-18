@@ -1,0 +1,14 @@
+apiVersion: score.dev/v1b1
+metadata:
+  name: workload-one
+containers:
+  example:
+    image: busybox
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do echo $${CONNECTION}; sleep 5; done"]
+    variables:
+      CONNECTION: "redis://${resources.cache-a.username}:${resources.cache-a.password}@${resources.cache-a.host}:${resources.cache-a.port}"
+resources:
+  cache-a:
+    type: redis
+    id: main-cache

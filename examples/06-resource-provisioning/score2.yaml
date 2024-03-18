@@ -1,0 +1,17 @@
+apiVersion: score.dev/v1b1
+metadata:
+  name: workload-two
+containers:
+  example:
+    image: busybox
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do echo $${CONNECTION_A}; echo $${CONNECTION_B}; sleep 5; done"]
+    variables:
+      CONNECTION_A: "redis://${resources.cache-b.username}:${resources.cache-b.password}@${resources.cache-b.host}:${resources.cache-b.port}"
+      CONNECTION_B: "redis://${resources.cache-c.username}:${resources.cache-c.password}@${resources.cache-c.host}:${resources.cache-c.port}"
+resources:
+  cache-b:
+    type: redis
+    id: main-cache
+  cache-c:
+    type: redis

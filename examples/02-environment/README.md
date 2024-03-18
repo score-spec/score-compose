@@ -1,8 +1,8 @@
 # 02 - Environment Variables
 
-When `docker-compose` spins-up the service, it is possible to pass some information from the host to the container via the environment variables.
+When `docker-compose` spins-up the service, it is possible to pass some information from the host to the container via the environment variables. These variables can then be accessed by programs running in the container.
 
-Compose specification uses a special `environment` resource type to support such cases:
+The `containers.*.variables` section supports placeholder interpolation using `${..}` syntax. This can be used to access outputs from metadata or resources. The `environment` resource to collect them from the current shell:
 
 ```yaml
 apiVersion: score.dev/v1b1
@@ -14,44 +14,49 @@ containers:
   hello:
     image: busybox
     command: ["/bin/sh"]
-    args: ["-c", "while true; do echo Hello $${FRIEND}!; sleep 5; done"]
+    args: ["-c", "while true; do echo $${GREETING} $${NAME}!; sleep 5; done"]
     variables:
-      FRIEND: ${resources.env.NAME}
+      GREETING: Hello
+      NAME: ${resources.env.NAME}
+      WORKLOAD_NAME: ${metadata.name}
 
 resources:
   env:
     type: environment
 ```
 
-To convert `score.yaml` file into runnable `compose.yaml` use a `score-compose` CLI tool:
+Like [example 01](../01-hello), we use `generate` to build a compose file:
 
 ```console
-$ score-compose run -f ./score.yaml -o ./compose.yaml
+$ score-compose init
+$ score-compose generate score.yaml
 ```
 
-Output `compose.yaml` file would contain a single service definition and utilize a host environment variable called `NAME`:
+And it returns
 
-```yaml
+```console
+name: 02-environment
 services:
-  hello-world:
-    command:
-      - -c
-      - 'while true; do echo Hello $${FRIEND}!; sleep 5; done'
-    entrypoint:
-      - /bin/sh
-    environment:
-      FRIEND: ${NAME}
-    image: busybox
+    hello-world-hello:
+        command:
+            - -c
+            - while true; do echo $${GREETING} $${NAME}!; sleep 5; done
+        entrypoint:
+            - /bin/sh
+        environment:
+            GREETING: Hello
+            NAME: ${NAME}
+            WORKLOAD_NAME: hello-world
+        image: busybox
 ```
 
-Running this service with `docker-compose`:
+Now we can set this variable using a `.env` file (see below) or provide it when we run `docker compose`:
 
 ```console
 $ NAME=John docker-compose -f ./compose.yaml up hello-world
-
 [+] Running 2/2
- ⠿ Network compose_default          Created                                                                                                                                               0.0s
- ⠿ Container compose-hello-world-1  Created                                                                                                                                               0.1s
+ ⠿ Network compose_default          Created
+ ⠿ Container compose-hello-world-1  Created
 Attaching to compose-hello-world-1
 compose-hello-world-1  | Hello John!
 compose-hello-world-1  | Hello John!
@@ -61,20 +66,19 @@ compose-hello-world-1  | Hello John!
 
 For workloads relying on many environment variables it is convenient to manage all required settings in one place, the `.env` file.
 
-`score-compose` CLI tool would produce a template for the `.env` file when `--env-file` parameter is set:
+`docker compose` will load `.env` from the current directory or any other file passed as `--env-file`:
 
 ```console
-$ score-compose run -f ./score.yaml -o ./compose.yaml --env-file ./.env
+$ cat .env
+NAME=John
 ```
-
-For the example above the `.env` file would include only one variable:
-
-```yaml
-NAME=
-```
-
-Once the `.env` is populated with all the values (usually such file is generated automatically by the configuration managements system or with the CI/CD automation scripts), it can be fed to `docker-compose`:
 
 ```console
-$ docker-compose -f ./compose.yaml --env-file ./.env up hello-world
+$ NAME=John docker-compose -f ./compose.yaml up hello-world
+[+] Running 2/2
+ ⠿ Network compose_default          Created
+ ⠿ Container compose-hello-world-1  Created
+Attaching to compose-hello-world-1
+compose-hello-world-1  | Hello Bob!
+compose-hello-world-1  | Hello Bob!
 ```

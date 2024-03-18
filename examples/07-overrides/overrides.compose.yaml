@@ -1,0 +1,4 @@
+services:
+  hello-world-web:
+    ports:
+      - "8080:80"
