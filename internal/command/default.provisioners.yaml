@@ -181,3 +181,97 @@
     {{ if ne .Init.publishPort "0" }}
     - "Or connect your postgres client to \"postgres://{{ .State.username }}:{{ .State.password }}@localhost:{{ .Init.publishPort }}/{{ .State.database }}\""
     {{ end }}
+
+# This resource provides a minio based S3 bucket with AWS-style credentials.
+# This provides some common and well known outputs that can be used with any generic AWS s3 client.
+# If the provider has a publish port annotation, it can expose a management port on the local network for debugging and
+# connectivity.
+- uri: template://default-provisioners/s3
+  type: s3
+  # The init template contains some initial seed data that can be used it needed.
+  init: |
+    randomServiceName: minio-{{ randAlphaNum 6 }}
+    randomUsername: user-{{ randAlpha 8 }}
+    randomPassword: {{ randAlphaNum 16 | quote }}
+    randomBucket: bucket-{{ randAlpha 8 | lower }}-{{ .Id | lower | trunc 47 }}
+    randomAccessKeyId: {{ randAlphaNum 20 | quote }}
+    randomSecretKey: {{ randAlphaNum 40 | quote }}
+    sk: default-provisioners-minio-instance
+    publishPort: {{ dig "annotations" "compose.score.dev/publish-port" "0" .Metadata | atoi }}
+  # The only instance state is the bucket name, for now we provision a single aws key across s3 resources.
+  state: |
+    bucket: {{ dig "bucket" .Init.randomBucket .State | quote }}
+  # The shared state contains the chosen service name and credentials
+  shared: |
+    {{ .Init.sk }}:
+      instanceServiceName: {{ dig .Init.sk "instanceServiceName" .Init.randomServiceName .Shared | quote }}
+      instanceUsername: {{ dig .Init.sk "instanceUsername" .Init.randomUsername .Shared | quote }}
+      instancePassword: {{ dig .Init.sk "instancePassword" .Init.randomPassword .Shared | quote }}
+      instanceAccessKeyId: {{ dig .Init.sk "instanceAccessKeyId" .Init.randomAccessKeyId .Shared | quote }}
+      instanceSecretKey: {{ dig .Init.sk "instanceSecretKey" .Init.randomSecretKey .Shared | quote }}
+      publishPort: {{ with (dig .Init.sk "publishPort" 0 .Shared) }}{{ if ne . 0 }}{{ . }}{{ else }}{{ $.Init.publishPort }}{{ end }}{{ end }}
+  # the outputs that we can expose
+  outputs: |
+    bucket: {{ .State.bucket }}
+    access_key_id: {{ dig .Init.sk "instanceAccessKeyId" "" .Shared | quote }}
+    secret_key: {{ dig .Init.sk "instanceSecretKey" "" .Shared | quote }}
+    endpoint: http://{{ dig .Init.sk "instanceServiceName" "" .Shared }}:9000
+    # for compatibility with Humanitec's existing s3 resource
+    region: ""
+    aws_access_key_id: {{ dig .Init.sk "instanceAccessKeyId" "" .Shared | quote }}
+    aws_secret_key: {{ dig .Init.sk "instanceSecretKey" "" .Shared | quote }}
+  # we store 2 files, 1 is always the same and overridden, the other is per bucket
+  files: |
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}-setup-scripts/00-svcacct.sh: |
+      mc alias set myminio http://{{ dig .Init.sk "instanceServiceName" "" .Shared }}:9000 {{ dig .Init.sk "instanceUsername" "" .Shared }} {{ dig .Init.sk "instancePassword" "" .Shared }}
+      mc admin user svcacct info myminio {{ dig .Init.sk "instanceAccessKeyId" "" .Shared | quote }} || mc admin user svcacct add myminio {{ dig .Init.sk "instanceUsername" "" .Shared | quote }} --access-key {{ dig .Init.sk "instanceAccessKeyId" "" .Shared | quote }} --secret-key {{ dig .Init.sk "instanceSecretKey" "" .Shared | quote }}
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}-setup-scripts/10-bucket-{{ .State.bucket }}.sh: |
+      mc alias set myminio http://{{ dig .Init.sk "instanceServiceName" "" .Shared }}:9000 {{ dig .Init.sk "instanceUsername" "" .Shared }} {{ dig .Init.sk "instancePassword" "" .Shared }}
+      mc mb -p myminio/{{ .State.bucket }}
+  volumes: |
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}-data:
+      driver: local
+  # 2 services, the minio one, and the init container which ensures the service account and buckets exist
+  services: |
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
+      image: quay.io/minio/minio
+      command: ["server", "/data", "--console-address", ":9001"]
+      restart: always
+      {{ if ne .Init.publishPort 0 }}
+      ports:
+      - target: 9001
+        published: {{ .Init.publishPort }}
+      {{ end }}
+      healthcheck:
+        test: ["CMD-SHELL", "mc alias set myminio http://localhost:9000 {{ dig .Init.sk "instanceUsername" "" .Shared }} {{ dig .Init.sk "instancePassword" "" .Shared }}"]
+        interval: 2s
+        timeout: 2s
+        retries: 10
+      environment:
+        MINIO_ROOT_USER: {{ dig .Init.sk "instanceUsername" "" .Shared | quote }}
+        MINIO_ROOT_PASSWORD: {{ dig .Init.sk "instancePassword" "" .Shared | quote }}
+      volumes:
+      - type: volume
+        source: {{ dig .Init.sk "instanceServiceName" "" .Shared }}-data
+        target: /data
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}-init:
+      image: quay.io/minio/minio
+      entrypoint: ["/bin/sh"]
+      command:
+      - "-c"
+      - "for s in $$(ls /setup-scripts -1); do sh /setup-scripts/$$s; done"
+      labels:
+        dev.score.compose.labels.is-init-container: "true"
+      depends_on:
+        {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
+          condition: service_healthy
+          restart: true
+      volumes:
+      - type: bind
+        source: {{ .MountsDirectory }}/{{ dig .Init.sk "instanceServiceName" "" .Shared }}-setup-scripts
+        target: /setup-scripts
+  info_logs: |
+    - "To connect with a minio client: use the myminio alias at \"docker run -it --network {{ .ComposeProjectName }}_default --rm --entrypoint /bin/bash quay.io/minio/minio -c 'mc alias set myminio http://{{ dig .Init.sk "instanceServiceName" "" .Shared }}:9000 {{ dig .Init.sk "instanceAccessKeyId" "" .Shared }} {{ dig .Init.sk "instanceSecretKey" "" .Shared }}; bash'\""
+    {{ if ne .Init.publishPort 0 }}
+    - "Or enter {{ dig .Init.sk "instanceUsername" "" .Shared }} / {{ dig .Init.sk "instancePassword" "" .Shared }} at https://localhost:{{ .Init.publishPort }}"
+    {{ end }}

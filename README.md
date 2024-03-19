@@ -27,13 +27,14 @@ The `score.yaml` specification file can be executed against a _Score Implementat
 
 `score-compose` comes with out-of-the-box support for:
 
-| Type        | Class   | Params | Output                                                                                      |
-|-------------|---------|--------|---------------------------------------------------------------------------------------------|
-| environment | default | (none) | `${KEY}`                                                                                    |
-| service     | !       | !      | Not supported yet, tracked in [#87](https://github.com/score-spec/score-compose/issues/87). |
-| volume      | *       | (none) | `source`                                                                                    |
-| redis       | *       | (none) | `host`, `port`, `username`, `password`                                                      | 
-| postgres    | *       | (none) | `host`, `port`, `name` (aka `database`), `username`, `password`                             |
+| Type        | Class   | Params | Output                                                                                                                                                          |
+|-------------|---------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| environment | default | (none) | `${KEY}`                                                                                                                                                        |
+| service     | !       | !      | Not supported yet, tracked in [#87](https://github.com/score-spec/score-compose/issues/87).                                                                     |
+| volume      | *       | (none) | `source`                                                                                                                                                        |
+| redis       | *       | (none) | `host`, `port`, `username`, `password`                                                                                                                          | 
+| postgres    | *       | (none) | `host`, `port`, `name` (aka `database`), `username`, `password`                                                                                                 |
+| s3          | *       | (none) | `endpoint`, `access_key_id`, `secret_key`, `bucket`, with `region=""`, `aws_access_key_id=<access_key_id>`, and `aws_secret_key=<secret_key>` for compatibility |
 
 ## ![Installation](docs/images/install.svg) Installation
 
