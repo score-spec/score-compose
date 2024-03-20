@@ -28,25 +28,42 @@ resources:
 In some stateful cases, you may need some resources to be shared. This can be done by adding `id: specific-id` to the resource definition. This is unique to the project and shared across workloads. For example, below we share the same cache across both workloads, while an extra independent cache is added to the second workload.
 
 ```yaml
+apiVersion: score.dev/v1b1
 metadata:
   name: workload-one
-...
+containers:
+  example:
+    image: busybox
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do echo $${CONNECTION}; sleep 5; done"]
+    variables:
+      CONNECTION: "redis://${resources.cache-a.username}:${resources.cache-a.password}@${resources.cache-a.host}:${resources.cache-a.port}"
 resources:
-  cacheA:
+  cache-a:
     type: redis
     id: main-cache
     
 ---
+apiVersion: score.dev/v1b1
 metadata:
   name: workload-two
-...
+containers:
+  example:
+    image: busybox
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do echo $${CONNECTION_A}; echo $${CONNECTION_B}; sleep 5; done"]
+    variables:
+      CONNECTION_A: "redis://${resources.cache-b.username}:${resources.cache-b.password}@${resources.cache-b.host}:${resources.cache-b.port}"
+      CONNECTION_B: "redis://${resources.cache-c.username}:${resources.cache-c.password}@${resources.cache-c.host}:${resources.cache-c.port}"
 resources:
-  cacheB:
+  cache-b:
     type: redis
     id: main-cache
-  cacheC:
+  cache-c:
     type: redis
 ```
+
+Notice how we are using the placeholder syntax to access outputs from the resources and pass these through to the workloads. The syntax uses a `.`-separated path to traverse the resource outputs. The `.` can be escaped inside the placeholder with a backslash, for example: `${resources.cache-a.some\.key}`.
 
 When we provision this with `score-compose` we get an output that shows 2 redis services being created and both workloads have access to the connection strings. This supports applications that need to share data within the same caches, databases, or other stateful resources.
 

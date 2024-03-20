@@ -724,3 +724,50 @@ resources:
 	})
 
 }
+
+func TestInitAndGenerate_with_annotation_ref(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	assert.NoError(t, os.WriteFile("score.yaml", []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+  annotations:
+    key.com/foo-bar: thing
+containers:
+  example:
+    image: foo
+    variables:
+      REF: ${metadata.annotations.key\.com/foo-bar}
+`), 0644))
+	// generate
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	raw, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+	assert.NoError(t, err)
+	assert.Equal(t, `name: "001"
+services:
+    example-example:
+        environment:
+            REF: thing
+        image: foo
+`, string(raw))
+
+	t.Run("validate compose spec", func(t *testing.T) {
+		if os.Getenv("NO_DOCKER") != "" {
+			t.Skip("NO_DOCKER is set")
+			return
+		}
+		dockerCmd, err := exec.LookPath("docker")
+		require.NoError(t, err)
+		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "convert", "--quiet", "--dry-run")
+		cmd.Dir = td
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		assert.NoError(t, cmd.Run())
+	})
+}

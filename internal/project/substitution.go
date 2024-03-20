@@ -23,7 +23,8 @@ import (
 )
 
 var (
-	placeholderRegEx = regexp.MustCompile(`\$(\$|{([a-zA-Z0-9.\-_\\]+)})`)
+	// placeholderRegEx will search for ${...} with any sequence of characters between them.
+	placeholderRegEx = regexp.MustCompile(`\$(\$|{([^}]*)})`)
 )
 
 func SplitRefParts(ref string) []string {
@@ -50,11 +51,9 @@ func SubstituteString(src string, inner func(string) (string, error)) (string, e
 			return src
 		}
 
-		// EDGE CASE: Captures "$$" sequences and empty templates "${}"
-		if matches[2] == "" {
+		// support escaped dollars
+		if matches[1] == "$" {
 			return matches[1]
-		} else if matches[2] == "$" {
-			return matches[2]
 		}
 
 		result, subErr := inner(matches[2])
@@ -146,7 +145,7 @@ func BuildSubstitutionFunction(metadata map[string]interface{}, resources map[st
 				resolvedValue = rv2
 			}
 		default:
-			return "", fmt.Errorf("invalid ref '%s': unknown reference root", ref)
+			return "", fmt.Errorf("invalid ref '%s': unknown reference root, use $$ to escape the substitution", ref)
 		}
 
 		if asString, ok := resolvedValue.(string); ok {
