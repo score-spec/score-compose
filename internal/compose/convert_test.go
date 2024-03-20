@@ -396,3 +396,35 @@ func TestConvertFilesIntoVolumes_expand_bad(t *testing.T) {
 	)
 	assert.EqualError(t, err, "containers.my-container.files[0]: failed to substitute in content: unknown key")
 }
+
+func TestConvertFiles_with_mode(t *testing.T) {
+	td := t.TempDir()
+	out, err := convertFilesIntoVolumes(
+		"my-workload", "my-container",
+		[]score.ContainerFilesElem{
+			{Target: "/ant.txt", Content: util.Ref("stuff")},
+			{Target: "/bat.txt", Content: util.Ref("stuff"), Mode: util.Ref("0600")},
+			{Target: "/cat.txt", Content: util.Ref("stuff"), Mode: util.Ref("0755")},
+			{Target: "/dog.txt", Content: util.Ref("stuff"), Mode: util.Ref("0444")},
+		}, td, func(s string) (string, error) {
+			return "", fmt.Errorf("unknown key")
+		},
+	)
+	assert.NoError(t, err)
+	st, err := os.Stat(filepath.Join(td, "files/my-workload-files-0-ant.txt"))
+	assert.NoError(t, err)
+	assert.Equal(t, 0644, int(st.Mode()))
+	assert.False(t, out[0].ReadOnly)
+	st, err = os.Stat(filepath.Join(td, "files/my-workload-files-1-bat.txt"))
+	assert.NoError(t, err)
+	assert.Equal(t, 0600, int(st.Mode()))
+	assert.False(t, out[1].ReadOnly)
+	st, err = os.Stat(filepath.Join(td, "files/my-workload-files-2-cat.txt"))
+	assert.NoError(t, err)
+	assert.Equal(t, 0755, int(st.Mode()))
+	assert.False(t, out[2].ReadOnly)
+	st, err = os.Stat(filepath.Join(td, "files/my-workload-files-3-dog.txt"))
+	assert.NoError(t, err)
+	assert.Equal(t, 0644, int(st.Mode()))
+	assert.True(t, out[3].ReadOnly)
+}
