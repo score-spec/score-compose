@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	compose "github.com/compose-spec/compose-go/v2/types"
@@ -203,14 +204,35 @@ func convertFilesIntoVolumes(workloadName string, containerName string, input []
 		}
 		newName := fmt.Sprintf("%s-files-%d-%s", workloadName, idx, strings.Trim(filepath.Base(file.Target), string(filepath.Separator)))
 		slog.Debug(fmt.Sprintf("Writing %d bytes of content for %s containers.%s.files[%d] to %s", len(content), workloadName, containerName, idx, filepath.Join(filesDir, newName)))
-		if err := os.WriteFile(filepath.Join(filesDir, newName), content, 0644); err != nil {
+
+		// Parse and correct the file mode of the mount. If the user permissions do not allow write, then we enable the read only flag
+		// on the bind mount so that we can still remove the file from disk on the outside without sudo.
+		readOnly := false
+		fileMode := os.FileMode(0644)
+		if file.Mode != nil {
+			newMode, err := strconv.ParseInt(*file.Mode, 8, 32)
+			if err != nil {
+				return nil, fmt.Errorf("containers.%s.files[%d]: failed to parse '%s' as octal", containerName, idx, *file.Mode)
+			} else if newMode > 0777 {
+				return nil, fmt.Errorf("containers.%s.files[%d]: mode must be <= 0777", containerName, idx)
+			} else if newMode&0400 != 0400 {
+				return nil, fmt.Errorf("containers.%s.files[%d]: mode must be at least 0400", containerName, idx)
+			} else if newMode&0600 != 0600 {
+				newMode = newMode | 0600
+				readOnly = true
+			}
+			fileMode = os.FileMode(newMode)
+		}
+
+		if err := os.WriteFile(filepath.Join(filesDir, newName), content, fileMode); err != nil {
 			return nil, fmt.Errorf("containers.%s.files[%d]: failed to write to disk: %w", containerName, idx, err)
 		}
 
 		output = append(output, compose.ServiceVolumeConfig{
-			Type:   "bind",
-			Source: filepath.Join(filesDir, newName),
-			Target: file.Target,
+			Type:     "bind",
+			Source:   filepath.Join(filesDir, newName),
+			Target:   file.Target,
+			ReadOnly: readOnly,
 		})
 	}
 
