@@ -82,3 +82,11 @@ Attaching to compose-hello-world-1
 compose-hello-world-1  | Hello Bob!
 compose-hello-world-1  | Hello Bob!
 ```
+
+`score-compose` can generate the initial env file for you if you're not sure what variables are used. To do this, specify the `--env-file` flag when running the `generate` subcommand.
+
+```
+$ score-compose generate --env-file sample.env
+$ cat sample.env
+NAME=
+```
