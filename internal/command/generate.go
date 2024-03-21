@@ -43,6 +43,8 @@ const (
 	generateCmdOverridePropertyFlag = "override-property"
 	generateCmdImageFlag            = "image"
 	generateCmdBuildFlag            = "build"
+	generateCmdOutputFlag           = "output"
+	generateCmdEnvFileFlag          = "env-file"
 )
 
 var generateCommand = &cobra.Command{
@@ -261,15 +263,28 @@ arguments.
 
 		raw, _ := yaml.Marshal(superProject)
 
-		v, _ := cmd.Flags().GetString("output")
+		v, _ := cmd.Flags().GetString(generateCmdOutputFlag)
 		if v == "" {
 			return fmt.Errorf("no output file specified")
 		} else if v == "-" {
 			_, _ = fmt.Fprint(cmd.OutOrStdout(), string(raw))
-		} else if err := os.WriteFile(v+".temp", raw, 0755); err != nil {
+		} else if err := os.WriteFile(v+".temp", raw, 0644); err != nil {
 			return fmt.Errorf("failed to write output file: %w", err)
 		} else if err := os.Rename(v+".temp", v); err != nil {
 			return fmt.Errorf("failed to complete writing output file: %w", err)
+		}
+
+		if v, _ := cmd.Flags().GetString(generateCmdEnvFileFlag); v != "" {
+			content := new(strings.Builder)
+			for k := range environmentProvisioner.Accessed() {
+				_, _ = content.WriteString(k)
+				_, _ = content.WriteRune('=')
+				_, _ = content.WriteRune('\n')
+			}
+			slog.Info(fmt.Sprintf("Writing env var file to '%s'", v))
+			if err := os.WriteFile(v, []byte(content.String()), 0644); err != nil {
+				return fmt.Errorf("failed to write env var file: %w", err)
+			}
 		}
 		return nil
 	},
@@ -304,11 +319,12 @@ func loadRawScoreFiles(fileNames []string) ([]string, map[string]map[string]inte
 }
 
 func init() {
-	generateCommand.Flags().StringP("output", "o", "compose.yaml", "The output file to write the composed compose file to")
+	generateCommand.Flags().StringP(generateCmdOutputFlag, "o", "compose.yaml", "The output file to write the composed compose file to")
 	generateCommand.Flags().String(generateCmdOverridesFileFlag, "", "An optional file of Score overrides to merge in")
 	generateCommand.Flags().StringArray(generateCmdOverridePropertyFlag, []string{}, "An optional set of path=key overrides to set or remove")
 	generateCommand.Flags().String(generateCmdImageFlag, "", "An optional container image to use for any container with image == '.'")
 	generateCommand.Flags().StringArray(generateCmdBuildFlag, []string{}, "An optional build context to use for the given container --build=container=./dir or --build=container={'\"context\":\"./dir\"}")
+	generateCommand.Flags().String(generateCmdEnvFileFlag, "", "Location to store a skeleton .env file for compose - this will override existing content")
 	rootCmd.AddCommand(generateCommand)
 }
 
