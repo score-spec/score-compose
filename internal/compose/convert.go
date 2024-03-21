@@ -112,7 +112,7 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 		}
 
 		if len(cSpec.Files) > 0 {
-			newVolumes, err := convertFilesIntoVolumes(workloadName, containerName, cSpec.Files, state.MountsDirectory, substitutionFunction)
+			newVolumes, err := convertFilesIntoVolumes(state, workloadName, containerName, substitutionFunction)
 			if err != nil {
 				return nil, err
 			}
@@ -171,7 +171,9 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 }
 
 // convertFilesIntoVolumes converts the lists of files into a list of bind mounts in the mounts directory.
-func convertFilesIntoVolumes(workloadName string, containerName string, input []score.ContainerFilesElem, mountsDirectory string, substitutionFunction func(string) (string, error)) ([]compose.ServiceVolumeConfig, error) {
+func convertFilesIntoVolumes(state *project.State, workloadName string, containerName string, substitutionFunction func(string) (string, error)) ([]compose.ServiceVolumeConfig, error) {
+	input := state.Workloads[workloadName].Spec.Containers[containerName].Files
+	mountsDirectory := state.MountsDirectory
 	if mountsDirectory == "" || mountsDirectory == "/dev/null" {
 		return nil, fmt.Errorf("files are not supported")
 	}
@@ -188,7 +190,11 @@ func convertFilesIntoVolumes(workloadName string, containerName string, input []
 		if file.Content != nil {
 			content = []byte(*file.Content)
 		} else if file.Source != nil {
-			content, err = os.ReadFile(*file.Source)
+			sourcePath := *file.Source
+			if !filepath.IsAbs(sourcePath) && state.Workloads[workloadName].File != nil {
+				sourcePath = filepath.Join(filepath.Dir(*state.Workloads[workloadName].File), sourcePath)
+			}
+			content, err = os.ReadFile(sourcePath)
 			if err != nil {
 				return nil, fmt.Errorf("containers.%s.files[%d].source: failed to read: %w", containerName, idx, err)
 			}

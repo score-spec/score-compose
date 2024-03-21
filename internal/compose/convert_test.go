@@ -313,17 +313,31 @@ func TestScoreConvert(t *testing.T) {
 
 func TestConvertFilesIntoVolumes_nominal(t *testing.T) {
 	td := t.TempDir()
-	assert.NoError(t, os.WriteFile(filepath.Join(td, "original.txt"), []byte(`first ${metadata.name} second`), 0644))
+	assert.NoError(t, os.MkdirAll(filepath.Join(td, "subdir"), 0755))
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "subdir/original.txt"), []byte(`first ${metadata.name} second`), 0644))
+	state := &project.State{
+		Workloads: map[string]project.ScoreWorkloadState{"my-workload": {
+			Spec: score.Workload{
+				Containers: map[string]score.Container{
+					"my-container": {
+						Files: []score.ContainerFilesElem{
+							{Target: "/ant.txt", Source: util.Ref("original.txt")},
+							{Target: "/bat.txt", Source: util.Ref("original.txt"), NoExpand: util.Ref(true)},
+							{Target: "/cat.txt", Source: util.Ref("original.txt"), NoExpand: util.Ref(false)},
+							{Target: "/dog.txt", Content: util.Ref("third ${metadata.name} fourth")},
+							{Target: "/eel.txt", Content: util.Ref("third ${metadata.name} fourth"), NoExpand: util.Ref(true)},
+							{Target: "/fox.txt", Content: util.Ref("third ${metadata.name} fourth"), NoExpand: util.Ref(false)},
+						},
+					},
+				},
+			},
+			File: util.Ref(filepath.Join(td, "subdir/score.yaml")),
+		}},
+		MountsDirectory: td,
+	}
 	out, err := convertFilesIntoVolumes(
-		"my-workload", "my-container",
-		[]score.ContainerFilesElem{
-			{Target: "/ant.txt", Source: util.Ref(filepath.Join(td, "original.txt"))},
-			{Target: "/bat.txt", Source: util.Ref(filepath.Join(td, "original.txt")), NoExpand: util.Ref(true)},
-			{Target: "/cat.txt", Source: util.Ref(filepath.Join(td, "original.txt")), NoExpand: util.Ref(false)},
-			{Target: "/dog.txt", Content: util.Ref("third ${metadata.name} fourth")},
-			{Target: "/eel.txt", Content: util.Ref("third ${metadata.name} fourth"), NoExpand: util.Ref(true)},
-			{Target: "/fox.txt", Content: util.Ref("third ${metadata.name} fourth"), NoExpand: util.Ref(false)},
-		}, td, func(s string) (string, error) {
+		state, "my-workload", "my-container",
+		func(s string) (string, error) {
 			switch s {
 			case "metadata.name":
 				return "blah", nil
@@ -360,11 +374,24 @@ func TestConvertFilesIntoVolumes_nominal(t *testing.T) {
 
 func TestConvertFilesIntoVolumes_file_missing(t *testing.T) {
 	td := t.TempDir()
+	state := &project.State{
+		Workloads: map[string]project.ScoreWorkloadState{"my-workload": {
+			Spec: score.Workload{
+				Containers: map[string]score.Container{
+					"my-container": {
+						Files: []score.ContainerFilesElem{
+							{Target: "/ant.txt", Source: util.Ref(filepath.Join(td, "original.txt"))},
+						},
+					},
+				},
+			},
+			File: util.Ref(filepath.Join(td, "score.yaml")),
+		}},
+		MountsDirectory: td,
+	}
 	_, err := convertFilesIntoVolumes(
-		"my-workload", "my-container",
-		[]score.ContainerFilesElem{
-			{Target: "/ant.txt", Source: util.Ref(filepath.Join(td, "original.txt"))},
-		}, td, func(s string) (string, error) {
+		state, "my-workload", "my-container",
+		func(s string) (string, error) {
 			return "", fmt.Errorf("unknown key")
 		},
 	)
@@ -373,11 +400,24 @@ func TestConvertFilesIntoVolumes_file_missing(t *testing.T) {
 
 func TestConvertFilesIntoVolumes_source_missing(t *testing.T) {
 	td := t.TempDir()
+	state := &project.State{
+		Workloads: map[string]project.ScoreWorkloadState{"my-workload": {
+			Spec: score.Workload{
+				Containers: map[string]score.Container{
+					"my-container": {
+						Files: []score.ContainerFilesElem{
+							{Target: "/ant.txt"},
+						},
+					},
+				},
+			},
+			File: util.Ref(filepath.Join(td, "score.yaml")),
+		}},
+		MountsDirectory: td,
+	}
 	_, err := convertFilesIntoVolumes(
-		"my-workload", "my-container",
-		[]score.ContainerFilesElem{
-			{Target: "/ant.txt"},
-		}, td, func(s string) (string, error) {
+		state, "my-workload", "my-container",
+		func(s string) (string, error) {
 			return "", fmt.Errorf("unknown key")
 		},
 	)
@@ -386,11 +426,24 @@ func TestConvertFilesIntoVolumes_source_missing(t *testing.T) {
 
 func TestConvertFilesIntoVolumes_expand_bad(t *testing.T) {
 	td := t.TempDir()
+	state := &project.State{
+		Workloads: map[string]project.ScoreWorkloadState{"my-workload": {
+			Spec: score.Workload{
+				Containers: map[string]score.Container{
+					"my-container": {
+						Files: []score.ContainerFilesElem{
+							{Target: "/ant.txt", Content: util.Ref("${metadata.blah}")},
+						},
+					},
+				},
+			},
+			File: util.Ref(filepath.Join(td, "score.yaml")),
+		}},
+		MountsDirectory: td,
+	}
 	_, err := convertFilesIntoVolumes(
-		"my-workload", "my-container",
-		[]score.ContainerFilesElem{
-			{Target: "/ant.txt", Content: util.Ref("${metadata.blah}")},
-		}, td, func(s string) (string, error) {
+		state, "my-workload", "my-container",
+		func(s string) (string, error) {
 			return "", fmt.Errorf("unknown key")
 		},
 	)
@@ -399,14 +452,27 @@ func TestConvertFilesIntoVolumes_expand_bad(t *testing.T) {
 
 func TestConvertFiles_with_mode(t *testing.T) {
 	td := t.TempDir()
+	state := &project.State{
+		Workloads: map[string]project.ScoreWorkloadState{"my-workload": {
+			Spec: score.Workload{
+				Containers: map[string]score.Container{
+					"my-container": {
+						Files: []score.ContainerFilesElem{
+							{Target: "/ant.txt", Content: util.Ref("stuff")},
+							{Target: "/bat.txt", Content: util.Ref("stuff"), Mode: util.Ref("0600")},
+							{Target: "/cat.txt", Content: util.Ref("stuff"), Mode: util.Ref("0755")},
+							{Target: "/dog.txt", Content: util.Ref("stuff"), Mode: util.Ref("0444")},
+						},
+					},
+				},
+			},
+			File: util.Ref(filepath.Join(td, "score.yaml")),
+		}},
+		MountsDirectory: td,
+	}
 	out, err := convertFilesIntoVolumes(
-		"my-workload", "my-container",
-		[]score.ContainerFilesElem{
-			{Target: "/ant.txt", Content: util.Ref("stuff")},
-			{Target: "/bat.txt", Content: util.Ref("stuff"), Mode: util.Ref("0600")},
-			{Target: "/cat.txt", Content: util.Ref("stuff"), Mode: util.Ref("0755")},
-			{Target: "/dog.txt", Content: util.Ref("stuff"), Mode: util.Ref("0444")},
-		}, td, func(s string) (string, error) {
+		state, "my-workload", "my-container",
+		func(s string) (string, error) {
 			return "", fmt.Errorf("unknown key")
 		},
 	)

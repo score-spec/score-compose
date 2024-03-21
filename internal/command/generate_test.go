@@ -170,6 +170,7 @@ services:
 	sd, ok, err := project.LoadStateDirectory(td)
 	assert.NoError(t, err)
 	assert.True(t, ok)
+	assert.Equal(t, "score.yaml", *sd.State.Workloads["example"].File)
 	assert.Len(t, sd.State.Workloads, 1)
 	assert.Len(t, sd.State.Resources, 1)
 }
