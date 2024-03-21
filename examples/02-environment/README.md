@@ -2,7 +2,9 @@
 
 When `docker-compose` spins-up the service, it is possible to pass some information from the host to the container via the environment variables. These variables can then be accessed by programs running in the container.
 
-The `containers.*.variables` section supports placeholder interpolation using `${..}` syntax. This can be used to access outputs from metadata or resources. The `environment` resource to collect them from the current shell:
+The `containers.*.variables` section supports placeholder interpolation using `${..}` syntax. This can be used to access outputs from metadata or resources. The placeholder syntax can be escaped with a double-$ like `$${..}`.
+
+The `environment` resource to collect them from the current shell:
 
 ```yaml
 apiVersion: score.dev/v1b1

@@ -29,6 +29,9 @@ func init() {
 	substitutionFunction = BuildSubstitutionFunction(score.WorkloadMetadata{
 		"name":  "test-name",
 		"other": map[string]interface{}{"key": "value"},
+		"annotations": map[string]interface{}{
+			"key.com/foo-bar": "thing",
+		},
 	}, map[string]OutputLookupFunc{
 		"env": func(keys ...string) (interface{}, error) {
 			if len(keys) != 1 {
@@ -52,13 +55,14 @@ func TestSubstitutionFunction(t *testing.T) {
 		Expected      string
 		ExpectedError string
 	}{
-		{Input: "missing", ExpectedError: "invalid ref 'missing': unknown reference root"},
+		{Input: "missing", ExpectedError: "invalid ref 'missing': unknown reference root, use $$ to escape the substitution"},
 		{Input: "metadata.name", Expected: "test-name"},
 		{Input: "metadata", ExpectedError: "invalid ref 'metadata': requires at least a metadata key to lookup"},
 		{Input: "metadata.other", Expected: "{\"key\":\"value\"}"},
 		{Input: "metadata.other.key", Expected: "value"},
 		{Input: "metadata.missing", ExpectedError: "invalid ref 'metadata.missing': key 'missing' not found"},
 		{Input: "metadata.name.foo", ExpectedError: "invalid ref 'metadata.name.foo': cannot lookup key 'foo', context is not a map"},
+		{Input: "metadata.annotations.key\\.com/foo-bar", Expected: "thing"},
 		{Input: "resources.env", Expected: "env"},
 		{Input: "resources.env.DEBUG", Expected: "${DEBUG}"},
 		{Input: "resources.missing", ExpectedError: "invalid ref 'resources.missing': no known resource 'missing'"},
@@ -94,8 +98,10 @@ func TestSubstituteString(t *testing.T) {
 		{Input: "$abc", Expected: "$abc"},
 		{Input: "abc $$ abc", Expected: "abc $ abc"},
 		{Input: "$${abc}", Expected: "${abc}"},
+		{Input: "$${abc .4t3298y *(^&(*}", Expected: "${abc .4t3298y *(^&(*}"},
 		{Input: "my name is ${metadata.name}", Expected: "my name is test-name"},
 		{Input: "my name is ${metadata.thing\\.two}", ExpectedError: "invalid ref 'metadata.thing\\.two': key 'thing.two' not found"},
+		{Input: "my name is ${}", ExpectedError: "invalid ref '': unknown reference root, use $$ to escape the substitution"},
 		{
 			Input:    "postgresql://${resources.db.user}:${resources.db.password}@${resources.db.host}:${resources.db.port}/${resources.db.name}",
 			Expected: "postgresql://${DB_USER?required}:${DB_PASSWORD?required}@${DB_HOST?required}:${DB_PORT?required}/${DB_NAME?required}",
