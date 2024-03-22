@@ -26,14 +26,14 @@ The `score.yaml` specification file can be executed against a _Score Implementat
 
 `score-compose` comes with out-of-the-box support for:
 
-| Type        | Class   | Params | Output                                                                                                                                                          |
-|-------------|---------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| environment | default | (none) | `${KEY}`                                                                                                                                                        |
-| service     | !       | !      | Not supported yet, tracked in [#87](https://github.com/score-spec/score-compose/issues/87).                                                                     |
-| volume      | *       | (none) | `source`                                                                                                                                                        |
-| redis       | *       | (none) | `host`, `port`, `username`, `password`                                                                                                                          | 
-| postgres    | *       | (none) | `host`, `port`, `name` (aka `database`), `username`, `password`                                                                                                 |
-| s3          | *       | (none) | `endpoint`, `access_key_id`, `secret_key`, `bucket`, with `region=""`, `aws_access_key_id=<access_key_id>`, and `aws_secret_key=<secret_key>` for compatibility |
+| Type         | Class   | Params             | Output                                                                                                                                                          |
+|--------------|---------|--------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| environment  | default | (none)             | `${KEY}`                                                                                                                                                        |
+| service-port | default | `workload`, `port` | `hostname`, `port`                                                                                                                                              |
+| volume       | *       | (none)             | `source`                                                                                                                                                        |
+| redis        | *       | (none)             | `host`, `port`, `username`, `password`                                                                                                                          | 
+| postgres     | *       | (none)             | `host`, `port`, `name` (aka `database`), `username`, `password`                                                                                                 |
+| s3           | *       | (none)             | `endpoint`, `access_key_id`, `secret_key`, `bucket`, with `region=""`, `aws_access_key_id=<access_key_id>`, and `aws_secret_key=<secret_key>` for compatibility |
 
 ## ![Installation](docs/images/install.svg) Installation
 
@@ -54,6 +54,7 @@ See the [examples](./examples) for more examples of using Score and provisioning
 - [05-volume-mounts](examples/05-volume-mounts) - an example of an "empty-dir" volume resource with `type: volume`
 - [06-resource-provisioning](examples/06-resource-provisioning) - detailed example and information about resource provisioning and the operation of the `template://` and `cmd://` provisioners
 - [07-overrides](examples/07-overrides) - details of how to override aspects of the input Score file and output Docker compose files
+- [08-service-port-resource](examples/08-service-port-resource) - an example of using the `service` resource type to link between workloads
 
 If you're getting started, you can use `score-compose init` to create a basic `score.yaml` file in the current directory along with a `.score-compose/` working directory.
 

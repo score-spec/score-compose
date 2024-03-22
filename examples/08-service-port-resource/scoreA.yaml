@@ -1,0 +1,11 @@
+apiVersion: score.dev/v1b1
+metadata:
+  name: workload-a
+containers:
+  example:
+    image: nginx
+service:
+  ports:
+    web:
+      port: 8080
+      targetPort: 80

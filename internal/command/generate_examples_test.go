@@ -146,6 +146,24 @@ services:
 `,
 		},
 		{
+			subDir: "08-service-port-resource",
+			adds:   []string{"scoreA.yaml", "scoreB.yaml"},
+			expected: `name: 08-service-port-resource
+services:
+    workload-a-example:
+        image: nginx
+    workload-b-example:
+        command:
+            - -c
+            - while true; do wget $${DEPENDENCY_URL} || true; sleep 5; done
+        entrypoint:
+            - /bin/sh
+        environment:
+            DEPENDENCY_URL: http://workload-a-example:80
+        image: busybox
+`,
+		},
+		{
 			subDir: "09-dns-and-route",
 			adds:   []string{"score.yaml"},
 		},
