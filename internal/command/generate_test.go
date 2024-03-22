@@ -772,3 +772,83 @@ services:
 		assert.NoError(t, cmd.Run())
 	})
 }
+
+func TestGenerateRouteResource(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: foo
+service:
+  ports:
+    foo:
+      port: 80
+      targetPort: 8080
+resources:
+  r1:
+    type: route
+    params:
+      host: localhost1
+      path: /first
+      port: foo
+  r2:
+    type: route
+    params:
+      host: localhost1
+      path: /second
+      port: foo
+  r3:
+    type: route
+    params:
+      host: localhost2
+      path: /third
+      port: foo
+`), 0644))
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	// check that state was persisted
+	sd, ok, err := project.LoadStateDirectory(td)
+	assert.NoError(t, err)
+	assert.True(t, ok)
+	assert.Len(t, sd.State.Workloads, 1)
+	assert.Len(t, sd.State.Resources, 3)
+	x := sd.State.SharedState["default-provisioners-routing-instance"].(map[string]interface{})
+	assert.Contains(t, x["instanceServiceName"].(string), "routing-")
+	delete(x, "instanceServiceName")
+	assert.Equal(t, map[string]interface{}{
+		"default-provisioners-routing-instance": map[string]interface{}{
+			"hosts": map[string]interface{}{
+				"localhost1": map[string]interface{}{
+					"route.default#example.r1": map[string]interface{}{"path": "/first", "port": 8080, "target": "example-example:8080"},
+					"route.default#example.r2": map[string]interface{}{"path": "/second", "port": 8080, "target": "example-example:8080"},
+				},
+				"localhost2": map[string]interface{}{
+					"route.default#example.r3": map[string]interface{}{"path": "/third", "port": 8080, "target": "example-example:8080"},
+				},
+			},
+			"instancePort": 8080,
+		},
+	}, sd.State.SharedState)
+
+	t.Run("validate compose spec", func(t *testing.T) {
+		if os.Getenv("NO_DOCKER") != "" {
+			t.Skip("NO_DOCKER is set")
+			return
+		}
+		dockerCmd, err := exec.LookPath("docker")
+		require.NoError(t, err)
+		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "convert", "--quiet", "--dry-run")
+		cmd.Dir = td
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		assert.NoError(t, cmd.Run())
+	})
+}

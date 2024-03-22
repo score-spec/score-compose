@@ -275,3 +275,109 @@
     {{ if ne .Init.publishPort 0 }}
     - "Or enter {{ dig .Init.sk "instanceUsername" "" .Shared }} / {{ dig .Init.sk "instancePassword" "" .Shared }} at https://localhost:{{ .Init.publishPort }}"
     {{ end }}
+
+# The default dns provisioner just outputs localhost as the hostname every time.
+# This is because without actual control of a dns resolver we can't do any accurate routing on any other name. This
+# can be replaced by a new provisioner in the future.
+- uri: template://default-provisioners/dns
+  type: dns
+  class: default
+  outputs: |
+    host: localhost
+
+# The default route provisioner sets up an nginx service with an HTTP service that can route on our prefix paths.
+# It assumes the hostnames and routes provided have no overlaps. Weird behavior may happen if there are overlaps.
+- uri: template://default-provisioners/route
+  type: route
+  class: default
+  init: |
+    randomServiceName: routing-{{ randAlphaNum 6 }}
+    sk: default-provisioners-routing-instance
+    {{ if not (regexMatch "^/|(/([^/]+))+$" .Params.path) }}{{ fail "params.path start with a / but cannot end with /" }}{{ end }}
+    {{ if not (regexMatch "^[a-z0-9_.-]{1,253}$" .Params.host) }}{{ fail "params.host must be a valid hostname" }}{{ end }}
+    {{ $ports := (index .WorkloadServices .SourceWorkload).Ports }}
+    {{ if not $ports }}{{ fail "no service ports exist" }}{{ end }}
+    {{ $port := index $ports .Params.port }}
+    {{ if not $port.TargetPort }}{{ fail "params.port is not a named service port" }}{{ end }}
+  shared: |
+    {{ .Init.sk }}:
+      instancePort: 8080
+      instanceServiceName: {{ dig .Init.sk "instanceServiceName" .Init.randomServiceName .Shared | quote }}
+      {{ $targetHost := (index .WorkloadServices .SourceWorkload).ServiceName }}
+      {{ $ports := (index .WorkloadServices .SourceWorkload).Ports }}
+      {{ $port := index $ports .Params.port }}
+      {{ $targetPort := $port.TargetPort }}
+      {{ $target := (printf "%s:%d" $targetHost $targetPort) }}
+      {{ $hBefore := dig .Init.sk "hosts" (dict) .Shared }}
+      {{ $rBefore := dig .Params.host (dict) $hBefore }}
+      {{ $inner := dict "path" .Params.path "target" $target "port" $targetPort }}
+      {{ $rAfter := (merge $rBefore (dict .Uid $inner)) }}
+      {{ $hAfter := (merge $hBefore (dict .Params.host $rAfter)) }}
+      hosts: {{ $hAfter | toRawJson }}
+  files: |
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}/nginx.conf: |
+      worker_processes 1;
+      worker_rlimit_nofile 8192;
+      events {
+        worker_connections 4096;
+      }
+      http {
+        resolver 127.0.0.11;
+    
+        {{ range $h, $r := (dig .Init.sk "hosts" "" .Shared) }}
+        server {
+          listen 80;
+          listen [::]:80;
+          server_name {{ $h }};
+    
+          proxy_set_header X-Real-IP              $remote_addr;
+          proxy_set_header X-Forwarded-For        $remote_addr;
+          proxy_set_header X-Original-Forwarded-For $http_x_forwarded_for;
+          proxy_set_header Proxy                  "";
+          proxy_connect_timeout                   5s;
+          proxy_send_timeout                      60s;
+          proxy_read_timeout                      60s;
+          proxy_buffers                           16 4k;
+          proxy_buffer_size                       2k;
+          
+          location = /favicon.ico {
+            return 204;
+            access_log     off;
+            log_not_found  off;
+          }
+          
+          {{ range $k, $v := $r }}
+          location = {{ index $v "path" }} {
+            set $backend {{ index $v "target" }};
+            rewrite ^{{ index $v "path" }}(.*)$ /$1 break;
+            proxy_pass http://$backend;
+          }
+
+          {{ if not (eq (index $v "path") "/") }}
+          location {{ index $v "path" }}/ {
+            set $backend {{ index $v "target" }};
+            rewrite ^{{ index $v "path" }}/(.*)$ /$1 break;
+            proxy_pass http://$backend;
+          }
+          {{ end }}
+          {{ end }}
+        }
+        {{ end }}
+      }
+
+  services: |
+    {{ $p := (dig .Init.sk "instancePort" 0 .Shared) }}
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
+      image: "nginx:1"
+      restart: always
+      ports:
+        - published: {{ $p }}
+          target: 80
+      volumes:
+        - type: bind
+          source: {{ .MountsDirectory }}/{{ dig .Init.sk "instanceServiceName" "" .Shared }}/nginx.conf
+          target: /etc/nginx/nginx.conf
+          readOnly: true
+  info_logs: |
+    {{ $p := (dig .Init.sk "instancePort" 0 .Shared) }}
+    - "{{.Uid}}: To connect to this route, http://{{ .Params.host }}:{{ $p }}{{ .Params.path }} (make sure {{ .Params.host }} resolves to localhost)"

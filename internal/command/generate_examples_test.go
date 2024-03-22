@@ -145,6 +145,10 @@ services:
         image: nginx
 `,
 		},
+		{
+			subDir: "09-dns-and-route",
+			adds:   []string{"score.yaml"},
+		},
 	} {
 		t.Run(tc.subDir, func(t *testing.T) {
 			oldReader := rand.Reader
