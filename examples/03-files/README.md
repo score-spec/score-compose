@@ -4,7 +4,7 @@ Score workloads can bind-mount files into running containers. Files using `conte
 
 This is invaluable when configuring containers whose images you don't control or cannot modify further.
 
-In the Score file below, two files are mounted, one with inline content, the other sourced from the local directory.
+In the Score file below, two files are mounted, one with inline content, the other sourced from the local directory relative to the input Score file.
 
 ```yaml
 apiVersion: score.dev/v1b1

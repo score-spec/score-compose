@@ -124,7 +124,10 @@ arguments.
 		currentState := &sd.State
 
 		// Now validate with score spec
-		for workloadName, spec := range workloadSpecs {
+		for i, workloadName := range workloadNames {
+			spec := workloadSpecs[workloadName]
+			inputFile := inputFiles[i]
+
 			// Ensure transforms are applied (be a good citizen)
 			if changes, err := schema.ApplyCommonUpgradeTransforms(spec); err != nil {
 				return fmt.Errorf("failed to upgrade spec: %w", err)
@@ -180,7 +183,7 @@ arguments.
 				}
 			}
 
-			currentState, err = currentState.WithWorkload(&out, nil, containerBuildContexts)
+			currentState, err = currentState.WithWorkload(&out, &inputFile, containerBuildContexts)
 			if err != nil {
 				return fmt.Errorf("failed to add workload '%s': %w", workloadName, err)
 			}
