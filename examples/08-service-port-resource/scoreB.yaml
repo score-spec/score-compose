@@ -1,0 +1,16 @@
+apiVersion: score.dev/v1b1
+metadata:
+  name: workload-b
+containers:
+  example:
+    image: busybox
+    command: ["/bin/sh"]
+    args: ["-c", "while true; do wget $${DEPENDENCY_URL} || true; sleep 5; done"]
+    variables:
+      DEPENDENCY_URL: "http://${resources.dependency.hostname}:${resources.dependency.port}"
+resources:
+  dependency:
+    type: service-port
+    params:
+      workload: workload-a
+      port: web
