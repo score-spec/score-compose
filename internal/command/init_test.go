@@ -27,6 +27,50 @@ import (
 	"github.com/score-spec/score-compose/internal/project"
 )
 
+func TestInitHelp(t *testing.T) {
+	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--help"})
+	assert.NoError(t, err)
+	assert.Equal(t, `The init subcommand will prepare the current directory for working with score-compose and prepare any local
+files or configuration needed to be successful.
+
+A directory named .score-compose will be created if it doesn't exist. This file stores local state and generally should
+not be checked into source control. Add it to your .gitignore file if you use Git as version control.
+
+The project name will be used as a Docker compose project name when the final compose files are written. This name
+acts as a namespace when multiple score files and containers are used.
+
+Usage:
+  score-compose init [flags]
+
+Examples:
+
+  # Define a score file to generate
+  score-compose init --file score2.yaml
+
+  # Or override the docker compose project name
+  score-compose init --project score-compose2
+
+  # Or disable the default score file generation if you already have a score file
+  score-compose init --no-sample
+
+Flags:
+  -f, --file string      The score file to initialize (default "./score.yaml")
+  -h, --help             help for init
+      --no-sample        Disable generation of the sample score file
+  -p, --project string   Set the name of the docker compose project (defaults to the current directory name)
+
+Global Flags:
+      --quiet           Mute any logging output
+  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
+`, stdout)
+	assert.Equal(t, "", stderr)
+
+	stdout2, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"help", "init"})
+	assert.NoError(t, err)
+	assert.Equal(t, stdout, stdout2)
+	assert.Equal(t, "", stderr)
+}
+
 func TestInitNominal(t *testing.T) {
 	td := t.TempDir()
 
@@ -64,6 +108,24 @@ func TestInitNominal(t *testing.T) {
 		assert.Equal(t, map[project.ResourceUid]project.ScoreResourceState{}, sd.State.Resources)
 		assert.Equal(t, map[string]interface{}{}, sd.State.SharedState)
 	}
+}
+
+func TestInitNoSample(t *testing.T) {
+	td := t.TempDir()
+
+	wd, _ := os.Getwd()
+	require.NoError(t, os.Chdir(td))
+	defer func() {
+		require.NoError(t, os.Chdir(wd))
+	}()
+
+	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--no-sample"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	assert.NotEqual(t, "", strings.TrimSpace(stderr))
+
+	_, err = os.Stat("score.yaml")
+	assert.ErrorIs(t, err, os.ErrNotExist)
 }
 
 func TestInitNominal_custom_file_and_project(t *testing.T) {

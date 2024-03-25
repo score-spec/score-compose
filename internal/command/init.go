@@ -29,7 +29,8 @@ import (
 	"github.com/score-spec/score-compose/internal/provisioners/loader"
 )
 
-const DefaultScoreFileContent = `# Score provides a developer-centric and platform-agnostic 
+const (
+	DefaultScoreFileContent = `# Score provides a developer-centric and platform-agnostic 
 # Workload specification to improve developer productivity and experience. 
 # Score eliminates configuration management between local and remote environments.
 #
@@ -65,6 +66,10 @@ service:
 
 resources: {}
 `
+	initCmdFileFlag         = "file"
+	initCmdFileProjectFlag  = "project"
+	initCmdFileNoSampleFlag = "no-sample"
+)
 
 //go:embed default.provisioners.yaml
 var defaultProvisionersContent string
@@ -87,7 +92,10 @@ acts as a namespace when multiple score files and containers are used.
   score-compose init --file score2.yaml
 
   # Or override the docker compose project name
-  score-compose init --project score-compose2`,
+  score-compose init --project score-compose2
+
+  # Or disable the default score file generation if you already have a score file
+  score-compose init --no-sample`,
 
 	// don't print the errors - we print these ourselves in main()
 	SilenceErrors: true,
@@ -96,8 +104,8 @@ acts as a namespace when multiple score files and containers are used.
 		cmd.SilenceUsage = true
 
 		// load flag values
-		initCmdScoreFile, _ := cmd.Flags().GetString("file")
-		initCmdComposeProject, _ := cmd.Flags().GetString("project")
+		initCmdScoreFile, _ := cmd.Flags().GetString(initCmdFileFlag)
+		initCmdComposeProject, _ := cmd.Flags().GetString(initCmdFileProjectFlag)
 
 		// validate project
 		if initCmdComposeProject != "" {
@@ -148,14 +156,18 @@ acts as a namespace when multiple score files and containers are used.
 		}
 
 		if _, err := os.ReadFile(initCmdScoreFile); err != nil {
-			if !errors.Is(err, os.ErrNotExist) {
-				return fmt.Errorf("failed to check existing Score file: %w", err)
-			}
-			slog.Info(fmt.Sprintf("Initial Score file '%s' does not exist - creating it", initCmdScoreFile))
-			if err := os.WriteFile(initCmdScoreFile+".temp", []byte(DefaultScoreFileContent), 0755); err != nil {
-				return fmt.Errorf("failed to write initial score file: %w", err)
-			} else if err := os.Rename(initCmdScoreFile+".temp", initCmdScoreFile); err != nil {
-				return fmt.Errorf("failed to complete writing initial Score file: %w", err)
+			if v, _ := cmd.Flags().GetBool(initCmdFileNoSampleFlag); v {
+				slog.Info(fmt.Sprintf("Initial Score file '%s' does not exist - and sample generation is disabled", initCmdScoreFile))
+			} else {
+				if !errors.Is(err, os.ErrNotExist) {
+					return fmt.Errorf("failed to check existing Score file: %w", err)
+				}
+				slog.Info(fmt.Sprintf("Initial Score file '%s' does not exist - creating it", initCmdScoreFile))
+				if err := os.WriteFile(initCmdScoreFile+".temp", []byte(DefaultScoreFileContent), 0755); err != nil {
+					return fmt.Errorf("failed to write initial score file: %w", err)
+				} else if err := os.Rename(initCmdScoreFile+".temp", initCmdScoreFile); err != nil {
+					return fmt.Errorf("failed to complete writing initial Score file: %w", err)
+				}
 			}
 		} else {
 			slog.Info(fmt.Sprintf("Found existing Score file '%s'", initCmdScoreFile))
@@ -174,8 +186,9 @@ acts as a namespace when multiple score files and containers are used.
 }
 
 func init() {
-	initCmd.Flags().StringP("file", "f", scoreFileDefault, "The score file to initialize")
-	initCmd.Flags().StringP("project", "p", "", "Set the name of the docker compose project (defaults to the current directory name)")
+	initCmd.Flags().StringP(initCmdFileFlag, "f", scoreFileDefault, "The score file to initialize")
+	initCmd.Flags().StringP(initCmdFileProjectFlag, "p", "", "Set the name of the docker compose project (defaults to the current directory name)")
+	initCmd.Flags().Bool(initCmdFileNoSampleFlag, false, "Disable generation of the sample score file")
 
 	rootCmd.AddCommand(initCmd)
 }
