@@ -297,7 +297,7 @@
     {{ if not (regexMatch "^[a-z0-9_.-]{1,253}$" .Params.host) }}{{ fail "params.host must be a valid hostname" }}{{ end }}
     {{ $ports := (index .WorkloadServices .SourceWorkload).Ports }}
     {{ if not $ports }}{{ fail "no service ports exist" }}{{ end }}
-    {{ $port := index $ports .Params.port }}
+    {{ $port := index $ports (print .Params.port) }}
     {{ if not $port.TargetPort }}{{ fail "params.port is not a named service port" }}{{ end }}
   shared: |
     {{ .Init.sk }}:
@@ -305,7 +305,7 @@
       instanceServiceName: {{ dig .Init.sk "instanceServiceName" .Init.randomServiceName .Shared | quote }}
       {{ $targetHost := (index .WorkloadServices .SourceWorkload).ServiceName }}
       {{ $ports := (index .WorkloadServices .SourceWorkload).Ports }}
-      {{ $port := index $ports .Params.port }}
+      {{ $port := index $ports (print .Params.port) }}
       {{ $targetPort := $port.TargetPort }}
       {{ $target := (printf "%s:%d" $targetHost $targetPort) }}
       {{ $hBefore := dig .Init.sk "hosts" (dict) .Shared }}

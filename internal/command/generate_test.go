@@ -808,7 +808,7 @@ resources:
     params:
       host: localhost2
       path: /third
-      port: foo
+      port: 80
 `), 0644))
 	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
 	assert.NoError(t, err)

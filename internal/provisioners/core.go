@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
 	compose "github.com/compose-spec/compose-go/v2/types"
@@ -257,6 +258,14 @@ func buildWorkloadServices(state *project.State) map[string]NetworkService {
 					Port:       port.Port,
 					TargetPort: util.DerefOr(port.TargetPort, port.Port),
 					Protocol:   util.DerefOr(port.Protocol, score.ServicePortProtocolTCP),
+				}
+			}
+			// Also add unique ports using a str-converted port number - this expands compatibility by allowing users
+			// to indicate the named port using its port number as a secondary name.
+			for s, port := range (*workloadState.Spec.Service).Ports {
+				p2 := strconv.Itoa(port.Port)
+				if _, ok := ns.Ports[p2]; !ok {
+					ns.Ports[p2] = ns.Ports[s]
 				}
 			}
 		}
