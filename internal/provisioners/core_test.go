@@ -141,7 +141,9 @@ func TestProvisionResourcesWithNetworkService(t *testing.T) {
 					ServiceName: "w1-container-a",
 					Ports: map[string]ServicePort{
 						"web":  {Name: "web", Port: 80, TargetPort: 80, Protocol: score.ServicePortProtocolTCP},
+						"80":   {Name: "web", Port: 80, TargetPort: 80, Protocol: score.ServicePortProtocolTCP},
 						"grpc": {Name: "grpc", Port: 9000, TargetPort: 9001, Protocol: score.ServicePortProtocolUDP},
+						"9000": {Name: "grpc", Port: 9000, TargetPort: 9001, Protocol: score.ServicePortProtocolUDP},
 					},
 				},
 			}, input.WorkloadServices)

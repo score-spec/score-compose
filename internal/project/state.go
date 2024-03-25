@@ -32,9 +32,6 @@ type State struct {
 	SharedState        map[string]interface{}             `yaml:"shared_state"`
 	ComposeProjectName string                             `yaml:"compose_project"`
 	MountsDirectory    string                             `yaml:"mounts_directory"`
-
-	// IsDeprecatedPortPublishingEnabled enables the old score-compose run mechanism of publishing service ports
-	IsDeprecatedPortPublishingEnabled bool `yaml:"-"`
 }
 
 type ScoreWorkloadState struct {

@@ -1,0 +1,20 @@
+apiVersion: score.dev/v1b1
+metadata:
+  name: hello-world
+service:
+  ports:
+    web:
+      port: 8080
+      targetPort: 80
+containers:
+  web:
+    image: nginx
+resources:
+  dns:
+    type: dns
+  route:
+    type: route
+    params:
+      path: /subpath
+      host: ${resources.dns.host}
+      port: web
