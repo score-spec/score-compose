@@ -1,18 +1,18 @@
 module github.com/score-spec/score-compose
 
-go 1.21
+go 1.22
 
-toolchain go1.21.0
+toolchain go1.22.0
 
 require (
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/compose-spec/compose-go/v2 v2.0.0-rc.8
 	github.com/imdario/mergo v0.3.13
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/score-spec/score-go v1.3.0
+	github.com/score-spec/score-go v1.5.0
 	github.com/spf13/cobra v1.6.0
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/tidwall/sjson v1.2.5
 	gopkg.in/yaml.v3 v3.0.1
 )

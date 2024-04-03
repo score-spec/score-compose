@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	compose "github.com/compose-spec/compose-go/v2/types"
+	"github.com/score-spec/score-go/framework"
 	score "github.com/score-spec/score-go/types"
 
 	"github.com/score-spec/score-compose/internal/project"
@@ -94,18 +95,18 @@ type ProvisionOutput struct {
 	ComposeServices      map[string]compose.ServiceConfig `json:"compose_services"`
 
 	// For testing and legacy reasons, built in provisioners can set a direct lookup function
-	OutputLookupFunc project.OutputLookupFunc `json:"-"`
+	OutputLookupFunc framework.OutputLookupFunc `json:"-"`
 }
 
 type Provisioner interface {
 	Uri() string
-	Match(resUid project.ResourceUid) bool
+	Match(resUid framework.ResourceUid) bool
 	Provision(ctx context.Context, input *Input) (*ProvisionOutput, error)
 }
 
 type ephemeralProvisioner struct {
 	uri       string
-	matchUid  project.ResourceUid
+	matchUid  framework.ResourceUid
 	provision func(ctx context.Context, input *Input) (*ProvisionOutput, error)
 }
 
@@ -113,7 +114,7 @@ func (e *ephemeralProvisioner) Uri() string {
 	return e.uri
 }
 
-func (e *ephemeralProvisioner) Match(resUid project.ResourceUid) bool {
+func (e *ephemeralProvisioner) Match(resUid framework.ResourceUid) bool {
 	return resUid == e.matchUid
 }
 
@@ -122,13 +123,13 @@ func (e *ephemeralProvisioner) Provision(ctx context.Context, input *Input) (*Pr
 }
 
 // NewEphemeralProvisioner is mostly used for internal testing and uses the given provisioner function to provision an exact resource.
-func NewEphemeralProvisioner(uri string, matchUid project.ResourceUid, inner func(ctx context.Context, input *Input) (*ProvisionOutput, error)) Provisioner {
+func NewEphemeralProvisioner(uri string, matchUid framework.ResourceUid, inner func(ctx context.Context, input *Input) (*ProvisionOutput, error)) Provisioner {
 	return &ephemeralProvisioner{uri: uri, matchUid: matchUid, provision: inner}
 }
 
 // ApplyToStateAndProject takes the outputs of a provisioning request and applies to the state, file tree, and docker
 // compose project.
-func (po *ProvisionOutput) ApplyToStateAndProject(state *project.State, resUid project.ResourceUid, project *compose.Project) (*project.State, error) {
+func (po *ProvisionOutput) ApplyToStateAndProject(state *project.State, resUid framework.ResourceUid, project *compose.Project) (*project.State, error) {
 	slog.Debug(
 		fmt.Sprintf("Provisioned resource '%s'", resUid),
 		"outputs", po.ResourceOutputs,
@@ -177,7 +178,7 @@ func (po *ProvisionOutput) ApplyToStateAndProject(state *project.State, resUid p
 		if !filepath.IsLocal(relativePath) {
 			return nil, fmt.Errorf("failing to write non relative volume directory '%s'", relativePath)
 		}
-		dst := filepath.Join(state.MountsDirectory, relativePath)
+		dst := filepath.Join(state.Extras.MountsDirectory, relativePath)
 		if b {
 			slog.Debug(fmt.Sprintf("Ensuring mount directory '%s' exists", dst))
 			if err := os.MkdirAll(dst, 0755); err != nil && !errors.Is(err, os.ErrExist) {
@@ -196,7 +197,7 @@ func (po *ProvisionOutput) ApplyToStateAndProject(state *project.State, resUid p
 		if !filepath.IsLocal(relativePath) {
 			return nil, fmt.Errorf("failing to write non relative volume directory '%s'", relativePath)
 		}
-		dst := filepath.Join(state.MountsDirectory, relativePath)
+		dst := filepath.Join(state.Extras.MountsDirectory, relativePath)
 		if b != nil {
 			slog.Debug(fmt.Sprintf("Ensuring mount file '%s' exists", dst))
 			if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil && !errors.Is(err, os.ErrExist) {
@@ -304,8 +305,8 @@ func ProvisionResources(ctx context.Context, state *project.State, provisioners 
 			if err != nil {
 				return nil, fmt.Errorf("failed to find resource params for resource '%s': %w", resUid, err)
 			}
-			sf := project.BuildSubstitutionFunction(out.Workloads[resState.SourceWorkload].Spec.Metadata, resOutputs)
-			rawParams, err := project.Substitute(resState.Params, sf)
+			sf := framework.BuildSubstitutionFunction(out.Workloads[resState.SourceWorkload].Spec.Metadata, resOutputs)
+			rawParams, err := framework.Substitute(resState.Params, sf)
 			if err != nil {
 				return nil, fmt.Errorf("failed to substitute params for resource '%s': %w", resUid, err)
 			}
@@ -323,8 +324,8 @@ func ProvisionResources(ctx context.Context, state *project.State, provisioners 
 			SourceWorkload:     resState.SourceWorkload,
 			WorkloadServices:   workloadServices,
 			SharedState:        out.SharedState,
-			ComposeProjectName: out.ComposeProjectName,
-			MountDirectoryPath: out.MountsDirectory,
+			ComposeProjectName: out.Extras.ComposeProjectName,
+			MountDirectoryPath: out.Extras.MountsDirectory,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("resource '%s': failed to provision: %w", resUid, err)

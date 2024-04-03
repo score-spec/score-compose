@@ -19,17 +19,17 @@ import (
 	"testing"
 
 	compose "github.com/compose-spec/compose-go/v2/types"
+	"github.com/score-spec/score-go/framework"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/score-spec/score-compose/internal/project"
 	"github.com/score-spec/score-compose/internal/provisioners"
 	"github.com/score-spec/score-compose/internal/util"
 )
 
 func TestProvision(t *testing.T) {
 	td := t.TempDir()
-	resUid := project.NewResourceUid("w", "r", "thing", nil, nil)
+	resUid := framework.NewResourceUid("w", "r", "thing", nil, nil)
 	p, err := Parse(map[string]interface{}{
 		"uri":  "template://example",
 		"type": resUid.Type(),

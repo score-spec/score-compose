@@ -26,6 +26,7 @@ import (
 
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/imdario/mergo"
+	"github.com/score-spec/score-go/framework"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/sjson"
 	"gopkg.in/yaml.v3"
@@ -186,8 +187,8 @@ func run(cmd *cobra.Command, args []string) error {
 
 	// Build a fake score-compose init state. We don't actually need to store or persist this because we're not doing
 	// anything iterative or stateful.
-	state := &project.State{MountsDirectory: "/dev/null"}
-	state, err = state.WithWorkload(&spec, &scoreFile, nil)
+	state := &project.State{Extras: project.StateExtras{MountsDirectory: "/dev/null"}}
+	state, err = state.WithWorkload(&spec, &scoreFile, project.WorkloadExtras{})
 	if err != nil {
 		return fmt.Errorf("failed to add score file to state: %w", err)
 	}
@@ -312,7 +313,7 @@ func buildLegacyProvisioners(workloadName string, state *project.State) ([]provi
 	envProv := new(envprov.Provisioner)
 	out := []provisioners.Provisioner{envProv}
 	for resName, res := range state.Workloads[workloadName].Spec.Resources {
-		resUid := project.NewResourceUid(workloadName, resName, res.Type, res.Class, res.Id)
+		resUid := framework.NewResourceUid(workloadName, resName, res.Type, res.Class, res.Id)
 		if resUid.Type() == "environment" {
 			// handled by env prov which is already added above
 		} else if resUid.Type() == "volume" && resUid.Class() == "default" {
@@ -326,14 +327,14 @@ func buildLegacyProvisioners(workloadName string, state *project.State) ([]provi
 }
 
 type legacyVolumeProvisioner struct {
-	MatchResourceUid project.ResourceUid
+	MatchResourceUid framework.ResourceUid
 }
 
 func (l *legacyVolumeProvisioner) Uri() string {
 	return "builtin://legacy-volume"
 }
 
-func (l *legacyVolumeProvisioner) Match(resUid project.ResourceUid) bool {
+func (l *legacyVolumeProvisioner) Match(resUid framework.ResourceUid) bool {
 	return l.MatchResourceUid == resUid
 }
 

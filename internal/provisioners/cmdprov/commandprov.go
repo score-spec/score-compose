@@ -27,9 +27,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/score-spec/score-go/framework"
 	"gopkg.in/yaml.v3"
 
-	"github.com/score-spec/score-compose/internal/project"
 	"github.com/score-spec/score-compose/internal/provisioners"
 )
 
@@ -45,7 +45,7 @@ func (p *Provisioner) Uri() string {
 	return p.ProvisionerUri
 }
 
-func (p *Provisioner) Match(resUid project.ResourceUid) bool {
+func (p *Provisioner) Match(resUid framework.ResourceUid) bool {
 	if resUid.Type() != p.ResType {
 		return false
 	} else if p.ResClass != nil && resUid.Class() != *p.ResClass {

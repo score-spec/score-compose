@@ -19,10 +19,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/score-spec/score-go/framework"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/score-spec/score-compose/internal/project"
 	"github.com/score-spec/score-compose/internal/util"
 )
 
@@ -46,7 +46,7 @@ func TestLoadProvisioners(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, p, 1)
 		assert.Equal(t, "template://example", p[0].Uri())
-		assert.True(t, p[0].Match(project.NewResourceUid("w", "r", "thing", nil, util.Ref("specific"))))
+		assert.True(t, p[0].Match(framework.NewResourceUid("w", "r", "thing", nil, util.Ref("specific"))))
 	})
 
 	t.Run("unknown schema", func(t *testing.T) {
