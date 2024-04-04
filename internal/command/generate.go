@@ -25,6 +25,7 @@ import (
 
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/imdario/mergo"
+	"github.com/score-spec/score-go/framework"
 	"github.com/score-spec/score-go/loader"
 	"github.com/score-spec/score-go/schema"
 	score "github.com/score-spec/score-go/types"
@@ -107,7 +108,7 @@ arguments.
 				return fmt.Errorf("--%s cannot be used when multiple score files are provided", generateCmdOverridesFileFlag)
 			}
 			for _, overridePropertyEntry := range v {
-				if err := parseAndApplyOverrideProperty(overridePropertyEntry, generateCmdOverridePropertyFlag, workloadSpecs[workloadNames[0]]); err != nil {
+				if workloadSpecs[workloadNames[0]], err = parseAndApplyOverrideProperty(overridePropertyEntry, generateCmdOverridePropertyFlag, workloadSpecs[workloadNames[0]]); err != nil {
 					return err
 				}
 			}
@@ -119,7 +120,7 @@ arguments.
 		} else if !ok {
 			return fmt.Errorf("state directory does not exist, please run \"score-compose init\" first")
 		}
-		slog.Info(fmt.Sprintf("Loaded state directory with docker compose project '%s'", sd.State.ComposeProjectName))
+		slog.Info(fmt.Sprintf("Loaded state directory with docker compose project '%s'", sd.State.Extras.ComposeProjectName))
 
 		currentState := &sd.State
 
@@ -183,7 +184,7 @@ arguments.
 				}
 			}
 
-			currentState, err = currentState.WithWorkload(&out, &inputFile, containerBuildContexts)
+			currentState, err = currentState.WithWorkload(&out, &inputFile, project.WorkloadExtras{BuildConfigs: containerBuildContexts})
 			if err != nil {
 				return fmt.Errorf("failed to add workload '%s': %w", workloadName, err)
 			}
@@ -210,7 +211,7 @@ arguments.
 		}
 
 		superProject := &types.Project{
-			Name:     sd.State.ComposeProjectName,
+			Name:     sd.State.Extras.ComposeProjectName,
 			Services: make(types.Services, 0),
 			Volumes:  map[string]types.VolumeConfig{},
 			Networks: map[string]types.NetworkConfig{},
@@ -346,27 +347,30 @@ func parseAndApplyOverrideFile(entry string, flagName string, spec map[string]in
 	return nil
 }
 
-func parseAndApplyOverrideProperty(entry string, flagName string, spec map[string]interface{}) error {
+func parseAndApplyOverrideProperty(entry string, flagName string, spec map[string]interface{}) (map[string]interface{}, error) {
 	parts := strings.SplitN(entry, "=", 2)
 	if len(parts) != 2 {
-		return fmt.Errorf("--%s '%s' is invalid, expected a =-separated path and value", flagName, entry)
+		return nil, fmt.Errorf("--%s '%s' is invalid, expected a =-separated path and value", flagName, entry)
 	}
 	if parts[1] == "" {
 		slog.Info(fmt.Sprintf("Overriding '%s' in workload", parts[0]))
-		if err := writePathInStruct(spec, parseDotPathParts(parts[0]), true, nil); err != nil {
-			return fmt.Errorf("--%s '%s' could not be applied: %w", flagName, entry, err)
+		after, err := framework.OverridePathInMap(spec, framework.ParseDotPathParts(parts[0]), true, nil)
+		if err != nil {
+			return nil, fmt.Errorf("--%s '%s' could not be applied: %w", flagName, entry, err)
 		}
+		return after, nil
 	} else {
 		var value interface{}
 		if err := yaml.Unmarshal([]byte(parts[1]), &value); err != nil {
-			return fmt.Errorf("--%s '%s' is invalid, failed to unmarshal value as json: %w", flagName, entry, err)
+			return nil, fmt.Errorf("--%s '%s' is invalid, failed to unmarshal value as json: %w", flagName, entry, err)
 		}
 		slog.Info(fmt.Sprintf("Overriding '%s' in workload", parts[0]))
-		if err := writePathInStruct(spec, parseDotPathParts(parts[0]), false, value); err != nil {
-			return fmt.Errorf("--%s '%s' could not be applied: %w", flagName, entry, err)
+		after, err := framework.OverridePathInMap(spec, framework.ParseDotPathParts(parts[0]), false, value)
+		if err != nil {
+			return nil, fmt.Errorf("--%s '%s' could not be applied: %w", flagName, entry, err)
 		}
+		return after, nil
 	}
-	return nil
 }
 
 // injectWaitService injects a service into the compose project which waits for all other services to be started,

@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	compose "github.com/compose-spec/compose-go/v2/types"
+	"github.com/score-spec/score-go/framework"
 	score "github.com/score-spec/score-go/types"
 
 	"github.com/score-spec/score-compose/internal/project"
@@ -47,7 +48,7 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 		return nil, err
 	}
 
-	substitutionFunction := project.BuildSubstitutionFunction(spec.Metadata, resourceOutputs)
+	substitutionFunction := framework.BuildSubstitutionFunction(spec.Metadata, resourceOutputs)
 
 	var composeProject = compose.Project{
 		Services: make(compose.Services),
@@ -68,7 +69,7 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 
 		var env = make(compose.MappingWithEquals, len(cSpec.Variables))
 		for key, val := range cSpec.Variables {
-			resolved, err := project.SubstituteString(val, substitutionFunction)
+			resolved, err := framework.SubstituteString(val, substitutionFunction)
 			if err != nil {
 				return nil, fmt.Errorf("containers.%s.variables.%s: %w", containerName, key, err)
 			}
@@ -83,7 +84,7 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 					return nil, fmt.Errorf("containers.%s.volumes[%d].path: can't mount named volume with sub path '%s': not supported", containerName, idx, *vol.Path)
 				}
 
-				resolvedVolumeSource, err := project.SubstituteString(vol.Source, substitutionFunction)
+				resolvedVolumeSource, err := framework.SubstituteString(vol.Source, substitutionFunction)
 				if err != nil {
 					return nil, fmt.Errorf("containers.%s.volumes[%d].source: %w", containerName, idx, err)
 				}
@@ -152,7 +153,7 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 			Volumes:     volumes,
 		}
 
-		if bc, ok := state.Workloads[workloadName].BuildConfigs[containerName]; ok {
+		if bc, ok := state.Workloads[workloadName].Extras.BuildConfigs[containerName]; ok {
 			slog.Info(fmt.Sprintf("containers.%s: overriding container build config to context=%s", containerName, bc.Context))
 			svc.Build = &bc
 			svc.Image = ""
@@ -173,7 +174,7 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 // convertFilesIntoVolumes converts the lists of files into a list of bind mounts in the mounts directory.
 func convertFilesIntoVolumes(state *project.State, workloadName string, containerName string, substitutionFunction func(string) (string, error)) ([]compose.ServiceVolumeConfig, error) {
 	input := state.Workloads[workloadName].Spec.Containers[containerName].Files
-	mountsDirectory := state.MountsDirectory
+	mountsDirectory := state.Extras.MountsDirectory
 	if mountsDirectory == "" || mountsDirectory == "/dev/null" {
 		return nil, fmt.Errorf("files are not supported")
 	}
@@ -202,7 +203,7 @@ func convertFilesIntoVolumes(state *project.State, workloadName string, containe
 			return nil, fmt.Errorf("containers.%s.files[%d]: missing 'content' or 'source'", containerName, idx)
 		}
 		if file.NoExpand == nil || !*file.NoExpand {
-			stringContent, err := project.SubstituteString(string(content), substitutionFunction)
+			stringContent, err := framework.SubstituteString(string(content), substitutionFunction)
 			if err != nil {
 				return nil, fmt.Errorf("containers.%s.files[%d]: failed to substitute in content: %w", containerName, idx, err)
 			}

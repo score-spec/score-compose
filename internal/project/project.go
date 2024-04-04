@@ -21,6 +21,8 @@ import (
 	"os"
 	"path/filepath"
 
+	compose "github.com/compose-spec/compose-go/v2/types"
+	"github.com/score-spec/score-go/framework"
 	"gopkg.in/yaml.v3"
 )
 
@@ -29,6 +31,21 @@ const (
 	StateFileName                 = "state.yaml"
 	MountsDirectoryName           = "mounts"
 )
+
+// State is the mega-structure that contains the state of our workload specifications and resources.
+// Score specs are added to this structure and it stores the current resource set.
+type State = framework.State[StateExtras, WorkloadExtras]
+
+type StateExtras struct {
+	ComposeProjectName string `yaml:"compose_project"`
+	MountsDirectory    string `yaml:"mounts_directory"`
+}
+
+type WorkloadExtras struct {
+	// BuildConfigs is a stored set of container build configs for this workload. Any known container should inherit
+	// the appropriate config when being converted.
+	BuildConfigs map[string]compose.BuildConfig `yaml:"build_configs,omitempty"`
+}
 
 // The StateDirectory holds the local state of the score-compose project, including any configuration, extensions,
 // plugins, or resource provisioning state when possible.
@@ -47,7 +64,7 @@ func (sd *StateDirectory) Persist() error {
 	if err := os.Mkdir(sd.Path, 0755); err != nil && !errors.Is(err, os.ErrExist) {
 		return fmt.Errorf("failed to create directory '%s': %w", sd.Path, err)
 	}
-	if err := os.Mkdir(sd.State.MountsDirectory, 0755); err != nil && !errors.Is(err, os.ErrExist) {
+	if err := os.Mkdir(sd.State.Extras.MountsDirectory, 0755); err != nil && !errors.Is(err, os.ErrExist) {
 		return fmt.Errorf("failed to create mounts directory: %w", err)
 	}
 	out := new(bytes.Buffer)

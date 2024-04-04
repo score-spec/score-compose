@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	compose "github.com/compose-spec/compose-go/v2/types"
+	"github.com/score-spec/score-go/framework"
 	score "github.com/score-spec/score-go/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,21 +33,21 @@ import (
 )
 
 func TestApplyToStateAndProject(t *testing.T) {
-	resUid := project.NewResourceUid("w", "r", "t", nil, nil)
+	resUid := framework.NewResourceUid("w", "r", "t", nil, nil)
 	startState := &project.State{
-		Resources: map[project.ResourceUid]project.ScoreResourceState{
+		Resources: map[framework.ResourceUid]framework.ScoreResourceState{
 			resUid: {},
 		},
 	}
 
 	t.Run("set first provision with no outputs", func(t *testing.T) {
 		td := t.TempDir()
-		startState.MountsDirectory = td
+		startState.Extras.MountsDirectory = td
 		composeProject := &compose.Project{}
 		output := &ProvisionOutput{}
 		afterState, err := output.ApplyToStateAndProject(startState, resUid, composeProject)
 		require.NoError(t, err)
-		assert.Equal(t, project.ScoreResourceState{
+		assert.Equal(t, framework.ScoreResourceState{
 			State:   map[string]interface{}{},
 			Outputs: map[string]interface{}{},
 		}, afterState.Resources[resUid])
@@ -54,7 +55,7 @@ func TestApplyToStateAndProject(t *testing.T) {
 
 	t.Run("set first provision with some outputs", func(t *testing.T) {
 		td := t.TempDir()
-		startState.MountsDirectory = td
+		startState.Extras.MountsDirectory = td
 		composeProject := &compose.Project{}
 		output := &ProvisionOutput{
 			ResourceState:   map[string]interface{}{"a": "b", "c": nil},
@@ -82,7 +83,7 @@ func TestApplyToStateAndProject(t *testing.T) {
 		}
 		afterState, err := output.ApplyToStateAndProject(startState, resUid, composeProject)
 		require.NoError(t, err)
-		assert.Equal(t, project.ScoreResourceState{
+		assert.Equal(t, framework.ScoreResourceState{
 			State:   map[string]interface{}{"a": "b", "c": nil},
 			Outputs: map[string]interface{}{"x": "y"},
 		}, afterState.Resources[resUid])
@@ -131,7 +132,7 @@ func TestProvisionResourcesWithNetworkService(t *testing.T) {
 		Resources: map[string]score.Resource{
 			"a": {Type: "thing"},
 		},
-	}, nil, nil)
+	}, nil, project.WorkloadExtras{})
 	state, _ = state.WithPrimedResources()
 	p := []Provisioner{
 		NewEphemeralProvisioner("ephemeral://blah", "thing.default#w1.a", func(ctx context.Context, input *Input) (*ProvisionOutput, error) {
@@ -164,7 +165,7 @@ func TestProvisionResourcesWithResourceParams(t *testing.T) {
 			"a": {Type: "a", Params: map[string]interface{}{"x": "${resources.b.key}"}},
 			"b": {Type: "b"},
 		},
-	}, nil, nil)
+	}, nil, project.WorkloadExtras{})
 	state, _ = state.WithPrimedResources()
 	p := []Provisioner{
 		NewEphemeralProvisioner("ephemeral://blah", "a.default#w1.a", func(ctx context.Context, input *Input) (*ProvisionOutput, error) {
@@ -189,7 +190,7 @@ func TestProvisionResourcesWithResourceParams_fail(t *testing.T) {
 			"a": {Type: "a", Params: map[string]interface{}{"x": "${resources.b.unknown}"}},
 			"b": {Type: "b"},
 		},
-	}, nil, nil)
+	}, nil, project.WorkloadExtras{})
 	state, _ = state.WithPrimedResources()
 	p := []Provisioner{
 		NewEphemeralProvisioner("ephemeral://blah", "a.default#w1.a", func(ctx context.Context, input *Input) (*ProvisionOutput, error) {

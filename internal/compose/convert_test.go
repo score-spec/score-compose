@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	compose "github.com/compose-spec/compose-go/v2/types"
+	"github.com/score-spec/score-go/framework"
 	score "github.com/score-spec/score-go/types"
 	assert "github.com/stretchr/testify/assert"
 
@@ -278,21 +279,21 @@ func TestScoreConvert(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 
 			state := &project.State{
-				Workloads: map[string]project.ScoreWorkloadState{
+				Workloads: map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{
 					"test": {Spec: score.Workload{Resources: map[string]score.Resource{
 						"env":      {Type: "environment"},
 						"app-db":   {Type: "thing"},
 						"some-dns": {Type: "thing"},
 					}}},
 				},
-				Resources: map[project.ResourceUid]project.ScoreResourceState{},
+				Resources: map[framework.ResourceUid]framework.ScoreResourceState{},
 			}
 			evt := new(envprov.Provisioner)
-			state.Resources["environment.default#test.env"] = project.ScoreResourceState{OutputLookupFunc: evt.LookupOutput}
+			state.Resources["environment.default#test.env"] = framework.ScoreResourceState{OutputLookupFunc: evt.LookupOutput}
 			po, _ := evt.GenerateSubProvisioner("app-db", "").Provision(nil, nil)
-			state.Resources["thing.default#test.app-db"] = project.ScoreResourceState{OutputLookupFunc: po.OutputLookupFunc}
+			state.Resources["thing.default#test.app-db"] = framework.ScoreResourceState{OutputLookupFunc: po.OutputLookupFunc}
 			po, _ = evt.GenerateSubProvisioner("some-dns", "").Provision(nil, nil)
-			state.Resources["thing.default#test.some-dns"] = project.ScoreResourceState{OutputLookupFunc: po.OutputLookupFunc}
+			state.Resources["thing.default#test.some-dns"] = framework.ScoreResourceState{OutputLookupFunc: po.OutputLookupFunc}
 
 			proj, err := ConvertSpec(state, tt.Source)
 
@@ -316,7 +317,7 @@ func TestConvertFilesIntoVolumes_nominal(t *testing.T) {
 	assert.NoError(t, os.MkdirAll(filepath.Join(td, "subdir"), 0755))
 	assert.NoError(t, os.WriteFile(filepath.Join(td, "subdir/original.txt"), []byte(`first ${metadata.name} second`), 0644))
 	state := &project.State{
-		Workloads: map[string]project.ScoreWorkloadState{"my-workload": {
+		Workloads: map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{"my-workload": {
 			Spec: score.Workload{
 				Containers: map[string]score.Container{
 					"my-container": {
@@ -333,7 +334,9 @@ func TestConvertFilesIntoVolumes_nominal(t *testing.T) {
 			},
 			File: util.Ref(filepath.Join(td, "subdir/score.yaml")),
 		}},
-		MountsDirectory: td,
+		Extras: project.StateExtras{
+			MountsDirectory: td,
+		},
 	}
 	out, err := convertFilesIntoVolumes(
 		state, "my-workload", "my-container",
@@ -375,7 +378,7 @@ func TestConvertFilesIntoVolumes_nominal(t *testing.T) {
 func TestConvertFilesIntoVolumes_file_missing(t *testing.T) {
 	td := t.TempDir()
 	state := &project.State{
-		Workloads: map[string]project.ScoreWorkloadState{"my-workload": {
+		Workloads: map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{"my-workload": {
 			Spec: score.Workload{
 				Containers: map[string]score.Container{
 					"my-container": {
@@ -387,7 +390,9 @@ func TestConvertFilesIntoVolumes_file_missing(t *testing.T) {
 			},
 			File: util.Ref(filepath.Join(td, "score.yaml")),
 		}},
-		MountsDirectory: td,
+		Extras: project.StateExtras{
+			MountsDirectory: td,
+		},
 	}
 	_, err := convertFilesIntoVolumes(
 		state, "my-workload", "my-container",
@@ -401,7 +406,7 @@ func TestConvertFilesIntoVolumes_file_missing(t *testing.T) {
 func TestConvertFilesIntoVolumes_source_missing(t *testing.T) {
 	td := t.TempDir()
 	state := &project.State{
-		Workloads: map[string]project.ScoreWorkloadState{"my-workload": {
+		Workloads: map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{"my-workload": {
 			Spec: score.Workload{
 				Containers: map[string]score.Container{
 					"my-container": {
@@ -413,7 +418,9 @@ func TestConvertFilesIntoVolumes_source_missing(t *testing.T) {
 			},
 			File: util.Ref(filepath.Join(td, "score.yaml")),
 		}},
-		MountsDirectory: td,
+		Extras: project.StateExtras{
+			MountsDirectory: td,
+		},
 	}
 	_, err := convertFilesIntoVolumes(
 		state, "my-workload", "my-container",
@@ -427,7 +434,7 @@ func TestConvertFilesIntoVolumes_source_missing(t *testing.T) {
 func TestConvertFilesIntoVolumes_expand_bad(t *testing.T) {
 	td := t.TempDir()
 	state := &project.State{
-		Workloads: map[string]project.ScoreWorkloadState{"my-workload": {
+		Workloads: map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{"my-workload": {
 			Spec: score.Workload{
 				Containers: map[string]score.Container{
 					"my-container": {
@@ -439,7 +446,9 @@ func TestConvertFilesIntoVolumes_expand_bad(t *testing.T) {
 			},
 			File: util.Ref(filepath.Join(td, "score.yaml")),
 		}},
-		MountsDirectory: td,
+		Extras: project.StateExtras{
+			MountsDirectory: td,
+		},
 	}
 	_, err := convertFilesIntoVolumes(
 		state, "my-workload", "my-container",
@@ -453,7 +462,7 @@ func TestConvertFilesIntoVolumes_expand_bad(t *testing.T) {
 func TestConvertFiles_with_mode(t *testing.T) {
 	td := t.TempDir()
 	state := &project.State{
-		Workloads: map[string]project.ScoreWorkloadState{"my-workload": {
+		Workloads: map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{"my-workload": {
 			Spec: score.Workload{
 				Containers: map[string]score.Container{
 					"my-container": {
@@ -468,7 +477,9 @@ func TestConvertFiles_with_mode(t *testing.T) {
 			},
 			File: util.Ref(filepath.Join(td, "score.yaml")),
 		}},
-		MountsDirectory: td,
+		Extras: project.StateExtras{
+			MountsDirectory: td,
+		},
 	}
 	out, err := convertFilesIntoVolumes(
 		state, "my-workload", "my-container",

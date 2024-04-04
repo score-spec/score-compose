@@ -22,7 +22,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/score-spec/score-compose/internal/project"
+	"github.com/score-spec/score-go/framework"
+
 	"github.com/score-spec/score-compose/internal/provisioners"
 )
 
@@ -40,7 +41,7 @@ func (e *Provisioner) Uri() string {
 	return "builtin://environment"
 }
 
-func (e *Provisioner) Match(resUid project.ResourceUid) bool {
+func (e *Provisioner) Match(resUid framework.ResourceUid) bool {
 	return resUid.Type() == "environment" && resUid.Class() == "default" && strings.Contains(resUid.Id(), ".")
 }
 
@@ -81,7 +82,7 @@ func (e *Provisioner) LookupOutput(keys ...string) (interface{}, error) {
 	return e.lookupOutput(false, keys[0])
 }
 
-func (e *Provisioner) GenerateSubProvisioner(resName string, resUid project.ResourceUid) provisioners.Provisioner {
+func (e *Provisioner) GenerateSubProvisioner(resName string, resUid framework.ResourceUid) provisioners.Provisioner {
 	return &envVarResourceTracker{
 		uid:    resUid,
 		inner:  e,
@@ -92,7 +93,7 @@ func (e *Provisioner) GenerateSubProvisioner(resName string, resUid project.Reso
 // envVarResourceTracker is a child object of EnvVarTracker and is used as a fallback behavior for resource types
 // that are not supported natively: we treat them like environment variables instead with a prefix of the resource name.
 type envVarResourceTracker struct {
-	uid    project.ResourceUid
+	uid    framework.ResourceUid
 	prefix string
 	inner  *Provisioner
 }
@@ -101,7 +102,7 @@ func (e *envVarResourceTracker) Uri() string {
 	return "builtin://environment/" + url.PathEscape(string(e.uid))
 }
 
-func (e *envVarResourceTracker) Match(resUid project.ResourceUid) bool {
+func (e *envVarResourceTracker) Match(resUid framework.ResourceUid) bool {
 	return e.uid == resUid
 }
 

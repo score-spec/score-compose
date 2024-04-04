@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/score-spec/score-go/framework"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -102,10 +103,10 @@ func TestInitNominal(t *testing.T) {
 	assert.NoError(t, err)
 	if assert.True(t, ok) {
 		assert.Equal(t, project.DefaultRelativeStateDirectory, sd.Path)
-		assert.Equal(t, filepath.Base(td), sd.State.ComposeProjectName)
-		assert.Equal(t, filepath.Join(project.DefaultRelativeStateDirectory, "mounts"), sd.State.MountsDirectory)
-		assert.Equal(t, map[string]project.ScoreWorkloadState{}, sd.State.Workloads)
-		assert.Equal(t, map[project.ResourceUid]project.ScoreResourceState{}, sd.State.Resources)
+		assert.Equal(t, filepath.Base(td), sd.State.Extras.ComposeProjectName)
+		assert.Equal(t, filepath.Join(project.DefaultRelativeStateDirectory, "mounts"), sd.State.Extras.MountsDirectory)
+		assert.Equal(t, map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{}, sd.State.Workloads)
+		assert.Equal(t, map[framework.ResourceUid]framework.ScoreResourceState{}, sd.State.Resources)
 		assert.Equal(t, map[string]interface{}{}, sd.State.SharedState)
 	}
 }
@@ -151,7 +152,7 @@ func TestInitNominal_custom_file_and_project(t *testing.T) {
 	assert.NoError(t, err)
 	if assert.True(t, ok) {
 		assert.Equal(t, project.DefaultRelativeStateDirectory, sd.Path)
-		assert.Equal(t, "bananas", sd.State.ComposeProjectName)
+		assert.Equal(t, "bananas", sd.State.Extras.ComposeProjectName)
 	}
 }
 
@@ -198,10 +199,10 @@ func TestInitNominal_run_twice(t *testing.T) {
 	assert.NoError(t, err)
 	if assert.True(t, ok) {
 		assert.Equal(t, project.DefaultRelativeStateDirectory, sd.Path)
-		assert.Equal(t, "bananas", sd.State.ComposeProjectName)
-		assert.Equal(t, filepath.Join(project.DefaultRelativeStateDirectory, "mounts"), sd.State.MountsDirectory)
-		assert.Equal(t, map[string]project.ScoreWorkloadState{}, sd.State.Workloads)
-		assert.Equal(t, map[project.ResourceUid]project.ScoreResourceState{}, sd.State.Resources)
+		assert.Equal(t, "bananas", sd.State.Extras.ComposeProjectName)
+		assert.Equal(t, filepath.Join(project.DefaultRelativeStateDirectory, "mounts"), sd.State.Extras.MountsDirectory)
+		assert.Equal(t, map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{}, sd.State.Workloads)
+		assert.Equal(t, map[framework.ResourceUid]framework.ScoreResourceState{}, sd.State.Resources)
 		assert.Equal(t, map[string]interface{}{}, sd.State.SharedState)
 	}
 }
