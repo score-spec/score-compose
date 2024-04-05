@@ -252,7 +252,7 @@ func TestScoreConvert(t *testing.T) {
 				Containers: score.WorkloadContainers{
 					"test": score.Container{
 						Image:   "busybox",
-						Volumes: []score.ContainerVolumesElem{{Source: "data", Target: "/mnt/data"}},
+						Volumes: []score.ContainerVolumesElem{{Source: "${resources.data}", Target: "/mnt/data"}},
 					},
 				},
 			},
@@ -266,7 +266,7 @@ func TestScoreConvert(t *testing.T) {
 				Containers: score.WorkloadContainers{
 					"test": score.Container{
 						Image:   "busybox",
-						Volumes: []score.ContainerVolumesElem{{Source: "data", Target: "/mnt/data"}},
+						Volumes: []score.ContainerVolumesElem{{Source: "${resources.data}", Target: "/mnt/data"}},
 					},
 				},
 				Resources: map[string]score.Resource{"data": {Type: "thing"}},

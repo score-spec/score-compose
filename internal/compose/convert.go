@@ -84,23 +84,23 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 					return nil, fmt.Errorf("containers.%s.volumes[%d].path: can't mount named volume with sub path '%s': not supported", containerName, idx, *vol.Path)
 				}
 
-				resolvedVolumeSource, err := framework.SubstituteString(vol.Source, substitutionFunction)
+				// The way volumes are linked to a resource is a bit of a special case. The goal is to confirm that the
+				// resource exists and is a volume. We then extract the source property. This only applies to the pattern
+				// of ${resources.my-volume} which can also be written as ${resources.my-volume.source}.
+				resolvedVolumeSource, err := framework.SubstituteString(vol.Source, func(ref string) (string, error) {
+					if parts := framework.SplitRefParts(ref); len(parts) == 2 && parts[0] == "resources" {
+						resName := parts[1]
+						if res, ok := spec.Resources[resName]; !ok {
+							return "", fmt.Errorf("containers.%s.volumes[%d].source: resource '%s' does not exist", containerName, idx, resName)
+						} else if res.Type != "volume" {
+							return "", fmt.Errorf("containers.%s.volumes[%d].source: resource '%s' is not a volume", containerName, idx, resName)
+						}
+						ref += ".source"
+					}
+					return substitutionFunction(ref)
+				})
 				if err != nil {
 					return nil, fmt.Errorf("containers.%s.volumes[%d].source: %w", containerName, idx, err)
-				}
-
-				if res, ok := spec.Resources[resolvedVolumeSource]; !ok {
-					return nil, fmt.Errorf("containers.%s.volumes[%d].source: resource '%s' does not exist", containerName, idx, resolvedVolumeSource)
-				} else if res.Type != "volume" {
-					return nil, fmt.Errorf("containers.%s.volumes[%d].source: resource '%s' is not a volume", containerName, idx, resolvedVolumeSource)
-				}
-
-				if outputFunc, ok := resourceOutputs[resolvedVolumeSource]; ok {
-					if v, err := outputFunc("source"); err != nil {
-						slog.Warn(fmt.Sprintf("containers.%s.volumes[%d].source: failed to find 'source' key in volume resource '%s': %v", containerName, idx, resolvedVolumeSource, err))
-					} else if sv, ok := v.(string); ok {
-						resolvedVolumeSource = sv
-					}
 				}
 
 				volumes[idx] = compose.ServiceVolumeConfig{
