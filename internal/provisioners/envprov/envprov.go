@@ -25,6 +25,7 @@ import (
 	"github.com/score-spec/score-go/framework"
 
 	"github.com/score-spec/score-compose/internal/provisioners"
+	"github.com/score-spec/score-compose/internal/util"
 )
 
 // The Provisioner is an environment provision which returns a suitable expression for accessing an environment variable
@@ -69,10 +70,7 @@ func (e *Provisioner) lookupOutput(required bool, envVarKey string) (interface{}
 	} else {
 		e.accessed[envVarKey] = ""
 	}
-	if required {
-		envVarKey += "?required"
-	}
-	return "${" + envVarKey + "}", nil
+	return nil, &util.DeferredEnvironmentVariable{Variable: envVarKey, Required: required}
 }
 
 func (e *Provisioner) LookupOutput(keys ...string) (interface{}, error) {

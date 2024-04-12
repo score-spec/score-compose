@@ -306,6 +306,7 @@ func ProvisionResources(ctx context.Context, state *project.State, provisioners 
 				return nil, fmt.Errorf("failed to find resource params for resource '%s': %w", resUid, err)
 			}
 			sf := framework.BuildSubstitutionFunction(out.Workloads[resState.SourceWorkload].Spec.Metadata, resOutputs)
+			sf = util.WrapImmediateSubstitutionFunction(sf)
 			rawParams, err := framework.Substitute(resState.Params, sf)
 			if err != nil {
 				return nil, fmt.Errorf("failed to substitute params for resource '%s': %w", resUid, err)

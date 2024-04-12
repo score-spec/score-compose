@@ -49,6 +49,8 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 	}
 
 	substitutionFunction := framework.BuildSubstitutionFunction(spec.Metadata, resourceOutputs)
+	immediateSubstitutionFunction := util.WrapImmediateSubstitutionFunction(substitutionFunction)
+	deferredSubstitutionFunction := util.WrapDeferredSubstitutionFunction(substitutionFunction)
 
 	var composeProject = compose.Project{
 		Services: make(compose.Services),
@@ -69,7 +71,7 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 
 		var env = make(compose.MappingWithEquals, len(cSpec.Variables))
 		for key, val := range cSpec.Variables {
-			resolved, err := framework.SubstituteString(val, substitutionFunction)
+			resolved, err := framework.SubstituteString(val, deferredSubstitutionFunction)
 			if err != nil {
 				return nil, fmt.Errorf("containers.%s.variables.%s: %w", containerName, key, err)
 			}
@@ -97,7 +99,7 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 						}
 						ref += ".source"
 					}
-					return substitutionFunction(ref)
+					return deferredSubstitutionFunction(ref)
 				})
 				if err != nil {
 					return nil, fmt.Errorf("containers.%s.volumes[%d].source: %w", containerName, idx, err)
@@ -113,7 +115,7 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 		}
 
 		if len(cSpec.Files) > 0 {
-			newVolumes, err := convertFilesIntoVolumes(state, workloadName, containerName, substitutionFunction)
+			newVolumes, err := convertFilesIntoVolumes(state, workloadName, containerName, immediateSubstitutionFunction)
 			if err != nil {
 				return nil, err
 			}
