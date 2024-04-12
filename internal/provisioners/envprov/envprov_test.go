@@ -39,8 +39,8 @@ func TestProvisioner(t *testing.T) {
 		assert.NoError(t, err)
 
 		for _, tc := range [][]string{
-			{"thing", "${thing}"},
-			{"HELLO", "${HELLO}"},
+			{"thing", "environment variable 'thing' must be resolved"},
+			{"HELLO", "environment variable 'HELLO' must be resolved"},
 			{"HELLO", "world", "environment resource only supports a single lookup key"},
 		} {
 			keys, expected := tc[:len(tc)-1], tc[len(tc)-1]
@@ -69,9 +69,9 @@ func TestProvisioner(t *testing.T) {
 			assert.NoError(t, err)
 
 			for _, tc := range [][]string{
-				{"thing", "${THING_THING?required}"},
-				{"HELLO", "${THING_HELLO?required}"},
-				{"HELLO", "world", "${THING_HELLO_WORLD?required}"},
+				{"thing", "environment variable 'THING_THING' must be resolved"},
+				{"HELLO", "environment variable 'THING_HELLO' must be resolved"},
+				{"HELLO", "world", "environment variable 'THING_HELLO_WORLD' must be resolved"},
 				{"at least one output lookup key is required"},
 			} {
 				keys, expected := tc[:len(tc)-1], tc[len(tc)-1]

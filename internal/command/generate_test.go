@@ -853,3 +853,87 @@ resources:
 		assert.NoError(t, cmd.Run())
 	})
 }
+
+func TestEnvVarsArentRequiredInVariables(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: foo
+    variables:
+      ONE: ${resources.env.UNKNOWN_SCORE_VARIABLE}
+resources:
+  env:
+    type: environment
+`), 0644))
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.NoError(t, err)
+	raw, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+	assert.NoError(t, err)
+	assert.Equal(t, `name: "001"
+services:
+    example-example:
+        environment:
+            ONE: ${UNKNOWN_SCORE_VARIABLE}
+        image: foo
+`, string(raw))
+}
+
+func TestEnvVarsMustResolveInsideFiles(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: foo
+    files:
+    - target: /some/file
+      content: ${resources.env.UNKNOWN_SCORE_VARIABLE}
+resources:
+  env:
+    type: environment
+`), 0644))
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.EqualError(t, err, "failed to convert workload 'example' to Docker compose: containers.example.files[0]: "+
+		"failed to substitute in content: invalid ref 'resources.env.UNKNOWN_SCORE_VARIABLE': "+
+		"environment variable 'UNKNOWN_SCORE_VARIABLE' must be resolved",
+	)
+}
+
+func TestEnvVarsMustResolveInsideParams(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: foo
+resources:
+  env:
+    type: environment
+  data:
+    type: volume
+    params:
+      x: ${resources.env.UNKNOWN_SCORE_VARIABLE}
+`), 0644))
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.EqualError(t, err, "failed to provision: failed to substitute params for resource 'volume.default#example.data': "+
+		"x: invalid ref 'resources.env.UNKNOWN_SCORE_VARIABLE': "+
+		"environment variable 'UNKNOWN_SCORE_VARIABLE' must be resolved",
+	)
+}
