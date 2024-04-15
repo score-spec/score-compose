@@ -34,6 +34,8 @@ This adds an additional nginx service to the compose file which contains an HTTP
 
 By default, this listens on http://localhost:8080.
 
+By default, this uses a `Prefix` route matching type so `/` can match `/any/request/path` but you can add a `score-compose.score.dev/route-provisioner-path-type: Exact` annotation to a Route to restrict this behavior.
+
 ## Limitations
 
 Technically, the `dns` resource should produce random or appropriate hostnames for each dns resource. However, this implementation always generates localhost since we don't by default create real DNS names or modify the local /etc/hosts file.

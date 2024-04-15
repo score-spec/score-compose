@@ -806,6 +806,9 @@ resources:
       port: foo
   r3:
     type: route
+    metadata:
+      annotations:
+        score-compose.score.dev/route-provisioner-path-type: Exact
     params:
       host: localhost2
       path: /third
@@ -822,22 +825,33 @@ resources:
 	assert.Len(t, sd.State.Workloads, 1)
 	assert.Len(t, sd.State.Resources, 3)
 	x := sd.State.SharedState["default-provisioners-routing-instance"].(map[string]interface{})
-	assert.Contains(t, x["instanceServiceName"].(string), "routing-")
+	instanceServiceName := x["instanceServiceName"].(string)
+	assert.Contains(t, instanceServiceName, "routing-")
 	delete(x, "instanceServiceName")
 	assert.Equal(t, map[string]interface{}{
 		"default-provisioners-routing-instance": map[string]interface{}{
 			"hosts": map[string]interface{}{
 				"localhost1": map[string]interface{}{
-					"route.default#example.r1": map[string]interface{}{"path": "/first", "port": 8080, "target": "example-example:8080"},
-					"route.default#example.r2": map[string]interface{}{"path": "/second", "port": 8080, "target": "example-example:8080"},
+					"route.default#example.r1": map[string]interface{}{"path": "/first", "port": 8080, "target": "example-example:8080", "path_type": "Prefix"},
+					"route.default#example.r2": map[string]interface{}{"path": "/second", "port": 8080, "target": "example-example:8080", "path_type": "Prefix"},
 				},
 				"localhost2": map[string]interface{}{
-					"route.default#example.r3": map[string]interface{}{"path": "/third", "port": 8080, "target": "example-example:8080"},
+					"route.default#example.r3": map[string]interface{}{"path": "/third", "port": 8080, "target": "example-example:8080", "path_type": "Exact"},
 				},
 			},
 			"instancePort": 8080,
 		},
 	}, sd.State.SharedState)
+
+	// validate that the wildcard routes don't exist for /third
+	raw, err := os.ReadFile(filepath.Join(td, ".score-compose", "mounts", instanceServiceName, "nginx.conf"))
+	assert.NoError(t, err)
+	assert.Contains(t, string(raw), `location = /first`)
+	assert.Contains(t, string(raw), `location /first/`)
+	assert.Contains(t, string(raw), `location = /second`)
+	assert.Contains(t, string(raw), `location /second/`)
+	assert.Contains(t, string(raw), `location = /third`)
+	assert.NotContains(t, string(raw), `location /third/`)
 
 	t.Run("validate compose spec", func(t *testing.T) {
 		if os.Getenv("NO_DOCKER") != "" {
