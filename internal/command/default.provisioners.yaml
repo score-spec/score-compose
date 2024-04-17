@@ -146,6 +146,8 @@
       SELECT 'CREATE DATABASE "{{ .State.database }}"' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '{{ .State.database }}')\gexec
       SELECT $$CREATE USER "{{ .State.username }}" WITH PASSWORD '{{ .State.password }}'$$ WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .State.username }}')\gexec
       GRANT ALL PRIVILEGES ON DATABASE "{{ .State.database }}" TO "{{ .State.username }}";
+      \connect "{{ .State.database }}";
+      GRANT ALL ON SCHEMA public TO "{{ .State.username }}";
   # Ensure the data volume exists
   volumes: |
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}-data:
