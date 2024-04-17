@@ -15,6 +15,6 @@ resources:
   route:
     type: route
     params:
-      path: /subpath
+      path: /my/[^/]+/path
       host: ${resources.dns.host}
       port: web

@@ -23,18 +23,18 @@ resources:
   route:
     type: route
     params:
-      path: /subpath
+      path: /my/[^/]+/path
       host: ${resources.dns.host}
       port: web
 ```
 
-The `route` resource indicates the host from the dns resource, and the sub path to route. While the `web` port is the one exposed by the service.
+The `route` resource indicates the host from the dns resource, and the path to route. While the `web` port is the one exposed by the service.
 
 This adds an additional nginx service to the compose file which contains an HTTP routing specification for the hostname and path combinations.
 
-By default, this listens on http://localhost:8080.
+By default, this listens on http://localhost:8080. And in the example will route paths like `/my/fizz/path`, `/my/buzz/path/thing`
 
-By default, this uses a `Prefix` route matching type so `/` can match `/any/request/path` but you can add a `score-compose.score.dev/route-provisioner-path-type: Exact` annotation to a Route to restrict this behavior.
+By default, this uses a `Prefix` route matching type so `/` can match `/any/request/path` but you can add a `score-compose.score.dev/route-provisioner-path-type: Exact` annotation to a Route to restrict this behavior to just an exact match.
 
 ## Limitations
 
