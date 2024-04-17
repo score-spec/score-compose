@@ -846,12 +846,12 @@ resources:
 	// validate that the wildcard routes don't exist for /third
 	raw, err := os.ReadFile(filepath.Join(td, ".score-compose", "mounts", instanceServiceName, "nginx.conf"))
 	assert.NoError(t, err)
-	assert.Contains(t, string(raw), `location = /first`)
-	assert.Contains(t, string(raw), `location /first/`)
-	assert.Contains(t, string(raw), `location = /second`)
-	assert.Contains(t, string(raw), `location /second/`)
-	assert.Contains(t, string(raw), `location = /third`)
-	assert.NotContains(t, string(raw), `location /third/`)
+	assert.Contains(t, string(raw), `location ~ ^/first$`)
+	assert.Contains(t, string(raw), `location ~ ^/first/.*`)
+	assert.Contains(t, string(raw), `location ~ ^/second$`)
+	assert.Contains(t, string(raw), `location ~ ^/second/.*`)
+	assert.Contains(t, string(raw), `location ~ ^/third$`)
+	assert.NotContains(t, string(raw), `location ~ ^/third/.*`)
 
 	t.Run("validate compose spec", func(t *testing.T) {
 		if os.Getenv("NO_DOCKER") != "" {

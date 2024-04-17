@@ -367,17 +367,15 @@
           
           {{ range $k, $v := $r }}
           # the basic path variant, "/" or "/one/two"
-          location = {{ index $v "path" }} {
+          location ~ ^{{ index $v "path" }}$ {
             set $backend {{ index $v "target" }};
-            rewrite ^{{ index $v "path" }}(.*)$ /$1 break;
             proxy_pass http://$backend;
           }
 
           # The prefix match variants are included by default but can be excluded via 'score-compose.score.dev/route-provisioner-path-type' annotation
           {{ if eq (index $v "path_type") "Prefix" }}
-          location {{ index $v "path" | trimSuffix "/" }}/ {
+          location ~ ^{{ index $v "path" | trimSuffix "/" }}/.* {
             set $backend {{ index $v "target" }};
-            rewrite ^{{ index $v "path" }}/(.*)$ /$1 break;
             proxy_pass http://$backend;
           }
           {{ end }}
