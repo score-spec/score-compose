@@ -1,0 +1,23 @@
+apiVersion: score.dev/v1b1
+
+metadata:
+  name: hello-world
+
+containers:
+  first:
+    image: nginx
+    variables:
+      CONNECT_1: amqp://${resources.amqp1.username}:${resources.amqp1.password}@${resources.amqp1.host}:${resources.amqp1.port}/${resources.amqp1.vhost}
+      CONNECT_2: amqp://${resources.amqp2.username}:${resources.amqp2.password}@${resources.amqp2.host}:${resources.amqp2.port}/${resources.amqp2.vhost}
+
+resources:
+  amqp1:
+    type: amqp
+    metadata:
+      annotations:
+        "compose.score.dev/publish-management-port": "15672"
+  amqp2:
+    type: amqp
+    metadata:
+      annotations:
+        "compose.score.dev/publish-management-port": "15672"

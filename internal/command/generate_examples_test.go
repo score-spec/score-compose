@@ -167,6 +167,10 @@ services:
 			subDir: "09-dns-and-route",
 			adds:   []string{"score.yaml"},
 		},
+		{
+			subDir: "10-amqp-rabbitmq",
+			adds:   []string{"score.yaml"},
+		},
 	} {
 		t.Run(tc.subDir, func(t *testing.T) {
 			oldReader := rand.Reader
