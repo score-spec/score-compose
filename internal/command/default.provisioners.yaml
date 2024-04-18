@@ -300,8 +300,12 @@
 - uri: template://default-provisioners/dns
   type: dns
   class: default
+  init: |
+    randomHostname: dns{{ randAlphaNum 6 | lower }}.localhost
+  state: |
+    instanceHostname: {{ dig "instanceHostname" .Init.randomHostname .State | quote }}
   outputs: |
-    host: localhost
+    host: {{ .State.instanceHostname }}
 
 # The default route provisioner sets up an nginx service with an HTTP service that can route on our prefix paths.
 # It assumes the hostnames and routes provided have no overlaps. Weird behavior may happen if there are overlaps.
@@ -312,14 +316,14 @@
     randomServiceName: routing-{{ randAlphaNum 6 }}
     sk: default-provisioners-routing-instance
     {{ if not (regexMatch "^/|(/([^/]+))+$" .Params.path) }}{{ fail "params.path start with a / but cannot end with /" }}{{ end }}
-    {{ if not (regexMatch "^[a-z0-9_.-]{1,253}$" .Params.host) }}{{ fail "params.host must be a valid hostname" }}{{ end }}
+    {{ if not (regexMatch "^[a-z0-9_.-]{1,253}$" .Params.host) }}{{ fail (cat "params.host must be a valid hostname but was" .Params.host) }}{{ end }}
     {{ $ports := (index .WorkloadServices .SourceWorkload).Ports }}
     {{ if not $ports }}{{ fail "no service ports exist" }}{{ end }}
     {{ $port := index $ports (print .Params.port) }}
     {{ if not $port.TargetPort }}{{ fail "params.port is not a named service port" }}{{ end }}
   shared: |
     {{ .Init.sk }}:
-      instancePort: 8080
+      instancePort: {{ dig .Init.sk "instancePort" 8080 .Shared }}
       instanceServiceName: {{ dig .Init.sk "instanceServiceName" .Init.randomServiceName .Shared | quote }}
       {{ $targetHost := (index .WorkloadServices .SourceWorkload).ServiceName }}
       {{ $ports := (index .WorkloadServices .SourceWorkload).Ports }}
