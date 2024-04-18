@@ -38,15 +38,26 @@ The `route` resource indicates the host from the dns resource, and the path to r
 
 This adds an additional nginx service to the compose file which contains an HTTP routing specification for the hostname and path combinations.
 
-By default, this listens on http://localhost:8080 and in the example will route paths like `/my/fizz/path`, `/my/buzz/path/thing`
+By default, this listens on http://localhost:8080 and in the example will route paths like `/my/fizz/path`, `/my/buzz/path/thing`. The port 8080 unfortunately cannot be changed without modifying the provisioner in the default provisioners file after running `score-compose init`.
 
 By default, this uses a `Prefix` route matching type so `/` can match `/any/request/path` but you can add a `score-compose.score.dev/route-provisioner-path-type: Exact` annotation to a Route to restrict this behavior to just an exact match.
 
 When running this compose project, we can test these routes using curl (in this instance the generated dns name was `dnsmntq6e`):
 
 ```shell
-$ curl http://dnsmntq6e.09-dns-and-route.localhost:8080/my/fizz/path/
+$ curl http://dnsmntq6e.localhost:8080/my/fizz/path/
 fizz
-$ curl http://dnsmntq6e.09-dns-and-route.localhost:8080/my/buzz/path/
+$ curl http://dnsmntq6e.localhost:8080/my/buzz/path/
 buzz
+```
+
+## Fixed DNS names
+
+If you want a fixed DNS name, you can add a new DNS provisioner to your `.score-compose/0-custom-provisioners.yaml` file:
+
+```yaml
+- uri: template://custom-dns
+  type: dns
+  outputs: |
+    host: api.localhost
 ```
