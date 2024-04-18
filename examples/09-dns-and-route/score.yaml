@@ -9,6 +9,11 @@ service:
 containers:
   web:
     image: nginx
+    files:
+      - target: /usr/share/nginx/html/my/fizz/path/index.html
+        content: fizz
+      - target: /usr/share/nginx/html/my/buzz/path/index.html
+        content: buzz
 resources:
   dns:
     type: dns
