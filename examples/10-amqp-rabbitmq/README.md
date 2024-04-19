@@ -33,4 +33,6 @@ resources:
         "compose.score.dev/publish-management-port": "15672"
 ```
 
+While you can add this to your main Score file, it's a good idea to apply this as an `--overrides-file`. 
+
 The default user with username `guest`, password `guest` will be available. This is very useful for debugging applications.
