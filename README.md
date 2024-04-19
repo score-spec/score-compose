@@ -26,14 +26,17 @@ The `score.yaml` specification file can be executed against a _Score Implementat
 
 `score-compose` comes with out-of-the-box support for:
 
-| Type         | Class   | Params             | Output                                                                                                                                                          |
-|--------------|---------|--------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| environment  | default | (none)             | `${KEY}`                                                                                                                                                        |
-| service-port | default | `workload`, `port` | `hostname`, `port`                                                                                                                                              |
-| volume       | *       | (none)             | `source`                                                                                                                                                        |
-| redis        | *       | (none)             | `host`, `port`, `username`, `password`                                                                                                                          | 
-| postgres     | *       | (none)             | `host`, `port`, `name` (aka `database`), `username`, `password`                                                                                                 |
-| s3           | *       | (none)             | `endpoint`, `access_key_id`, `secret_key`, `bucket`, with `region=""`, `aws_access_key_id=<access_key_id>`, and `aws_secret_key=<secret_key>` for compatibility |
+| Type         | Class   | Params                 | Output                                                                                                                                                          |
+|--------------|---------|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| environment  | default | (none)                 | `${KEY}`                                                                                                                                                        |
+| service-port | default | `workload`, `port`     | `hostname`, `port`                                                                                                                                              |
+| volume       | default | (none)                 | `source`                                                                                                                                                        |
+| redis        | default | (none)                 | `host`, `port`, `username`, `password`                                                                                                                          |
+| postgres     | default | (none)                 | `host`, `port`, `name` (aka `database`), `username`, `password`                                                                                                 |
+| s3           | default | (none)                 | `endpoint`, `access_key_id`, `secret_key`, `bucket`, with `region=""`, `aws_access_key_id=<access_key_id>`, and `aws_secret_key=<secret_key>` for compatibility |
+| dns          | default | (none)                 | `host`                                                                                                                                                          |
+| route        | default | `host`, `path`, `port` |                                                                                                                                                                 |
+| amqp         | default | (none)                 | `host`, `port`, `vhost`, `username`, `password`                                                                                                                 |
 
 ## ![Installation](docs/images/install.svg) Installation
 

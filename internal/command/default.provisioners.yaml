@@ -41,7 +41,6 @@
 # relationship yet.
 - uri: template://default-provisioners/service-port
   type: service-port
-  class: default
   outputs: |
     {{ if not .Params.workload }}{{ fail "expected 'workload' param for the target workload name" }}{{ end }}
     {{ if not .Params.port }}{{ fail "expected 'port' param for the name of the target workload service port" }}{{ end }}
@@ -294,12 +293,95 @@
     - "Or enter {{ dig .Init.sk "instanceUsername" "" .Shared }} / {{ dig .Init.sk "instancePassword" "" .Shared }} at https://localhost:{{ .Init.publishPort }}"
     {{ end }}
 
+
+# The default AMQP provisioner provides a simple rabbitmq instance with default configuration and plugins.
+- uri: template://default-provisioners/rabbitmq
+  type: amqp
+  init: |
+    randomServiceName: rabbitmq-{{ randAlphaNum 6 }}
+    randomVHost: vhost-{{ randAlpha 8 }}
+    randomUsername: user-{{ randAlpha 8 }}
+    randomPassword: {{ randAlphaNum 16 | quote }}
+    sk: default-provisioners-rabbitmq
+    publishPort: {{ dig "annotations" "compose.score.dev/publish-port" "0" .Metadata | atoi }}
+    publishManagementPort: {{ dig "annotations" "compose.score.dev/publish-management-port" "0" .Metadata | atoi }}
+  state: |
+    vhost: {{ dig "database" .Init.randomVHost .State | quote }}
+    username: {{ dig "username" .Init.randomUsername .State | quote }}
+    password: {{ dig "password" .Init.randomPassword .State | quote }}
+  outputs: |
+    host: {{ dig .Init.sk "instanceServiceName" "" .Shared }}
+    port: 5672
+    vhost: {{ .State.vhost }}
+    username: {{ .State.username }}
+    password: {{ .State.password }}
+  shared: |
+    {{ .Init.sk }}:
+      instanceServiceName: {{ dig .Init.sk "instanceServiceName" .Init.randomServiceName .Shared | quote }}
+      instanceErlangCookie: {{ dig .Init.sk "instanceErlangCookie" (randAlpha 20) .Shared }}
+      {{ $publishPorts := (list) }}
+      {{ if ne .Init.publishPort 0 }}{{ $publishPorts = (append $publishPorts (dict "target" 5672 "published" .Init.publishPort)) }}{{ end }}
+      {{ $x := (dig "annotations" "compose.score.dev/publish-management-port" "0" .Metadata | atoi) }}
+      {{ if ne .Init.publishManagementPort 0 }}{{ $publishPorts = (append $publishPorts (dict "target" 15672 "published" .Init.publishManagementPort)) }}{{ end }}
+      publishPorts: {{ $publishPorts | toJson }}
+  volumes: |
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}-data:
+      driver: local
+  files: |
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}-db-scripts/{{ .State.vhost }}.sh: |
+      rabbitmqctl list_vhosts | grep {{ .State.vhost }} || rabbitmqctl add_vhost {{ .State.vhost }}
+      rabbitmqctl list_users | grep {{ .State.username }} || rabbitmqctl add_user {{ .State.username }} {{ .State.password }}
+      rabbitmqctl set_user_tags {{ .State.username }} administrator
+      rabbitmqctl set_permissions -p {{ .State.vhost }} {{ .State.username }} ".*" ".*" ".*"
+      rabbitmqctl set_topic_permissions -p {{ .State.vhost }} {{ .State.username }} ".*" ".*" ".*"
+  services: |
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
+      image: rabbitmq:3-management-alpine
+      restart: always
+      environment:
+        RABBITMQ_ERLANG_COOKIE: {{ dig .Init.sk "instanceErlangCookie" "" .Shared }}
+        RABBITMQ_DEFAULT_USER: guest
+        RABBITMQ_DEFAULT_PASS: guest
+      ports: {{ dig .Init.sk "publishPorts" "" .Shared | toJson}}
+      volumes:
+      - type: volume
+        source: {{ dig .Init.sk "instanceServiceName" "" .Shared }}-data
+        target: /var/lib/rabbitmq
+      healthcheck:
+        test: ["CMD-SHELL", "rabbitmq-diagnostics -q check_port_connectivity"]
+        interval: 2s
+        timeout: 5s
+        retries: 5
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}-init:
+      image: rabbitmq:3-management-alpine
+      entrypoint: ["/bin/sh"]
+      environment:
+        RABBITMQ_ERLANG_COOKIE: {{ dig .Init.sk "instanceErlangCookie" "" .Shared }}
+      command:
+      - "-c"
+      - |
+        set -exu
+        for s in /db-scripts/*.sh; do source $$s; done
+      depends_on:
+        {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
+          condition: service_healthy
+          restart: true
+      labels:
+        dev.score.compose.labels.is-init-container: "true"
+      network_mode: service:{{ dig .Init.sk "instanceServiceName" "" .Shared }}
+      volumes:
+      - type: bind
+        source: {{ .MountsDirectory }}/{{ dig .Init.sk "instanceServiceName" "" .Shared }}-db-scripts
+        target: /db-scripts
+  info_logs: |
+    {{ if ne .Init.publishManagementPort 0 }}
+    - "Browse the rabbitmq UI at \"http://localhost:{{ .Init.publishManagementPort }}\""
+    {{ end }}
 # The default dns provisioner just outputs localhost as the hostname every time.
 # This is because without actual control of a dns resolver we can't do any accurate routing on any other name. This
 # can be replaced by a new provisioner in the future.
 - uri: template://default-provisioners/dns
   type: dns
-  class: default
   init: |
     randomHostname: dns{{ randAlphaNum 6 | lower }}.localhost
   state: |
@@ -311,7 +393,6 @@
 # It assumes the hostnames and routes provided have no overlaps. Weird behavior may happen if there are overlaps.
 - uri: template://default-provisioners/route
   type: route
-  class: default
   init: |
     randomServiceName: routing-{{ randAlphaNum 6 }}
     sk: default-provisioners-routing-instance
