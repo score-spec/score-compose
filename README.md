@@ -57,7 +57,9 @@ See the [examples](./examples) for more examples of using Score and provisioning
 - [05-volume-mounts](examples/05-volume-mounts) - an example of an "empty-dir" volume resource with `type: volume`
 - [06-resource-provisioning](examples/06-resource-provisioning) - detailed example and information about resource provisioning and the operation of the `template://` and `cmd://` provisioners
 - [07-overrides](examples/07-overrides) - details of how to override aspects of the input Score file and output Docker compose files
-- [08-service-port-resource](examples/08-service-port-resource) - an example of using the `service` resource type to link between workloads
+- [08-service-port-resource](examples/08-service-port-resource) - an example of using the `service-port` resource type to link between workloads
+- [09-dns-and-route](examples/09-dns-and-route) - an example of using the `dns` and `route` resources to route http requests
+- [10-amqp-rabbitmq](examples/10-amqp-rabbitmq) - an example the default `amqp` resource provisioner
 
 If you're getting started, you can use `score-compose init` to create a basic `score.yaml` file in the current directory along with a `.score-compose/` working directory.
 

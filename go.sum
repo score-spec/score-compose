@@ -51,6 +51,8 @@ github.com/santhosh-tekuri/jsonschema/v5 v5.3.1 h1:lZUw3E0/J3roVtGQ+SCrUrg3ON6Ng
 github.com/santhosh-tekuri/jsonschema/v5 v5.3.1/go.mod h1:uToXkOrWAZ6/Oc07xWQrPOhJotwFIyu2bBVN41fcDUY=
 github.com/score-spec/score-go v1.5.2 h1:6zzeqx6D7Np7WnJmWWkhX89t5SmN6f0/6xYh40QJFZc=
 github.com/score-spec/score-go v1.5.2/go.mod h1:3QSPH5QVMIX7FdhktLLFtjLQTL1/ENqrWDe5lSdZGFc=
+github.com/score-spec/score-go v1.5.3 h1:K2qujBslD71vttRPE/djxQ0qb4oXZDhOUqzszRQP76U=
+github.com/score-spec/score-go v1.5.3/go.mod h1:3QSPH5QVMIX7FdhktLLFtjLQTL1/ENqrWDe5lSdZGFc=
 github.com/shopspring/decimal v1.2.0 h1:abSATXmQEYyShuxI4/vyW3tV1MrKAJzCZ/0zLUXYbsQ=
 github.com/shopspring/decimal v1.2.0/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFRcu2hWCYk4o=
 github.com/sirupsen/logrus v1.9.0 h1:trlNQbNUG3OdDrDil03MCb1H2o9nJ1x4/5LYw7byDE0=

@@ -86,6 +86,32 @@ workload-two-example-1  | redis://default:v2otaQdY6052ylWq@redis-MSFdjH:6379
 workload-one-example-1  | redis://default:94GBXwsRLtDLagPg@redis-2tKndj:6379
 ```
 
+## Inspecting resources
+
+Two subcommands make it a bit easier to see the list of resources provisioned and inspect what outputs are available. These can be very useful while building out a new Score compose project.
+
+`score-compose resources list` will output the list of resource uids:
+
+```console
+$ score-compose resources list
+redis.default#main-cache
+redis.default#workload-two.cache-c
+```
+
+And `score-compose resources get-outputs` can preview the last outputs:
+
+```console
+$ score-compose resources get-outputs 'redis.default#main-cache' --format yaml
+host: redis-OVAJ8l
+password: TbxVySxGXWIwaosD
+port: 6379
+username: default
+```
+
+This makes it much easier to use the outputs in your integration tests and CI pipelines. For example, a test may need to connect to a particular database or queue in order to inspect its state.
+
+**NOTE**: experts may wish to look at the `.score-compose/state.yaml` file directly.
+
 ## The `*.provisioners.yaml` files
 
 When you run `score-compose init`, a [99-default.provisioners.yaml](https://github.com/score-spec/score-compose/blob/main/internal/command/default.provisioners.yaml) file is created, which is a YAML file holding the definition of the built-in provisioners.
