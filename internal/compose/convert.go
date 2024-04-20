@@ -15,6 +15,8 @@
 package compose
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -27,6 +29,7 @@ import (
 	compose "github.com/compose-spec/compose-go/v2/types"
 	"github.com/score-spec/score-go/framework"
 	score "github.com/score-spec/score-go/types"
+	"gopkg.in/yaml.v3"
 
 	"github.com/score-spec/score-compose/internal/project"
 	"github.com/score-spec/score-compose/internal/util"
@@ -86,31 +89,11 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 					return nil, fmt.Errorf("containers.%s.volumes[%d].path: can't mount named volume with sub path '%s': not supported", containerName, idx, *vol.Path)
 				}
 
-				// The way volumes are linked to a resource is a bit of a special case. The goal is to confirm that the
-				// resource exists and is a volume. We then extract the source property. This only applies to the pattern
-				// of ${resources.my-volume} which can also be written as ${resources.my-volume.source}.
-				resolvedVolumeSource, err := framework.SubstituteString(vol.Source, func(ref string) (string, error) {
-					if parts := framework.SplitRefParts(ref); len(parts) == 2 && parts[0] == "resources" {
-						resName := parts[1]
-						if res, ok := spec.Resources[resName]; !ok {
-							return "", fmt.Errorf("containers.%s.volumes[%d].source: resource '%s' does not exist", containerName, idx, resName)
-						} else if res.Type != "volume" {
-							return "", fmt.Errorf("containers.%s.volumes[%d].source: resource '%s' is not a volume", containerName, idx, resName)
-						}
-						ref += ".source"
-					}
-					return deferredSubstitutionFunction(ref)
-				})
+				cfg, err := convertVolumeSourceIntoVolume(state, deferredSubstitutionFunction, workloadName, vol)
 				if err != nil {
 					return nil, fmt.Errorf("containers.%s.volumes[%d].source: %w", containerName, idx, err)
 				}
-
-				volumes[idx] = compose.ServiceVolumeConfig{
-					Type:     "volume",
-					Source:   resolvedVolumeSource,
-					Target:   vol.Target,
-					ReadOnly: util.DerefOr(vol.ReadOnly, false),
-				}
+				volumes[idx] = *cfg
 			}
 		}
 
@@ -250,4 +233,81 @@ func convertFilesIntoVolumes(state *project.State, workloadName string, containe
 	}
 
 	return output, nil
+}
+
+func convertVolumeSourceIntoVolume(state *project.State, substitutionFunction func(string) (string, error), workloadName string, vol score.ContainerVolumesElem) (*compose.ServiceVolumeConfig, error) {
+	spec := state.Workloads[workloadName].Spec
+
+	// The way volumes are linked to a resource is a bit of a special case. The goal is to confirm that the
+	// resource exists and has the outputs that we need.
+	resolvedVolumeSource, err := framework.SubstituteString(vol.Source, func(ref string) (string, error) {
+		if parts := framework.SplitRefParts(ref); len(parts) == 2 && parts[0] == "resources" {
+			resName := parts[1]
+			if res, ok := spec.Resources[resName]; ok {
+				return string(framework.NewResourceUid(workloadName, resName, res.Type, res.Class, res.Id)), nil
+			}
+			return "", fmt.Errorf("resource '%s' does not exist", resName)
+		}
+		return substitutionFunction(ref)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	outputVolume := &compose.ServiceVolumeConfig{
+		Type:     "volume",
+		Source:   resolvedVolumeSource,
+		Target:   vol.Target,
+		ReadOnly: util.DerefOr(vol.ReadOnly, false),
+	}
+
+	// now if the resolves source is a volume we can check the outputs or throw an error
+	res, ok := state.Resources[framework.ResourceUid(resolvedVolumeSource)]
+	if ok {
+		volType, ok := res.Outputs["type"].(string)
+		if !ok {
+			return nil, fmt.Errorf("resource '%s' has no 'type' output", resolvedVolumeSource)
+		}
+		outputVolume.Type = volType
+		raw, _ := json.Marshal(res.Outputs)
+		dec := yaml.NewDecoder(bytes.NewReader(raw))
+		dec.KnownFields(true)
+		switch volType {
+		case "volume":
+			s := struct {
+				Type   string                       `json:"type"`
+				Source string                       `json:"source"`
+				Volume *compose.ServiceVolumeVolume `json:"volume"`
+			}{}
+			if err := dec.Decode(&s); err != nil {
+				return nil, fmt.Errorf("resource '%s' outputs cannot decode for volume: %w", resolvedVolumeSource, err)
+			}
+			outputVolume.Source = s.Source
+			outputVolume.Volume = s.Volume
+		case "tmpfs":
+			s := struct {
+				Type  string                      `json:"type"`
+				Tmpfs *compose.ServiceVolumeTmpfs `json:"tmpfs"`
+			}{}
+			if err := dec.Decode(&s); err != nil {
+				return nil, fmt.Errorf("resource '%s' outputs cannot decode for tmpfs: %w", resolvedVolumeSource, err)
+			}
+			outputVolume.Tmpfs = s.Tmpfs
+		case "bind":
+			s := struct {
+				Type   string                     `json:"type"`
+				Source string                     `json:"source"`
+				Bind   *compose.ServiceVolumeBind `json:"bind"`
+			}{}
+			if err := dec.Decode(&s); err != nil {
+				return nil, fmt.Errorf("resource '%s' outputs cannot decode for bind: %w", resolvedVolumeSource, err)
+			}
+			outputVolume.Source = s.Source
+			outputVolume.Bind = s.Bind
+		default:
+			return nil, fmt.Errorf("resource '%s' has invalid type '%s'", resolvedVolumeSource, volType)
+		}
+	}
+
+	return outputVolume, nil
 }

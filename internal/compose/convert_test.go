@@ -274,7 +274,7 @@ func TestScoreConvert(t *testing.T) {
 				},
 				Resources: map[string]score.Resource{"data": {Type: "thing"}},
 			},
-			Error: errors.New("containers.test.volumes[0].source: resource 'data' is not a volume"),
+			Error: errors.New("containers.test.volumes[0].source: resource 'data' does not exist"),
 		},
 	}
 
