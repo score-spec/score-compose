@@ -78,6 +78,16 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 			env[key] = &resolved
 		}
 
+		// replace dollar sign ($) by double dollar sign ($$) in command strings
+		if len(cSpec.Command) > 0 {
+			cSpec.Command = util.PrepareEnvVariables(cSpec.Command)
+		}
+
+		// replace dollar sign ($) by double dollar sign ($$) in command arguments
+		if len(cSpec.Args) > 0 {
+			cSpec.Args = util.PrepareEnvVariables(cSpec.Args)
+		}
+
 		var volumes []compose.ServiceVolumeConfig
 		if len(cSpec.Volumes) > 0 {
 			volumes = make([]compose.ServiceVolumeConfig, len(cSpec.Volumes))
