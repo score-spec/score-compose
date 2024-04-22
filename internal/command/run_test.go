@@ -32,7 +32,7 @@ import (
 
 // executeAndResetCommand is a test helper that runs and then resets a command for executing in another test.
 func executeAndResetCommand(ctx context.Context, cmd *cobra.Command, args []string) (string, string, error) {
-	beforeOut, beforeErr := cmd.OutOrStderr(), cmd.ErrOrStderr()
+	beforeOut, beforeErr := cmd.OutOrStdout(), cmd.ErrOrStderr()
 	defer func() {
 		cmd.SetOut(beforeOut)
 		cmd.SetErr(beforeErr)

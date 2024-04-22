@@ -37,6 +37,7 @@ Available Commands:
   generate    Convert one or more Score files into a Docker compose manifest
   help        Help about any command
   init        Initialise a new score-compose project with local state directory and score file
+  resources   Subcommands related to provisioned resources
   run         Translate the SCORE file to docker-compose configuration
 
 Flags:
