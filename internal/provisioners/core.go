@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strconv"
-	"strings"
 
 	compose "github.com/compose-spec/compose-go/v2/types"
 	"github.com/score-spec/score-go/framework"
@@ -240,16 +239,10 @@ func (po *ProvisionOutput) ApplyToStateAndProject(state *project.State, resUid f
 func buildWorkloadServices(state *project.State) map[string]NetworkService {
 	out := make(map[string]NetworkService, len(state.Workloads))
 	for workloadName, workloadState := range state.Workloads {
-		// the hostname of a workload is the <workload name>-<first container name>
-		var firstContainerName string
-		for name := range workloadState.Spec.Containers {
-			if firstContainerName == "" || strings.Compare(name, firstContainerName) < 0 {
-				firstContainerName = name
-			}
-		}
 		// setup ports exposure
 		ns := NetworkService{
-			ServiceName: workloadName + "-" + firstContainerName,
+			// the hostname of a workload is the <workload name>
+			ServiceName: workloadName,
 			Ports:       make(map[string]ServicePort),
 		}
 		if workloadState.Spec.Service != nil {

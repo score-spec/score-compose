@@ -53,10 +53,12 @@ services:
     hello-world-2-first:
         environment:
             NGINX_PORT: "8080"
+        hostname: hello-world-2
         image: nginx:latest
     hello-world-first:
         environment:
             NGINX_PORT: "8080"
+        hostname: hello-world
         image: nginx:latest
     hello-world-second:
         environment:

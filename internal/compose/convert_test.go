@@ -82,8 +82,9 @@ func TestScoreConvert(t *testing.T) {
 			Project: &compose.Project{
 				Services: compose.Services{
 					"test-backend": {
-						Name:  "test-backend",
-						Image: "busybox",
+						Name:     "test-backend",
+						Hostname: "test",
+						Image:    "busybox",
 						Entrypoint: compose.ShellCommand{
 							"/bin/sh",
 						},
@@ -140,8 +141,9 @@ func TestScoreConvert(t *testing.T) {
 			Project: &compose.Project{
 				Services: compose.Services{
 					"test-backend": {
-						Name:  "test-backend",
-						Image: "busybox",
+						Name:     "test-backend",
+						Hostname: "test",
+						Image:    "busybox",
 						Environment: compose.MappingWithEquals{
 							"DEBUG":             stringPtr("${DEBUG}"),
 							"LOGS_LEVEL":        stringPtr("${LOGS_LEVEL}"),
@@ -197,8 +199,9 @@ func TestScoreConvert(t *testing.T) {
 			Project: &compose.Project{
 				Services: compose.Services{
 					"test-backend": {
-						Name:  "test-backend",
-						Image: "busybox",
+						Name:     "test-backend",
+						Hostname: "test",
+						Image:    "busybox",
 						Environment: compose.MappingWithEquals{
 							"PORT": stringPtr("81"),
 						},

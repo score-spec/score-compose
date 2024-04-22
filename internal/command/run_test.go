@@ -186,6 +186,7 @@ resources:
 	assert.Equal(t, map[string]interface{}{
 		"services": map[string]interface{}{
 			"example-workload-name123-container-one1": map[string]interface{}{
+				"hostname":   "example-workload-name123",
 				"image":      "localhost:4000/repo/my-image:tag",
 				"entrypoint": []interface{}{"/bin/sh", "-c"},
 				"command":    []interface{}{"hello", "world"},
@@ -311,6 +312,7 @@ func TestRunExample01(t *testing.T) {
       - while true; do echo Hello World!; sleep 5; done
     entrypoint:
       - /bin/sh
+    hostname: hello-world
     image: busybox
 `
 
@@ -358,6 +360,7 @@ containers:
   hello-world-hello:
     build:
       context: ./test
+    hostname: hello-world
 `
 
 	assert.Equal(t, expectedOutput, stdout)
@@ -392,6 +395,7 @@ containers:
 
 	expectedOutput := `services:
   hello-world-hello:
+    hostname: hello-world
     image: nginx
 `
 
@@ -421,6 +425,7 @@ containers:
 
 	expectedOutput := `services:
   hello-world-hello:
+    hostname: hello-world
     image: bananas:latest
 `
 

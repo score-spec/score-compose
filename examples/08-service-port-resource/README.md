@@ -51,6 +51,7 @@ When we run `score-compose init; score-compose generate score*.yaml`, the result
 name: temptest
 services:
     workload-a-example:
+        hostname: workload-a
         image: nginx
     workload-b-example:
         command:
@@ -60,6 +61,7 @@ services:
             - /bin/sh
         environment:
             DEPENDENCY_URL: http://workload-a-example:80
+        hostname: workload-b
         image: busybox
 ```
 
