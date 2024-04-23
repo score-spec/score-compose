@@ -26,6 +26,7 @@
     name: {{ dig "name" .Init.randomVolumeName .State }}
   # Return a source value with the volume name. This can be used in volume resource references now.
   outputs: |
+    type: volume
     source: {{ .State.name }}
   # Add a volume to the docker compose file. We assume our name is unique here. We also apply a label to help ensure
   # that we can track the volume back to the workload and resource that created it.

@@ -151,10 +151,20 @@ acts as a namespace when multiple score files and containers are used.
 				return fmt.Errorf("failed to persist new compose project name: %w", err)
 			}
 
+			// create and write the default provisioners file if it doesn't already exist
 			dst := "99-default" + loader.DefaultSuffix
-			slog.Info(fmt.Sprintf("Writing default provisioners yaml file '%s'", dst))
-			if err := os.WriteFile(filepath.Join(sd.Path, dst), []byte(defaultProvisionersContent), 0644); err != nil {
-				return fmt.Errorf("failed to write provisioners: %w", err)
+			if f, err := os.OpenFile(filepath.Join(sd.Path, dst), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644); err != nil {
+				if !errors.Is(err, os.ErrExist) {
+					return fmt.Errorf("failed to open default provisioners for writing: %w", err)
+				}
+				slog.Info(fmt.Sprintf("Default provisioners yaml file '%s' already exists, not overwriting it", dst))
+			} else {
+				defer f.Close()
+				slog.Info(fmt.Sprintf("Writing default provisioners yaml file '%s'", dst))
+				if _, err = f.WriteString(defaultProvisionersContent); err != nil {
+					return fmt.Errorf("failed to write provisioners: %w", err)
+				}
+				_ = f.Close()
 			}
 		}
 

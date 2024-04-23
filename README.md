@@ -38,6 +38,8 @@ The `score.yaml` specification file can be executed against a _Score Implementat
 | route        | default | `host`, `path`, `port` |                                                                                                                                                                 |
 | amqp         | default | (none)                 | `host`, `port`, `vhost`, `username`, `password`                                                                                                                 |
 
+These can be found in the default provisioners file. You are encouraged to write your own provisioners and add them to the `.score-compose` directory (with the `.provisioners.yaml` extension) or contribute them upstream to the [default.provisioners.yaml](internal/command/default.provisioners.yaml) file.
+
 ## ![Installation](docs/images/install.svg) Installation
 
 To install `score-compose`, follow the instructions as described in our [installation guide](https://docs.score.dev/docs/get-started/install/).
