@@ -36,7 +36,7 @@ $ score-compose generate score.yaml
 
 And it returns
 
-```console
+```yaml
 name: 02-environment
 services:
     hello-world-hello:
@@ -49,6 +49,7 @@ services:
             GREETING: Hello
             NAME: ${NAME}
             WORKLOAD_NAME: hello-world
+        hostname: hello-world
         image: busybox
 ```
 

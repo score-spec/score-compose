@@ -46,6 +46,7 @@ services:
             - while true; do echo Hello World!; sleep 5; done
         entrypoint:
             - /bin/sh
+        hostname: hello-world
         image: busybox
 `,
 		},
@@ -64,6 +65,7 @@ services:
             GREETING: Hello
             NAME: ${NAME}
             WORKLOAD_NAME: hello-world
+        hostname: hello-world
         image: busybox
 `,
 		},
@@ -78,6 +80,7 @@ services:
             - while true; do cat /fileA.txt; cat /fileB.txt; sleep 5; done
         entrypoint:
             - /bin/sh
+        hostname: hello-world
         image: busybox
         volumes:
             - type: bind
@@ -99,10 +102,12 @@ services:
     hello-world-2-first:
         environment:
             NGINX_PORT: "8080"
+        hostname: hello-world-2
         image: nginx:latest
     hello-world-first:
         environment:
             NGINX_PORT: "8080"
+        hostname: hello-world
         image: nginx:latest
     hello-world-second:
         environment:
@@ -117,6 +122,7 @@ services:
 			expected: `name: 05-volume-mounts
 services:
     hello-world-first:
+        hostname: hello-world
         image: nginx:latest
         volumes:
             - type: volume
@@ -142,6 +148,7 @@ services:
     hello-world-web:
         environment:
             DEBUG: "true"
+        hostname: hello-world
         image: nginx
 `,
 		},
@@ -151,6 +158,7 @@ services:
 			expected: `name: 08-service-port-resource
 services:
     workload-a-example:
+        hostname: workload-a
         image: nginx
     workload-b-example:
         command:
@@ -159,7 +167,8 @@ services:
         entrypoint:
             - /bin/sh
         environment:
-            DEPENDENCY_URL: http://workload-a-example:80
+            DEPENDENCY_URL: http://workload-a:80
+        hostname: workload-b
         image: busybox
 `,
 		},

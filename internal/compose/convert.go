@@ -164,6 +164,10 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 		// if we are not the "first" service, then inherit the network from the first service
 		if firstService == "" {
 			firstService = svc.Name
+			// We name the containers as (workload name)-(container name) but we want the name for the main network
+			// interface for be (workload name). So we set the hostname itself. This means that workloads cannot have
+			// the same name within the project. But that's already enforced elsewhere.
+			svc.Hostname = workloadName
 		} else {
 			svc.Ports = nil
 			svc.NetworkMode = "service:" + firstService

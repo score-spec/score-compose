@@ -155,6 +155,7 @@ services:
         environment:
             EXAMPLE_VARIABLE: example-value
             THING: ${THING}
+        hostname: example
         image: nginx:latest
 `
 	assert.Equal(t, expectedOutput, string(raw))
@@ -210,6 +211,7 @@ containers:
 		expectedOutput := `name: "001"
 services:
     example-example:
+        hostname: example
         image: busybox:latest
 `
 		assert.Equal(t, expectedOutput, string(raw))
@@ -236,6 +238,7 @@ services:
     example-example:
         build:
             context: ./dir
+        hostname: example
 `
 		assert.Equal(t, expectedOutput, string(raw))
 		// generate again just for luck
@@ -262,6 +265,7 @@ services:
             context: ./dir
             args:
                 DEBUG: "true"
+        hostname: example
 `
 		assert.Equal(t, expectedOutput, string(raw))
 	})
@@ -293,6 +297,7 @@ containers:
 	assert.Equal(t, `name: "001"
 services:
     example-example:
+        hostname: example
         image: foo
         volumes:
             - type: bind
@@ -505,6 +510,7 @@ services:
             wait-for-resources:
                 condition: service_started
                 required: false
+        hostname: example
         image: foo
     generic_service:
         image: other
@@ -603,6 +609,7 @@ services:
             wait-for-resources:
                 condition: service_started
                 required: false
+        hostname: example
         image: busybox
     foo-service:
         image: foo-image
@@ -720,7 +727,7 @@ resources:
 		assert.Len(t, sd.State.Workloads, 1)
 		assert.Len(t, sd.State.Resources, 1)
 		assert.Equal(t, map[string]interface{}{
-			"hostname": "example-example",
+			"hostname": "example",
 			"port":     80,
 		}, sd.State.Resources["workload-port.default#example.first"].State)
 	})
@@ -756,6 +763,7 @@ services:
     example-example:
         environment:
             REF: thing
+        hostname: example
         image: foo
 `, string(raw))
 
@@ -832,11 +840,11 @@ resources:
 		"default-provisioners-routing-instance": map[string]interface{}{
 			"hosts": map[string]interface{}{
 				"localhost1": map[string]interface{}{
-					"route.default#example.r1": map[string]interface{}{"path": "/first", "port": 8080, "target": "example-example:8080", "path_type": "Prefix"},
-					"route.default#example.r2": map[string]interface{}{"path": "/second", "port": 8080, "target": "example-example:8080", "path_type": "Prefix"},
+					"route.default#example.r1": map[string]interface{}{"path": "/first", "port": 8080, "target": "example:8080", "path_type": "Prefix"},
+					"route.default#example.r2": map[string]interface{}{"path": "/second", "port": 8080, "target": "example:8080", "path_type": "Prefix"},
 				},
 				"localhost2": map[string]interface{}{
-					"route.default#example.r3": map[string]interface{}{"path": "/third", "port": 8080, "target": "example-example:8080", "path_type": "Exact"},
+					"route.default#example.r3": map[string]interface{}{"path": "/third", "port": 8080, "target": "example:8080", "path_type": "Exact"},
 				},
 			},
 			"instancePort": 8080,
@@ -895,6 +903,7 @@ services:
     example-example:
         environment:
             ONE: ${UNKNOWN_SCORE_VARIABLE}
+        hostname: example
         image: foo
 `, string(raw))
 }

@@ -139,7 +139,7 @@ func TestProvisionResourcesWithNetworkService(t *testing.T) {
 			assert.Equal(t, "w1", input.SourceWorkload)
 			assert.Equal(t, map[string]NetworkService{
 				"w1": {
-					ServiceName: "w1-container-a",
+					ServiceName: "w1",
 					Ports: map[string]ServicePort{
 						"web":  {Name: "web", Port: 80, TargetPort: 80, Protocol: score.ServicePortProtocolTCP},
 						"80":   {Name: "web", Port: 80, TargetPort: 80, Protocol: score.ServicePortProtocolTCP},

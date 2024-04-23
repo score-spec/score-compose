@@ -24,8 +24,7 @@ $ score-compose generate score.yaml
 
 The `init` will create the `.score-compose` directory. The `generate` command will add the input `score.yaml` workload to the `.score-compose/state.yaml` state file and regenerate the output `compose.yaml`.
 
-```console
-$ cat compose.yaml
+```yaml
 name: 01-hello
 services:
     hello-world-hello:
@@ -34,6 +33,7 @@ services:
             - while true; do echo Hello World!; sleep 5; done
         entrypoint:
             - /bin/sh
+        hostname: hello-world
         image: busybox
 ```
 

@@ -92,6 +92,7 @@ func TestInitNominal(t *testing.T) {
   example-hello-world:
     environment:
       EXAMPLE_VARIABLE: example-value
+    hostname: example
     image: nginx:latest
     ports:
       - target: 80
