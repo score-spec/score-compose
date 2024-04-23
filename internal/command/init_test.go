@@ -181,15 +181,27 @@ func TestInitNominal_run_twice(t *testing.T) {
 		require.NoError(t, os.Chdir(wd))
 	}()
 
+	// first init
 	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--file", "score2.yaml", "--project", "bananas"})
 	assert.NoError(t, err)
 	assert.Equal(t, "", stdout)
 	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 
+	// check default provisioners exists and overwrite it with an empty array
+	dpf, err := os.Stat(filepath.Join(td, ".score-compose", "99-default.provisioners.yaml"))
+	assert.NoError(t, err)
+	assert.NoError(t, os.WriteFile(filepath.Join(td, ".score-compose", dpf.Name()), []byte("[]"), 0644))
+
+	// init again
 	stdout, stderr, err = executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
 	assert.NoError(t, err)
 	assert.Equal(t, "", stdout)
 	assert.NotEqual(t, "", strings.TrimSpace(stderr))
+
+	// verify that default provisioners was not overwritten again
+	dpf, err = os.Stat(filepath.Join(td, ".score-compose", dpf.Name()))
+	assert.NoError(t, err)
+	assert.Equal(t, 2, int(dpf.Size()))
 
 	_, err = os.Stat("score.yaml")
 	assert.NoError(t, err)

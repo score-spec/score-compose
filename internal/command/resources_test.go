@@ -123,6 +123,6 @@ volume.default#example.vol
 	t.Run("format template", func(t *testing.T) {
 		stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"resources", "get-outputs", "volume.default#example.vol", "--format", `{{ . | len }}`})
 		assert.NoError(t, err)
-		assert.Equal(t, "1", stdout)
+		assert.Equal(t, "2", stdout)
 	})
 }
