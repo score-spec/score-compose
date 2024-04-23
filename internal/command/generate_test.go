@@ -960,3 +960,71 @@ resources:
 		"environment variable 'UNKNOWN_SCORE_VARIABLE' must be resolved",
 	)
 }
+
+func TestInitAndGenerate_with_volume_types(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	// write custom providers
+	assert.NoError(t, os.WriteFile(filepath.Join(td, ".score-compose", "00-custom.provisioners.yaml"), []byte(`
+- uri: template://tmpfs-volume
+  type: tmp-volume
+  outputs: |
+    type: tmpfs
+    tmpfs:
+      size: 10000000
+- uri: template://bind-volume
+  type: bind-volume
+  outputs: |
+    type: bind
+    source: /dev/something
+    bind:
+      create_host_path: true
+`), 0644))
+
+	// write custom score file
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: busybox
+    volumes:
+    - target: /mnt/v1
+      source: ${resources.v1}
+    - target: /mnt/v2
+      source: ${resources.v2}
+resources:
+  v1:
+    type: tmp-volume
+  v2:
+    type: bind-volume
+`), 0644))
+
+	// generate
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	raw, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+	assert.NoError(t, err)
+	assert.Equal(t, `name: "001"
+services:
+    example-example:
+        hostname: example
+        image: busybox
+        volumes:
+            - type: bind
+              source: /dev/something
+              target: /mnt/v2
+              bind:
+                create_host_path: true
+            - type: tmpfs
+              source: tmp-volume.default#example.v1
+              target: /mnt/v1
+              tmpfs:
+                size: "10000000"
+`, string(raw))
+}
