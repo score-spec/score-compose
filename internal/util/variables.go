@@ -14,13 +14,24 @@
 
 package util
 
-import "regexp"
+import (
+	"regexp"
+	"strings"
+)
 
 // PrepareEnvVariables replaces the dollar sign ($) by double dollar sign ($$)
 // in slice strings for using in the docker compose file
 func PrepareEnvVariables(arr []string) []string {
+	// create pattern matching string
+	chars := []string{
+		"@", "#", "!", "&", "%", ":", ";", "=", "|", "/", "~", "'", "_",
+		"\\-", "\\.", "\\*", "\\?", "\\\\", "\"", "\\^",
+		"\\(", "\\)", "\\{", "\\}", "\\[", "\\]",
+	}
+	matchStr := `(^|[\w\s` + strings.Join(chars, "") + `])\$([\w+|\{?])`
+	re := regexp.MustCompile(matchStr)
+
 	// prepare replace string
-	re := regexp.MustCompile(`([\w|\s|\-|\}|\)])\$([\w+|\{?])`)
 	replaceStr := "${1}$$$$${2}"
 
 	for i := range arr {
