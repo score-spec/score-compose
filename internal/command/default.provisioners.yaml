@@ -106,7 +106,7 @@
         volume:
           nocopy: true
   info_logs: |
-    - "To connect to redis: \"docker run -it --network {{ .ComposeProjectName }}_default --rm redis redis-cli -h {{ .State.serviceName | squote }} -a {{ .State.password | squote }}\""
+    - "{{.Uid}}: To connect to redis: \"docker run -it --network {{ .ComposeProjectName }}_default --rm redis redis-cli -h {{ .State.serviceName | squote }} -a {{ .State.password | squote }}\""
 
 # The default postgres provisioner adds a postgres instance and then ensures that the required databases are created on
 # startup.
@@ -195,9 +195,9 @@
         source: {{ .MountsDirectory }}/{{ dig .Init.sk "instanceServiceName" "" .Shared }}-db-scripts
         target: /db-scripts
   info_logs: |
-    - "To connect to postgres, enter password {{ .State.password | squote }} at: \"docker run -it --network {{ .ComposeProjectName }}_default --rm postgres:16-alpine psql -h {{ dig .Init.sk "instanceServiceName" "" .Shared }} -U {{ .State.username }} --dbname {{ .State.database }}\""
+    - "{{.Uid}}: To connect to postgres, enter password {{ .State.password | squote }} at: \"docker run -it --network {{ .ComposeProjectName }}_default --rm postgres:16-alpine psql -h {{ dig .Init.sk "instanceServiceName" "" .Shared }} -U {{ .State.username }} --dbname {{ .State.database }}\""
     {{ if ne .Init.publishPort "0" }}
-    - "Or connect your postgres client to \"postgres://{{ .State.username }}:{{ .State.password }}@localhost:{{ .Init.publishPort }}/{{ .State.database }}\""
+    - "{{.Uid}}: Or connect your postgres client to \"postgres://{{ .State.username }}:{{ .State.password }}@localhost:{{ .Init.publishPort }}/{{ .State.database }}\""
     {{ end }}
 
 # This resource provides a minio based S3 bucket with AWS-style credentials.
@@ -289,9 +289,9 @@
         source: {{ .MountsDirectory }}/{{ dig .Init.sk "instanceServiceName" "" .Shared }}-setup-scripts
         target: /setup-scripts
   info_logs: |
-    - "To connect with a minio client: use the myminio alias at \"docker run -it --network {{ .ComposeProjectName }}_default --rm --entrypoint /bin/bash quay.io/minio/minio -c 'mc alias set myminio http://{{ dig .Init.sk "instanceServiceName" "" .Shared }}:9000 {{ dig .Init.sk "instanceAccessKeyId" "" .Shared }} {{ dig .Init.sk "instanceSecretKey" "" .Shared }}; bash'\""
+    - "{{.Uid}}: To connect with a minio client: use the myminio alias at \"docker run -it --network {{ .ComposeProjectName }}_default --rm --entrypoint /bin/bash quay.io/minio/minio -c 'mc alias set myminio http://{{ dig .Init.sk "instanceServiceName" "" .Shared }}:9000 {{ dig .Init.sk "instanceAccessKeyId" "" .Shared }} {{ dig .Init.sk "instanceSecretKey" "" .Shared }}; bash'\""
     {{ if ne .Init.publishPort 0 }}
-    - "Or enter {{ dig .Init.sk "instanceUsername" "" .Shared }} / {{ dig .Init.sk "instancePassword" "" .Shared }} at https://localhost:{{ .Init.publishPort }}"
+    - "{{.Uid}}: Or enter {{ dig .Init.sk "instanceUsername" "" .Shared }} / {{ dig .Init.sk "instancePassword" "" .Shared }} at https://localhost:{{ .Init.publishPort }}"
     {{ end }}
 
 
@@ -376,7 +376,7 @@
         target: /db-scripts
   info_logs: |
     {{ if ne .Init.publishManagementPort 0 }}
-    - "Browse the rabbitmq UI at \"http://localhost:{{ .Init.publishManagementPort }}\""
+    - "{{.Uid}}: Browse the rabbitmq UI at \"http://localhost:{{ .Init.publishManagementPort }}\""
     {{ end }}
 # The default dns provisioner just outputs localhost as the hostname every time.
 # This is because without actual control of a dns resolver we can't do any accurate routing on any other name. This
@@ -486,3 +486,51 @@
   info_logs: |
     {{ $p := (dig .Init.sk "instancePort" 0 .Shared) }}
     - "{{.Uid}}: To connect to this route, http://{{ .Params.host }}:{{ $p }}{{ .Params.path }} (make sure {{ .Params.host }} resolves to localhost)"
+
+# The default mongodb provisioner adds a mongodb service to the project which returns a host, port, username, and password, and connection string.
+- uri: template://default-provisioners/mongodb
+  type: mongodb
+  init: |
+    port: 27017
+    randomServiceName: mongo-{{ randAlphaNum 6 }}
+    randomUsername: user-{{ randAlpha 8 }}
+    randomPassword: {{ randAlphaNum 16 | quote }}
+  state: |
+    serviceName: {{ dig "serviceName" .Init.randomServiceName .State | quote }}
+    username: {{ dig "username" .Init.randomUsername .State | quote }}
+    password: {{ dig "password" .Init.randomPassword .State | quote }}
+  outputs: |
+    host: {{ .State.serviceName }}
+    port: {{ .Init.port }}
+    username: {{ .State.username | quote }}
+    password: {{ .State.password | quote }}
+    connection: "mongodb://{{ .State.username }}:{{ .State.password }}@{{ .State.serviceName }}:{{ .Init.port }}/"
+  volumes: |
+    {{ .State.serviceName }}-data:
+      name: {{ .State.serviceName }}-data
+      driver: local
+      labels:
+        dev.score.compose.res.uid: {{ .Uid }}
+  services: |
+    {{ .State.serviceName }}:
+      labels:
+        dev.score.compose.res.uid: {{ .Uid }}
+      image: mongo:7
+      restart: always
+      environment:
+        MONGO_INITDB_ROOT_USERNAME: {{ .State.username | quote }}
+        MONGO_INITDB_ROOT_PASSWORD: {{ .State.password | quote }}
+      healthcheck:
+        test: ["CMD-SHELL", "echo 'db.runCommand(\"ping\").ok' | mongosh -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD"]
+        interval: 2s
+        timeout: 5s
+        retries: 5
+        start_period: 10s
+      volumes:
+      - type: volume
+        source: {{ .State.serviceName }}-data
+        target: /data/db
+        volume:
+          nocopy: true
+  info_logs: |
+    - "{{.Uid}}: To connect to mongo: \"docker exec -ti {{ .ComposeProjectName }}-{{ .State.serviceName }}-1 mongosh -u {{ .State.username }} -p {{ .State.password }}\""

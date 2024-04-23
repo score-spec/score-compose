@@ -180,6 +180,10 @@ services:
 			subDir: "10-amqp-rabbitmq",
 			adds:   []string{"score.yaml"},
 		},
+		{
+			subDir: "11-mongodb-document-database",
+			adds:   []string{"score.yaml"},
+		},
 	} {
 		t.Run(tc.subDir, func(t *testing.T) {
 			oldReader := rand.Reader

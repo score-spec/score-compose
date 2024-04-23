@@ -1,0 +1,14 @@
+apiVersion: score.dev/v1b1
+
+metadata:
+  name: hello-world
+
+containers:
+  first:
+    image: nginx
+    variables:
+      CONNECT_1: ${resources.db.connection}
+
+resources:
+  db:
+    type: mongodb
