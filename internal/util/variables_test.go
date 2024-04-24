@@ -162,6 +162,16 @@ func TestPrepareEnvVariables(t *testing.T) {
 				"echo hello $$AAA$${BBB}$$CCC world",
 			},
 		},
+		{"PrepareEnvVariables complex example",
+			[]string{
+				"curl https://${SUBDOMAIN}.${HOST}:${PORT}/${PATH}?${PARAM1}=${VALUE1}&${PARAM2}=${VALUE2}#${REFID}",
+				"mysql://${USER}:${PASSWORD}@${HOST}:${PORT}/${DATABASE}?${KEY1}=${VALUE1}&${KEY2}=${VALUE2}&${KEY3}=${VALUE3}",
+			},
+			[]string{
+				"curl https://$${SUBDOMAIN}.$${HOST}:$${PORT}/$${PATH}?$${PARAM1}=$${VALUE1}&$${PARAM2}=$${VALUE2}#$${REFID}",
+				"mysql://$${USER}:$${PASSWORD}@$${HOST}:$${PORT}/$${DATABASE}?$${KEY1}=$${VALUE1}&$${KEY2}=$${VALUE2}&$${KEY3}=$${VALUE3}",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
