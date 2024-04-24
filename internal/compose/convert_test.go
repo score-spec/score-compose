@@ -217,6 +217,49 @@ func TestScoreConvert(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "Should convert SCORE to docker-compose spec with env variables",
+			Source: &score.Workload{
+				Metadata: score.WorkloadMetadata{
+					"name": "test",
+				},
+				Containers: score.WorkloadContainers{
+					"backend": score.Container{
+						Image: "busybox",
+						Command: []string{
+							"/bin/sh",
+							"-c",
+						},
+						Args: []string{
+							"echo hello $A ${B} $C world",
+						},
+						Variables: map[string]string{
+							"A": "cat",
+							"B": "dog",
+						},
+					},
+				},
+			},
+			Project: &compose.Project{
+				Services: compose.Services{
+					"test-backend": {
+						Name:  "test-backend",
+						Image: "busybox",
+						Entrypoint: compose.ShellCommand{
+							"/bin/sh",
+							"-c",
+						},
+						Command: compose.ShellCommand{
+							"echo hello $$A $${B} $$C world",
+						},
+						Environment: compose.MappingWithEquals{
+							"A": stringPtr("cat"),
+							"B": stringPtr("dog"),
+						},
+					},
+				},
+			},
+		},
 
 		// Errors handling
 		//
