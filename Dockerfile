@@ -1,7 +1,7 @@
 # Use the official Golang image to create a build artifact.
 # This is based on Debian and sets the GOPATH to /go.
 # https://hub.docker.com/_/golang
-FROM golang:1.21 as builder
+FROM golang:1.22 as builder
 
 # https://stackoverflow.com/questions/36279253/go-compiled-binary-wont-run-in-an-alpine-docker-container-on-ubuntu-host
 ENV CGO_ENABLED=0
@@ -11,7 +11,7 @@ WORKDIR /go/src/github.com/score-spec/score-compose
 
 # Copy the entire project and build it.
 COPY . .
-RUN GOOS=linux GOARCH=amd64 go build -o /usr/local/bin/score-compose ./cmd/score-compose
+RUN go build -o /usr/local/bin/score-compose ./cmd/score-compose
 
 # Use the official Alpine image for a lean production container.
 # https://hub.docker.com/_/alpine
