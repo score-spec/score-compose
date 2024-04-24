@@ -3,7 +3,7 @@ name: release
 on: [push]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   
@@ -48,7 +48,9 @@ jobs:
       - test
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      # must be able to setup a release
+      contents: write
+      # must be able to push a package
       packages: write
     steps:
       -
