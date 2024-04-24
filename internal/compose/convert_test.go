@@ -243,8 +243,9 @@ func TestScoreConvert(t *testing.T) {
 			Project: &compose.Project{
 				Services: compose.Services{
 					"test-backend": {
-						Name:  "test-backend",
-						Image: "busybox",
+						Name:     "test-backend",
+						Image:    "busybox",
+						Hostname: "test",
 						Entrypoint: compose.ShellCommand{
 							"/bin/sh",
 							"-c",
