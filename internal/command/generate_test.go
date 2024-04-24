@@ -1028,3 +1028,53 @@ services:
                 size: "10000000"
 `, string(raw))
 }
+
+func TestGenerateMongodbResource(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: foo
+    variables:
+      CONN_STR_1: "mongodb://${resources.db.username}:${resources.db.password}@${resources.db.host}:${resources.db.port}/"
+      CONN_STR_2: "${resources.db.connection}"
+resources:
+  db:
+    type: mongodb
+`), 0644))
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	// check that state was persisted
+	sd, ok, err := project.LoadStateDirectory(td)
+	assert.NoError(t, err)
+	assert.True(t, ok)
+	assert.Len(t, sd.State.Workloads, 1)
+	assert.Len(t, sd.State.Resources, 1)
+	assert.Contains(t, sd.State.Resources["mongodb.default#example.db"].Outputs, "connection")
+	assert.Contains(t, sd.State.Resources["mongodb.default#example.db"].Outputs, "username")
+	assert.Contains(t, sd.State.Resources["mongodb.default#example.db"].Outputs, "password")
+	assert.Contains(t, sd.State.Resources["mongodb.default#example.db"].Outputs, "host")
+	assert.Contains(t, sd.State.Resources["mongodb.default#example.db"].Outputs, "port")
+
+	t.Run("validate compose spec", func(t *testing.T) {
+		if os.Getenv("NO_DOCKER") != "" {
+			t.Skip("NO_DOCKER is set")
+			return
+		}
+		dockerCmd, err := exec.LookPath("docker")
+		require.NoError(t, err)
+		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "convert", "--quiet", "--dry-run")
+		cmd.Dir = td
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		assert.NoError(t, cmd.Run())
+	})
+}
