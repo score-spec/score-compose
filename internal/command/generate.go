@@ -16,13 +16,13 @@ package command
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
 	"slices"
 	"strings"
 
+	composeloader "github.com/compose-spec/compose-go/v2/loader"
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/imdario/mergo"
 	"github.com/score-spec/score-go/framework"
@@ -158,10 +158,12 @@ arguments.
 						return fmt.Errorf("invalid --%s '%s': unknown container '%s'", generateCmdBuildFlag, buildFlag, parts[0])
 					}
 					if strings.HasPrefix(parts[1], "{") {
+						var intermediate interface{}
+						if err := yaml.Unmarshal([]byte(parts[1]), &intermediate); err != nil {
+							return fmt.Errorf("invalid --%s '%s': %w", generateCmdBuildFlag, buildFlag, err)
+						}
 						var out types.BuildConfig
-						dec := json.NewDecoder(strings.NewReader(parts[1]))
-						dec.DisallowUnknownFields()
-						if err := dec.Decode(&out); err != nil {
+						if err := composeloader.Transform(intermediate, &out); err != nil {
 							return fmt.Errorf("invalid --%s '%s': %w", generateCmdBuildFlag, buildFlag, err)
 						}
 						containerBuildContexts[parts[0]] = out
@@ -327,7 +329,7 @@ func init() {
 	generateCommand.Flags().String(generateCmdOverridesFileFlag, "", "An optional file of Score overrides to merge in")
 	generateCommand.Flags().StringArray(generateCmdOverridePropertyFlag, []string{}, "An optional set of path=key overrides to set or remove")
 	generateCommand.Flags().String(generateCmdImageFlag, "", "An optional container image to use for any container with image == '.'")
-	generateCommand.Flags().StringArray(generateCmdBuildFlag, []string{}, "An optional build context to use for the given container --build=container=./dir or --build=container={'\"context\":\"./dir\"}")
+	generateCommand.Flags().StringArray(generateCmdBuildFlag, []string{}, "An optional build context to use for the given container --build=container=./dir or --build=container={\"context\":\"./dir\"}")
 	generateCommand.Flags().String(generateCmdEnvFileFlag, "", "Location to store a skeleton .env file for compose - this will override existing content")
 	rootCmd.AddCommand(generateCommand)
 }
