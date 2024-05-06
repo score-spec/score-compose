@@ -1,0 +1,14 @@
+apiVersion: score.dev/v1b1
+
+metadata:
+  name: hello-world
+
+containers:
+  first:
+    image: nginx
+    variables:
+      CONNECTION_STRING: "mysql://${resources.db.username}:${resources.db.password}@${resources.db.host}:${resources.db.port}/${resources.db.name}"
+
+resources:
+  db:
+    type: mysql
