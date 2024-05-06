@@ -1078,3 +1078,56 @@ resources:
 		assert.NoError(t, cmd.Run())
 	})
 }
+
+func TestGenerateMySQLResource(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: foo
+    variables:
+      CONN_STR_1: "mysql://${resources.db1.username}:${resources.db1.password}@${resources.db1.host}:${resources.db1.port}/${resources.db1.name}"
+      CONN_STR_2: "mysql://${resources.db2.username}:${resources.db2.password}@${resources.db2.host}:${resources.db2.port}/${resources.db2.name}"
+resources:
+  db1:
+    type: mysql
+  db2:
+    type: mysql
+`), 0644))
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	// check that state was persisted
+	sd, ok, err := project.LoadStateDirectory(td)
+	assert.NoError(t, err)
+	assert.True(t, ok)
+	assert.Len(t, sd.State.Workloads, 1)
+	assert.Len(t, sd.State.Resources, 2)
+	assert.Contains(t, sd.State.Resources["mysql.default#example.db1"].State, "database")
+	assert.Contains(t, sd.State.Resources["mysql.default#example.db1"].State, "username")
+	assert.Contains(t, sd.State.Resources["mysql.default#example.db1"].State, "password")
+	assert.Contains(t, sd.State.Resources["mysql.default#example.db2"].State, "database")
+	assert.NotEqual(t, sd.State.Resources["mysql.default#example.db1"].State, sd.State.Resources["mysql.default#example.db2"].State)
+	assert.Contains(t, sd.State.SharedState, "default-provisioners-mysql-instance")
+
+	t.Run("validate compose spec", func(t *testing.T) {
+		if os.Getenv("NO_DOCKER") != "" {
+			t.Skip("NO_DOCKER is set")
+			return
+		}
+		dockerCmd, err := exec.LookPath("docker")
+		require.NoError(t, err)
+		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "convert", "--quiet", "--dry-run")
+		cmd.Dir = td
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		assert.NoError(t, cmd.Run())
+	})
+}
