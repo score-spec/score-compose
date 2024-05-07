@@ -53,7 +53,7 @@ Examples:
   score-compose generate score.yaml --override-file=./overrides.score.yaml --override-property=metadata.key=value
 
 Flags:
-      --build stringArray               An optional build context to use for the given container --build=container=./dir or --build=container={'"context":"./dir"}
+      --build stringArray               An optional build context to use for the given container --build=container=./dir or --build=container={"context":"./dir"}
       --env-file string                 Location to store a skeleton .env file for compose - this will override existing content
   -h, --help                            help for generate
       --image string                    An optional container image to use for any container with image == '.'
@@ -265,6 +265,44 @@ services:
             context: ./dir
             args:
                 DEBUG: "true"
+        hostname: example
+`
+		assert.Equal(t, expectedOutput, string(raw))
+	})
+
+	t.Run("generate with json build context and array args", func(t *testing.T) {
+		stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{
+			"generate", "-o", "compose-output.yaml", "--build", `example={"context":"./dir","args":["DEBUG"]}`, "--", "score.yaml",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, "", stdout)
+		raw, err := os.ReadFile(filepath.Join(td, "compose-output.yaml"))
+		assert.NoError(t, err)
+		expectedOutput := `name: "001"
+services:
+    example-example:
+        build:
+            context: ./dir
+            args:
+                DEBUG: null
+        hostname: example
+`
+		assert.Equal(t, expectedOutput, string(raw))
+	})
+
+	t.Run("generate with yaml build context", func(t *testing.T) {
+		stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{
+			"generate", "-o", "compose-output.yaml", "--build", `example={context: "./dir"}`, "--", "score.yaml",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, "", stdout)
+		raw, err := os.ReadFile(filepath.Join(td, "compose-output.yaml"))
+		assert.NoError(t, err)
+		expectedOutput := `name: "001"
+services:
+    example-example:
+        build:
+            context: ./dir
         hostname: example
 `
 		assert.Equal(t, expectedOutput, string(raw))

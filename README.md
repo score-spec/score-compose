@@ -117,7 +117,7 @@ Examples:
   score-compose generate score.yaml --override-file=./overrides.score.yaml --override-property=metadata.key=value
 
 Flags:
-      --build stringArray               An optional build context to use for the given container --build=container=./dir or --build=container={'"context":"./dir"}
+      --build stringArray               An optional build context to use for the given container --build=container=./dir or --build=container={"context":"./dir"}
       --env-file string                 Location to store a skeleton .env file for compose - this will override existing content
   -h, --help                            help for generate
       --image string                    An optional container image to use for any container with image == '.'
