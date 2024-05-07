@@ -307,7 +307,7 @@
     publishPort: {{ dig "annotations" "compose.score.dev/publish-port" "0" .Metadata | atoi }}
     publishManagementPort: {{ dig "annotations" "compose.score.dev/publish-management-port" "0" .Metadata | atoi }}
   state: |
-    vhost: {{ dig "database" .Init.randomVHost .State | quote }}
+    vhost: {{ dig "vhost" .Init.randomVHost .State | quote }}
     username: {{ dig "username" .Init.randomUsername .State | quote }}
     password: {{ dig "password" .Init.randomPassword .State | quote }}
   outputs: |
@@ -378,6 +378,7 @@
     {{ if ne .Init.publishManagementPort 0 }}
     - "{{.Uid}}: Browse the rabbitmq UI at \"http://localhost:{{ .Init.publishManagementPort }}\""
     {{ end }}
+
 # The default dns provisioner just outputs localhost as the hostname every time.
 # This is because without actual control of a dns resolver we can't do any accurate routing on any other name. This
 # can be replaced by a new provisioner in the future.
