@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-  
+
 # The default volume provisioner provided by score-compose allows basic volume resources to be created in the resources
 # system. The volume resource just creates an ephemeral Docker volume with a random string as the name, and source
 # attribute that we can reference.
@@ -294,7 +294,6 @@
     - "{{.Uid}}: Or enter {{ dig .Init.sk "instanceUsername" "" .Shared }} / {{ dig .Init.sk "instancePassword" "" .Shared }} at https://localhost:{{ .Init.publishPort }}"
     {{ end }}
 
-
 # The default AMQP provisioner provides a simple rabbitmq instance with default configuration and plugins.
 - uri: template://default-provisioners/rabbitmq
   type: amqp
@@ -429,13 +428,13 @@
       }
       http {
         resolver 127.0.0.11;
-    
+
         {{ range $h, $r := (dig .Init.sk "hosts" "" .Shared) }}
         server {
           listen 80;
           listen [::]:80;
           server_name {{ $h }};
-    
+
           proxy_set_header X-Real-IP              $remote_addr;
           proxy_set_header X-Forwarded-For        $remote_addr;
           proxy_set_header X-Original-Forwarded-For $http_x_forwarded_for;
@@ -445,13 +444,13 @@
           proxy_read_timeout                      60s;
           proxy_buffers                           16 4k;
           proxy_buffer_size                       2k;
-          
+
           location = /favicon.ico {
             return 204;
             access_log     off;
             log_not_found  off;
           }
-          
+
           {{ range $k, $v := $r }}
           # the basic path variant, "/" or "/one/two"
           location ~ ^{{ index $v "path" }}$ {
@@ -535,3 +534,83 @@
           nocopy: true
   info_logs: |
     - "{{.Uid}}: To connect to mongo: \"docker exec -ti {{ .ComposeProjectName }}-{{ .State.serviceName }}-1 mongosh -u {{ .State.username }} -p {{ .State.password }}\""
+
+# The default mysql provisioner adds a mysql instance and then ensures that the required databases are created on
+# startup.
+- uri: template://default-provisioners/mysql
+  # By default, match all mysql types regardless of class and id. If you want to override this, create another
+  # provisioner definition with a higher priority.
+  type: mysql
+  # Init template has the random service name and password if needed later
+  init: |
+    randomServiceName: mysql-{{ randAlphaNum 6 }}
+    randomDatabase: db{{ randAlpha 8 }}
+    randomUsername: user-{{ randAlpha 8 }}
+    randomPassword: {{ randAlphaNum 16 | quote }}
+    randomRootPassword: {{ randAlphaNum 16 | quote }}
+    sk: default-provisioners-mysql-instance
+    publishPort: {{ dig "annotations" "compose.score.dev/publish-port" "0" .Metadata | quote }}
+  # The state for each database resource is a unique db name and credentials
+  state: |
+    database: {{ dig "database" .Init.randomDatabase .State | quote }}
+    username: {{ dig "username" .Init.randomUsername .State | quote }}
+    password: {{ dig "password" .Init.randomPassword .State | quote }}
+  # All instances agree on the shared state since there is no concurrency here
+  shared: |
+    {{ .Init.sk }}:
+      instanceServiceName: {{ dig .Init.sk "instanceServiceName" .Init.randomServiceName .Shared | quote }}
+      instancePassword: {{ dig .Init.sk "instancePassword" .Init.randomPassword .Shared | quote }}
+      instanceRootPassword: {{ dig .Init.sk "instanceRootPassword" .Init.randomRootPassword .Shared | quote }}
+  # The outputs are the core database outputs. We output both name and database for broader compatibility.
+  outputs: |
+    host: {{ dig .Init.sk "instanceServiceName" "" .Shared }}
+    port: 3306
+    name: {{ .State.database }}
+    database: {{ .State.database }}
+    username: {{ .State.username }}
+    password: {{ .State.password }}
+  # Write out an idempotent create script per database
+  files: |
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}-db-scripts/{{ .State.database }}.sql: |
+      CREATE DATABASE IF NOT EXISTS {{ .State.database }};
+      USE {{ .State.database }};
+      CREATE USER IF NOT EXISTS '{{ .State.username }}'@'localhost' IDENTIFIED BY '{{ .State.password }}';
+      GRANT ALL PRIVILEGES ON {{ .State.database }} TO '{{ .State.username }}'@'localhost';
+      FLUSH PRIVILEGES;
+  # Ensure the data volume exists
+  volumes: |
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}-data:
+      driver: local
+  # Create an services with the database itself
+  services: |
+    {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
+      image: mysql:8
+      restart: always
+      environment:
+        MYSQL_DATABASE: {{ .State.database }}
+        MYSQL_USER: {{ .State.username }}
+        MYSQL_PASSWORD: {{ dig .Init.sk "instancePassword" "" .Shared | quote }}
+        MYSQL_ROOT_PASSWORD: {{ dig .Init.sk "instanceRootPassword" "" .Shared | quote }}
+      {{ if ne .Init.publishPort "0" }}
+      ports:
+      - target: 3306
+        published: {{ .Init.publishPort }}
+      {{ end }}
+      volumes:
+      - type: bind
+        source: {{ .MountsDirectory }}/{{ dig .Init.sk "instanceServiceName" "" .Shared }}-db-scripts
+        target: /docker-entrypoint-initdb.d/
+      - type: volume
+        source: {{ dig .Init.sk "instanceServiceName" "" .Shared }}-data
+        target: /var/lib/mysql
+      healthcheck:
+        test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p$${MYSQL_ROOT_PASSWORD}"]
+        interval: 5s
+        timeout: 3s
+        retries: 10
+  info_logs: |
+    - "{{.Uid}}: To connect to mysql, enter password {{ .State.password | squote }} at: \"docker run -it --network {{ .ComposeProjectName }}_default --rm mysql:8 mysql -h {{ dig .Init.sk "instanceServiceName" "" .Shared }} -u {{ .State.username }} -p\""
+    {{ if ne .Init.publishPort "0" }}
+    - "{{.Uid}}: Or connect your mysql client to \"
+    mysql://{{ .State.username }}:{{ .State.password }}@{{ dig .Init.sk "instanceServiceName" "" .Shared }}:{{ .Init.publishPort }}/{{ .State.database }}\""
+    {{ end }}

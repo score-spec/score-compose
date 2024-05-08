@@ -170,6 +170,76 @@ func TestScoreConvert(t *testing.T) {
 			},
 		},
 		{
+			Name: "Should convert all resources references with mysql database",
+			Source: &score.Workload{
+				Metadata: score.WorkloadMetadata{
+					"name": "test",
+				},
+				Containers: score.WorkloadContainers{
+					"backend": score.Container{
+						Image: "busybox",
+						Variables: map[string]string{
+							"DEBUG":             "${resources.env.DEBUG}",
+							"LOGS_LEVEL":        "$${LOGS_LEVEL}",
+							"DOMAIN_NAME":       "${resources.some-dns.domain_name}",
+							"CONNECTION_STRING": "mysql://${resources.app-db.host}:${resources.app-db.port}/${resources.app-db.name}",
+						},
+						Volumes: []score.ContainerVolumesElem{
+							{
+								Source:   "data",
+								Target:   "/mnt/data",
+								ReadOnly: util.Ref(true),
+							},
+						},
+					},
+				},
+				Resources: map[string]score.Resource{
+					"env": {
+						Type: "environment",
+					},
+					"app-db": {
+						Type: "mysql",
+					},
+					"some-dns": {
+						Type: "dns",
+					},
+					"data": {
+						Type: "volume",
+					},
+				},
+			},
+			Project: &compose.Project{
+				Services: compose.Services{
+					"test-backend": {
+						Name:     "test-backend",
+						Hostname: "test",
+						Image:    "busybox",
+						Environment: compose.MappingWithEquals{
+							"DEBUG":             stringPtr("${DEBUG}"),
+							"LOGS_LEVEL":        stringPtr("${LOGS_LEVEL}"),
+							"DOMAIN_NAME":       stringPtr("${SOME_DNS_DOMAIN_NAME?required}"),
+							"CONNECTION_STRING": stringPtr("mysql://${APP_DB_HOST?required}:${APP_DB_PORT?required}/${APP_DB_NAME?required}"),
+						},
+						Volumes: []compose.ServiceVolumeConfig{
+							{
+								Type:     "volume",
+								Source:   "data",
+								Target:   "/mnt/data",
+								ReadOnly: true,
+							},
+						},
+					},
+				},
+			},
+			Vars: map[string]string{
+				"DEBUG":                "",
+				"APP_DB_HOST":          "",
+				"APP_DB_PORT":          "",
+				"APP_DB_NAME":          "",
+				"SOME_DNS_DOMAIN_NAME": "",
+			},
+		},
+		{
 			Name: "Should support multiple containers",
 			Source: &score.Workload{
 				Metadata: score.WorkloadMetadata{
