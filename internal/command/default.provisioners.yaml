@@ -294,7 +294,6 @@
     - "{{.Uid}}: Or enter {{ dig .Init.sk "instanceUsername" "" .Shared }} / {{ dig .Init.sk "instancePassword" "" .Shared }} at https://localhost:{{ .Init.publishPort }}"
     {{ end }}
 
-
 # The default AMQP provisioner provides a simple rabbitmq instance with default configuration and plugins.
 - uri: template://default-provisioners/rabbitmq
   type: amqp
@@ -581,7 +580,7 @@
   volumes: |
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}-data:
       driver: local
-  # Create 2 services, the first is the database itself, the second is the init container which runs the scripts
+  # Create an services with the database itself
   services: |
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
       image: mysql:8
@@ -600,6 +599,9 @@
       - type: bind
         source: {{ .MountsDirectory }}/{{ dig .Init.sk "instanceServiceName" "" .Shared }}-db-scripts
         target: /docker-entrypoint-initdb.d/
+      - type: volume
+        source: {{ dig .Init.sk "instanceServiceName" "" .Shared }}-data
+        target: /var/lib/mysql
       healthcheck:
         test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p$${MYSQL_ROOT_PASSWORD}"]
         interval: 5s
