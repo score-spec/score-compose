@@ -1,4 +1,4 @@
-# 11 - MySQL database
+# 12 - MySQL database
 
 There is also a `mysql` resource provisioner as an example
 of a mysql database. This uses the official image from <https://hub.docker.com/_/mysql>.
@@ -6,7 +6,12 @@ of a mysql database. This uses the official image from <https://hub.docker.com/_
 ```yaml
 resources:
   db:
-    type: mongodb
+    type: mysql
+    # Optionally, you can overwrite the port that will be published
+    # by commenting out the following lines
+    # metadata:
+      # annotations:
+        # "compose.score.dev/publish-port": "3308"
 ```
 
 The provided outputs are `host`, `port`, `name` (aka `database`), `username`, `password`.
