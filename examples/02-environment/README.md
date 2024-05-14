@@ -40,6 +40,8 @@ And it returns
 name: 02-environment
 services:
     hello-world-hello:
+        annotations:
+            compose.score.dev/workload-name: hello-world
         command:
             - -c
             - while true; do echo $${GREETING} $${NAME}!; sleep 5; done

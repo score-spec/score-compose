@@ -28,6 +28,9 @@ The `init` will create the `.score-compose` directory. The `generate` command wi
 name: 01-hello
 services:
     hello-world-hello:
+        annotations:
+            compose.score.dev/workload-name: hello-world
+            your.custom/annotation: value
         command:
             - -c
             - while true; do echo Hello World!; sleep 5; done

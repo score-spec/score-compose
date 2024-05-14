@@ -2,6 +2,8 @@ apiVersion: score.dev/v1b1
 
 metadata:
   name: hello-world
+  annotations:
+    your.custom/annotation: value
 
 containers:
   hello:

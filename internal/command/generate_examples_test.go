@@ -41,6 +41,9 @@ func TestExample(t *testing.T) {
 			expected: `name: 01-hello
 services:
     hello-world-hello:
+        annotations:
+            compose.score.dev/workload-name: hello-world
+            your.custom/annotation: value
         command:
             - -c
             - while true; do echo Hello World!; sleep 5; done
@@ -56,6 +59,8 @@ services:
 			expected: `name: 02-environment
 services:
     hello-world-hello:
+        annotations:
+            compose.score.dev/workload-name: hello-world
         command:
             - -c
             - while true; do echo $${GREETING} $${NAME}!; sleep 5; done
@@ -75,6 +80,8 @@ services:
 			expected: `name: 03-files
 services:
     hello-world-hello:
+        annotations:
+            compose.score.dev/workload-name: hello-world
         command:
             - -c
             - while true; do cat /fileA.txt; cat /fileB.txt; sleep 5; done
@@ -100,16 +107,22 @@ services:
 			expected: `name: 04-multiple-workloads
 services:
     hello-world-2-first:
+        annotations:
+            compose.score.dev/workload-name: hello-world-2
         environment:
             NGINX_PORT: "8080"
         hostname: hello-world-2
         image: nginx:latest
     hello-world-first:
+        annotations:
+            compose.score.dev/workload-name: hello-world
         environment:
             NGINX_PORT: "8080"
         hostname: hello-world
         image: nginx:latest
     hello-world-second:
+        annotations:
+            compose.score.dev/workload-name: hello-world
         environment:
             NGINX_PORT: "8081"
         image: nginx:latest
@@ -122,6 +135,8 @@ services:
 			expected: `name: 05-volume-mounts
 services:
     hello-world-first:
+        annotations:
+            compose.score.dev/workload-name: hello-world
         hostname: hello-world
         image: nginx:latest
         volumes:
@@ -146,6 +161,8 @@ volumes:
 			expected: `name: 07-overrides
 services:
     hello-world-web:
+        annotations:
+            compose.score.dev/workload-name: hello-world
         environment:
             DEBUG: "true"
         hostname: hello-world
@@ -158,9 +175,13 @@ services:
 			expected: `name: 08-service-port-resource
 services:
     workload-a-example:
+        annotations:
+            compose.score.dev/workload-name: workload-a
         hostname: workload-a
         image: nginx
     workload-b-example:
+        annotations:
+            compose.score.dev/workload-name: workload-b
         command:
             - -c
             - while true; do wget $${DEPENDENCY_URL} || true; sleep 5; done

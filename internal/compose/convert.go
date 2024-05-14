@@ -141,6 +141,7 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 
 		var svc = compose.ServiceConfig{
 			Name:        workloadName + "-" + containerName,
+			Annotations: buildWorkloadAnnotations(workloadName, spec),
 			Image:       cSpec.Image,
 			Entrypoint:  cSpec.Command,
 			Command:     cSpec.Args,
@@ -168,6 +169,22 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 		composeProject.Services[svc.Name] = svc
 	}
 	return &composeProject, nil
+}
+
+// buildWorkloadAnnotations returns an annotation set for the workload service.
+func buildWorkloadAnnotations(name string, spec *score.Workload) map[string]string {
+	var out map[string]string
+	if a, ok := spec.Metadata["annotations"].(map[string]interface{}); ok {
+		out = make(map[string]string, len(a))
+		for k, v := range a {
+			// type is validated by the spec
+			out[k] = v.(string)
+		}
+	} else {
+		out = make(map[string]string, 1)
+	}
+	out["compose.score.dev/workload-name"] = name
+	return out
 }
 
 // convertFilesIntoVolumes converts the lists of files into a list of bind mounts in the mounts directory.
