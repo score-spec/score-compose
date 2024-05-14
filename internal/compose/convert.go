@@ -174,7 +174,11 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 // buildWorkloadAnnotations returns an annotation set for the workload service.
 func buildWorkloadAnnotations(name string, spec *score.Workload) map[string]string {
 	var out map[string]string
-	if a, ok := spec.Metadata["annotations"].(map[string]interface{}); ok {
+	a, ok := spec.Metadata["annotations"].(map[string]interface{})
+	if !ok {
+		a, ok = spec.Metadata["annotations"].(score.WorkloadMetadata)
+	}
+	if ok {
 		out = make(map[string]string, len(a))
 		for k, v := range a {
 			// type is validated by the spec

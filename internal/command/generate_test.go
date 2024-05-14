@@ -1194,3 +1194,35 @@ resources:
 		assert.NoError(t, cmd.Run())
 	})
 }
+
+func TestGenerateKeepAnnotations(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+  annotations:
+    example.com/fizz: buzz
+containers:
+  example:
+    image: foo
+`), 0644))
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	raw, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+	assert.NoError(t, err)
+	assert.Contains(t, string(raw), `example.com/fizz: buzz`)
+
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	raw, err = os.ReadFile(filepath.Join(td, "compose.yaml"))
+	assert.NoError(t, err)
+	assert.Contains(t, string(raw), `example.com/fizz: buzz`)
+}
