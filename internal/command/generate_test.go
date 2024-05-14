@@ -152,6 +152,8 @@ func TestInitAndGenerate_with_sample(t *testing.T) {
 	expectedOutput := `name: "001"
 services:
     example-hello-world:
+        annotations:
+            compose.score.dev/workload-name: example
         environment:
             EXAMPLE_VARIABLE: example-value
             THING: ${THING}
@@ -211,6 +213,8 @@ containers:
 		expectedOutput := `name: "001"
 services:
     example-example:
+        annotations:
+            compose.score.dev/workload-name: example
         hostname: example
         image: busybox:latest
 `
@@ -236,6 +240,8 @@ services:
 		expectedOutput := `name: "001"
 services:
     example-example:
+        annotations:
+            compose.score.dev/workload-name: example
         build:
             context: ./dir
         hostname: example
@@ -261,6 +267,8 @@ services:
 		expectedOutput := `name: "001"
 services:
     example-example:
+        annotations:
+            compose.score.dev/workload-name: example
         build:
             context: ./dir
             args:
@@ -281,6 +289,8 @@ services:
 		expectedOutput := `name: "001"
 services:
     example-example:
+        annotations:
+            compose.score.dev/workload-name: example
         build:
             context: ./dir
             args:
@@ -301,6 +311,8 @@ services:
 		expectedOutput := `name: "001"
 services:
     example-example:
+        annotations:
+            compose.score.dev/workload-name: example
         build:
             context: ./dir
         hostname: example
@@ -335,6 +347,8 @@ containers:
 	assert.Equal(t, `name: "001"
 services:
     example-example:
+        annotations:
+            compose.score.dev/workload-name: example
         hostname: example
         image: foo
         volumes:
@@ -544,6 +558,8 @@ resources:
 	assert.Equal(t, `name: "001"
 services:
     example-example:
+        annotations:
+            compose.score.dev/workload-name: example
         depends_on:
             wait-for-resources:
                 condition: service_started
@@ -643,6 +659,8 @@ services:
     bar-service:
         image: value
     example-example:
+        annotations:
+            compose.score.dev/workload-name: example
         depends_on:
             wait-for-resources:
                 condition: service_started
@@ -799,6 +817,9 @@ containers:
 	assert.Equal(t, `name: "001"
 services:
     example-example:
+        annotations:
+            compose.score.dev/workload-name: example
+            key.com/foo-bar: thing
         environment:
             REF: thing
         hostname: example
@@ -939,6 +960,8 @@ resources:
 	assert.Equal(t, `name: "001"
 services:
     example-example:
+        annotations:
+            compose.score.dev/workload-name: example
         environment:
             ONE: ${UNKNOWN_SCORE_VARIABLE}
         hostname: example
@@ -1051,6 +1074,8 @@ resources:
 	assert.Equal(t, `name: "001"
 services:
     example-example:
+        annotations:
+            compose.score.dev/workload-name: example
         hostname: example
         image: busybox
         volumes:

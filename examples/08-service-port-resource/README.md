@@ -51,9 +51,13 @@ When we run `score-compose init; score-compose generate score*.yaml`, the result
 name: temptest
 services:
     workload-a-example:
+        annotations:
+            compose.score.dev/workload-name: workload-a
         hostname: workload-a
         image: nginx
     workload-b-example:
+        annotations:
+            compose.score.dev/workload-name: workload-b
         command:
             - -c
             - while true; do wget $${DEPENDENCY_URL} || true; sleep 5; done

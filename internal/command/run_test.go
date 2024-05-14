@@ -186,6 +186,9 @@ resources:
 	assert.Equal(t, map[string]interface{}{
 		"services": map[string]interface{}{
 			"example-workload-name123-container-one1": map[string]interface{}{
+				"annotations": map[string]interface{}{
+					"compose.score.dev/workload-name": "example-workload-name123",
+				},
 				"hostname":   "example-workload-name123",
 				"image":      "localhost:4000/repo/my-image:tag",
 				"entrypoint": []interface{}{"/bin/sh", "-c"},
@@ -203,6 +206,9 @@ resources:
 				},
 			},
 			"example-workload-name123-container-two2": map[string]interface{}{
+				"annotations": map[string]interface{}{
+					"compose.score.dev/workload-name": "example-workload-name123",
+				},
 				"image":        "localhost:4000/repo/my-image:tag",
 				"network_mode": "service:example-workload-name123-container-one1",
 			},
@@ -307,6 +313,9 @@ func TestRunExample01(t *testing.T) {
 
 	expectedOutput := `services:
   hello-world-hello:
+    annotations:
+      compose.score.dev/workload-name: hello-world
+      your.custom/annotation: value
     command:
       - -c
       - while true; do echo Hello World!; sleep 5; done
@@ -358,6 +367,8 @@ containers:
 
 	expectedOutput := `services:
   hello-world-hello:
+    annotations:
+      compose.score.dev/workload-name: hello-world
     build:
       context: ./test
     hostname: hello-world
@@ -395,6 +406,8 @@ containers:
 
 	expectedOutput := `services:
   hello-world-hello:
+    annotations:
+      compose.score.dev/workload-name: hello-world
     hostname: hello-world
     image: nginx
 `
@@ -425,6 +438,8 @@ containers:
 
 	expectedOutput := `services:
   hello-world-hello:
+    annotations:
+      compose.score.dev/workload-name: hello-world
     hostname: hello-world
     image: bananas:latest
 `

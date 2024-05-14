@@ -90,6 +90,8 @@ func TestInitNominal(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, `services:
   example-hello-world:
+    annotations:
+      compose.score.dev/workload-name: example
     environment:
       EXAMPLE_VARIABLE: example-value
     hostname: example

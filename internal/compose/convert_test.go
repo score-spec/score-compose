@@ -50,6 +50,9 @@ func TestScoreConvert(t *testing.T) {
 			Source: &score.Workload{
 				Metadata: score.WorkloadMetadata{
 					"name": "test",
+					"annotations": map[string]interface{}{
+						"extra.name/annotation": "foo",
+					},
 				},
 				Service: &score.WorkloadService{
 					Ports: score.WorkloadServicePorts{
@@ -82,7 +85,11 @@ func TestScoreConvert(t *testing.T) {
 			Project: &compose.Project{
 				Services: compose.Services{
 					"test-backend": {
-						Name:     "test-backend",
+						Name: "test-backend",
+						Annotations: map[string]string{
+							"compose.score.dev/workload-name": "test",
+							"extra.name/annotation":           "foo",
+						},
 						Hostname: "test",
 						Image:    "busybox",
 						Entrypoint: compose.ShellCommand{
@@ -141,7 +148,10 @@ func TestScoreConvert(t *testing.T) {
 			Project: &compose.Project{
 				Services: compose.Services{
 					"test-backend": {
-						Name:     "test-backend",
+						Name: "test-backend",
+						Annotations: map[string]string{
+							"compose.score.dev/workload-name": "test",
+						},
 						Hostname: "test",
 						Image:    "busybox",
 						Environment: compose.MappingWithEquals{
@@ -211,7 +221,10 @@ func TestScoreConvert(t *testing.T) {
 			Project: &compose.Project{
 				Services: compose.Services{
 					"test-backend": {
-						Name:     "test-backend",
+						Name: "test-backend",
+						Annotations: map[string]string{
+							"compose.score.dev/workload-name": "test",
+						},
 						Hostname: "test",
 						Image:    "busybox",
 						Environment: compose.MappingWithEquals{
@@ -269,6 +282,9 @@ func TestScoreConvert(t *testing.T) {
 			Project: &compose.Project{
 				Services: compose.Services{
 					"test-backend": {
+						Annotations: map[string]string{
+							"compose.score.dev/workload-name": "test",
+						},
 						Name:     "test-backend",
 						Hostname: "test",
 						Image:    "busybox",
@@ -277,6 +293,9 @@ func TestScoreConvert(t *testing.T) {
 						},
 					},
 					"test-frontend": {
+						Annotations: map[string]string{
+							"compose.score.dev/workload-name": "test",
+						},
 						Name:  "test-frontend",
 						Image: "busybox",
 						Environment: compose.MappingWithEquals{
@@ -313,7 +332,10 @@ func TestScoreConvert(t *testing.T) {
 			Project: &compose.Project{
 				Services: compose.Services{
 					"test-backend": {
-						Name:     "test-backend",
+						Name: "test-backend",
+						Annotations: map[string]string{
+							"compose.score.dev/workload-name": "test",
+						},
 						Image:    "busybox",
 						Hostname: "test",
 						Entrypoint: compose.ShellCommand{

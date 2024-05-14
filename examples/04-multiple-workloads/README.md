@@ -51,16 +51,22 @@ The output compose file appears as below. Notice that all 3 containers are prese
 name: 04-multiple-workloads
 services:
     hello-world-2-first:
+      annotations:
+        compose.score.dev/workload-name: hello-world-2
         environment:
             NGINX_PORT: "8080"
         hostname: hello-world-2
         image: nginx:latest
     hello-world-first:
+      annotations:
+        compose.score.dev/workload-name: hello-world
         environment:
             NGINX_PORT: "8080"
         hostname: hello-world
         image: nginx:latest
     hello-world-second:
+      annotations:
+        compose.score.dev/workload-name: hello-world
         environment:
             NGINX_PORT: "8081"
         image: nginx:latest

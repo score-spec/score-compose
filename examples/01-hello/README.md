@@ -7,6 +7,8 @@ apiVersion: score.dev/v1b1
 
 metadata:
   name: hello-world
+  annotations:
+    your.custom/annotation: value
 
 containers:
   hello:
@@ -28,6 +30,9 @@ The `init` will create the `.score-compose` directory. The `generate` command wi
 name: 01-hello
 services:
     hello-world-hello:
+        annotations:
+            compose.score.dev/workload-name: hello-world
+            your.custom/annotation: value
         command:
             - -c
             - while true; do echo Hello World!; sleep 5; done
@@ -36,6 +41,8 @@ services:
         hostname: hello-world
         image: busybox
 ```
+
+See how the Score workload has been converted into a Compose service. With the container, command, image, and annotations. 
 
 This `compose.yaml` can then be run directly, and you can watch the output of the logs.
 
