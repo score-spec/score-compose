@@ -7,6 +7,8 @@ apiVersion: score.dev/v1b1
 
 metadata:
   name: hello-world
+  annotations:
+    your.custom/annotation: value
 
 containers:
   hello:
@@ -39,6 +41,8 @@ services:
         hostname: hello-world
         image: busybox
 ```
+
+See how the Score workload has been converted into a Compose service. With the container, command, image, and annotations. 
 
 This `compose.yaml` can then be run directly, and you can watch the output of the logs.
 
