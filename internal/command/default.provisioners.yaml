@@ -91,7 +91,7 @@
     {{ .State.serviceName }}:
       labels:
         dev.score.compose.res.uid: {{ .Uid }}
-      image: redis:7
+      image: redis:7-alpine
       restart: always
       entrypoint: ["redis-server"]
       command: ["/usr/local/etc/redis/redis.conf"]
