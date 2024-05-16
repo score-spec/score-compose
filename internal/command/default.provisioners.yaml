@@ -403,6 +403,7 @@
     {{ if not $ports }}{{ fail "no service ports exist" }}{{ end }}
     {{ $port := index $ports (print .Params.port) }}
     {{ if not $port.TargetPort }}{{ fail "params.port is not a named service port" }}{{ end }}
+
   shared: |
     {{ .Init.sk }}:
       instancePort: {{ dig .Init.sk "instancePort" 8080 .Shared }}
@@ -414,7 +415,7 @@
       {{ $target := (printf "%s:%d" $targetHost $targetPort) }}
       {{ $hBefore := dig .Init.sk "hosts" (dict) .Shared }}
       {{ $rBefore := dig .Params.host (dict) $hBefore }}
-      {{ $pathType := dig "score-compose.score.dev/route-provisioner-path-type" "Prefix" (dig "annotations" (dict) (.Metadata | default (dict))) }}
+      {{ $pathType := dig "compose.score.dev/route-provisioner-path-type" "Prefix" (dig "annotations" (dict) (.Metadata | default (dict))) }}
       {{ $inner := dict "path" .Params.path "target" $target "port" $targetPort "path_type" $pathType }}
       {{ $rAfter := (merge $rBefore (dict .Uid $inner)) }}
       {{ $hAfter := (merge $hBefore (dict .Params.host $rAfter)) }}
@@ -444,7 +445,9 @@
           proxy_read_timeout                      60s;
           proxy_buffers                           16 4k;
           proxy_buffer_size                       2k;
-
+          client_max_body_size                    10m;
+      {{ dig "compose.score.dev/route-provisioner-server-snippet" "" (dig "annotations" (dict) ($.Metadata | default (dict))) | indent 4 }}
+        
           location = /favicon.ico {
             return 204;
             access_log     off;
@@ -456,13 +459,15 @@
           location ~ ^{{ index $v "path" }}$ {
             set $backend {{ index $v "target" }};
             proxy_pass http://$backend;
+      {{ dig "compose.score.dev/route-provisioner-location-snippet" "" (dig "annotations" (dict) ($.Metadata | default (dict))) | indent 6 }}
           }
 
-          # The prefix match variants are included by default but can be excluded via 'score-compose.score.dev/route-provisioner-path-type' annotation
+          # The prefix match variants are included by default but can be excluded via 'compose.score.dev/route-provisioner-path-type' annotation
           {{ if eq (index $v "path_type") "Prefix" }}
           location ~ ^{{ index $v "path" | trimSuffix "/" }}/.* {
             set $backend {{ index $v "target" }};
             proxy_pass http://$backend;
+      {{ dig "compose.score.dev/route-provisioner-location-snippet" "" (dig "annotations" (dict) ($.Metadata | default (dict))) | indent 6 }}
           }
           {{ end }}
           {{ end }}
