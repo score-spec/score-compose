@@ -178,7 +178,7 @@ arguments.
 				if container.Image == "." {
 					if v, _ := cmd.Flags().GetString(generateCmdImageFlag); v != "" {
 						container.Image = v
-						slog.Info("Set container image for workload '%s' container '%s' to %s from --%s", workloadName, containerName, v, generateCmdImageFlag)
+						slog.Info(fmt.Sprintf("Set container image for workload '%s' container '%s' to %s from --%s", workloadName, containerName, v, generateCmdImageFlag))
 						out.Containers[containerName] = container
 					} else if _, ok := containerBuildContexts[containerName]; !ok {
 						return fmt.Errorf("failed to convert '%s' because container '%s' has no image and neither --%s nor --%s was provided", workloadName, containerName, generateCmdImageFlag, generateCmdBuildFlag)
