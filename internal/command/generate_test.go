@@ -875,7 +875,7 @@ resources:
     type: route
     metadata:
       annotations:
-        score-compose.score.dev/route-provisioner-path-type: Exact
+        compose.score.dev/route-provisioner-path-type: Exact
     params:
       host: localhost2
       path: /third
