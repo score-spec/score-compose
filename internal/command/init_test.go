@@ -109,7 +109,7 @@ func TestInitNominal(t *testing.T) {
 		assert.Equal(t, filepath.Base(td), sd.State.Extras.ComposeProjectName)
 		assert.Equal(t, filepath.Join(project.DefaultRelativeStateDirectory, "mounts"), sd.State.Extras.MountsDirectory)
 		assert.Equal(t, map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{}, sd.State.Workloads)
-		assert.Equal(t, map[framework.ResourceUid]framework.ScoreResourceState{}, sd.State.Resources)
+		assert.Equal(t, map[framework.ResourceUid]framework.ScoreResourceState[framework.NoExtras]{}, sd.State.Resources)
 		assert.Equal(t, map[string]interface{}{}, sd.State.SharedState)
 	}
 }
@@ -217,7 +217,7 @@ func TestInitNominal_run_twice(t *testing.T) {
 		assert.Equal(t, "bananas", sd.State.Extras.ComposeProjectName)
 		assert.Equal(t, filepath.Join(project.DefaultRelativeStateDirectory, "mounts"), sd.State.Extras.MountsDirectory)
 		assert.Equal(t, map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{}, sd.State.Workloads)
-		assert.Equal(t, map[framework.ResourceUid]framework.ScoreResourceState{}, sd.State.Resources)
+		assert.Equal(t, map[framework.ResourceUid]framework.ScoreResourceState[framework.NoExtras]{}, sd.State.Resources)
 		assert.Equal(t, map[string]interface{}{}, sd.State.SharedState)
 	}
 }

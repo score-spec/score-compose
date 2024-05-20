@@ -135,7 +135,7 @@ acts as a namespace when multiple score files and containers are used.
 				Path: project.DefaultRelativeStateDirectory,
 				State: project.State{
 					Workloads:   map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{},
-					Resources:   map[framework.ResourceUid]framework.ScoreResourceState{},
+					Resources:   map[framework.ResourceUid]framework.ScoreResourceState[framework.NoExtras]{},
 					SharedState: map[string]interface{}{},
 					Extras: project.StateExtras{
 						ComposeProjectName: cleanComposeProjectName(filepath.Base(wd)),

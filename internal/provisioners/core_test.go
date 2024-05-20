@@ -35,7 +35,7 @@ import (
 func TestApplyToStateAndProject(t *testing.T) {
 	resUid := framework.NewResourceUid("w", "r", "t", nil, nil)
 	startState := &project.State{
-		Resources: map[framework.ResourceUid]framework.ScoreResourceState{
+		Resources: map[framework.ResourceUid]framework.ScoreResourceState[framework.NoExtras]{
 			resUid: {},
 		},
 	}
@@ -47,7 +47,7 @@ func TestApplyToStateAndProject(t *testing.T) {
 		output := &ProvisionOutput{}
 		afterState, err := output.ApplyToStateAndProject(startState, resUid, composeProject)
 		require.NoError(t, err)
-		assert.Equal(t, framework.ScoreResourceState{
+		assert.Equal(t, framework.ScoreResourceState[framework.NoExtras]{
 			State:   map[string]interface{}{},
 			Outputs: map[string]interface{}{},
 		}, afterState.Resources[resUid])
@@ -83,7 +83,7 @@ func TestApplyToStateAndProject(t *testing.T) {
 		}
 		afterState, err := output.ApplyToStateAndProject(startState, resUid, composeProject)
 		require.NoError(t, err)
-		assert.Equal(t, framework.ScoreResourceState{
+		assert.Equal(t, framework.ScoreResourceState[framework.NoExtras]{
 			State:   map[string]interface{}{"a": "b", "c": nil},
 			Outputs: map[string]interface{}{"x": "y"},
 		}, afterState.Resources[resUid])

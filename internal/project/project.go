@@ -34,7 +34,7 @@ const (
 
 // State is the mega-structure that contains the state of our workload specifications and resources.
 // Score specs are added to this structure and it stores the current resource set.
-type State = framework.State[StateExtras, WorkloadExtras]
+type State = framework.State[StateExtras, WorkloadExtras, framework.NoExtras]
 
 type StateExtras struct {
 	ComposeProjectName string `yaml:"compose_project"`
