@@ -141,11 +141,11 @@ services:
         image: nginx:latest
         volumes:
             - type: volume
-              source: hello-world-data-2saOb4
+              source: hello-world-data-8MjJEo
               target: /data
 volumes:
-    hello-world-data-2saOb4:
-        name: hello-world-data-2saOb4
+    hello-world-data-8MjJEo:
+        name: hello-world-data-8MjJEo
         driver: local
         labels:
             dev.score.compose.res.uid: volume.default#hello-world.data

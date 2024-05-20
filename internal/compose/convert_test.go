@@ -425,14 +425,14 @@ func TestScoreConvert(t *testing.T) {
 						"some-dns": {Type: "thing"},
 					}}},
 				},
-				Resources: map[framework.ResourceUid]framework.ScoreResourceState{},
+				Resources: map[framework.ResourceUid]framework.ScoreResourceState[framework.NoExtras]{},
 			}
 			evt := new(envprov.Provisioner)
-			state.Resources["environment.default#test.env"] = framework.ScoreResourceState{OutputLookupFunc: evt.LookupOutput}
+			state.Resources["environment.default#test.env"] = framework.ScoreResourceState[framework.NoExtras]{OutputLookupFunc: evt.LookupOutput}
 			po, _ := evt.GenerateSubProvisioner("app-db", "").Provision(nil, nil)
-			state.Resources["thing.default#test.app-db"] = framework.ScoreResourceState{OutputLookupFunc: po.OutputLookupFunc}
+			state.Resources["thing.default#test.app-db"] = framework.ScoreResourceState[framework.NoExtras]{OutputLookupFunc: po.OutputLookupFunc}
 			po, _ = evt.GenerateSubProvisioner("some-dns", "").Provision(nil, nil)
-			state.Resources["thing.default#test.some-dns"] = framework.ScoreResourceState{OutputLookupFunc: po.OutputLookupFunc}
+			state.Resources["thing.default#test.some-dns"] = framework.ScoreResourceState[framework.NoExtras]{OutputLookupFunc: po.OutputLookupFunc}
 
 			proj, err := ConvertSpec(state, tt.Source)
 
