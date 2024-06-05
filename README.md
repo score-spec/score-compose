@@ -39,6 +39,7 @@ The `score.yaml` specification file can be executed against a _Score Implementat
 | route        | default | `host`, `path`, `port` |                                                                                                                                                                 |
 | amqp         | default | (none)                 | `host`, `port`, `vhost`, `username`, `password`                                                                                                                 |
 | mongodb      | default | (none)                 | `host`, `port`, `username`, `password`, `connection`                                                                                                            |
+| kafka-topic  | default | (none)                 | `host`, `port`, `name`, `num_partitions`                                                                                                                        |
 
 These can be found in the default provisioners file. You are encouraged to write your own provisioners and add them to the `.score-compose` directory (with the `.provisioners.yaml` extension) or contribute them upstream to the [default.provisioners.yaml](internal/command/default.provisioners.yaml) file.
 
@@ -65,6 +66,8 @@ See the [examples](./examples) for more examples of using Score and provisioning
 - [09-dns-and-route](examples/09-dns-and-route) - an example of using the `dns` and `route` resources to route http requests
 - [10-amqp-rabbitmq](examples/10-amqp-rabbitmq) - an example the default `amqp` resource provisioner
 - [11-mongodb-document-database](examples/11-mongodb-document-database) - an example the default `mongodb` resource provisioner
+- [12-mysql-database](examples/12-mysql-database) - an example of the `mysql` resource provisioner
+- [13-kafka-topic](examples/13-kafka-topic) - an example of the default `kafka-topic` resource provisioner
 
 If you're getting started, you can use `score-compose init` to create a basic `score.yaml` file in the current directory along with a `.score-compose/` working directory.
 

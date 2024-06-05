@@ -205,6 +205,14 @@ services:
 			subDir: "11-mongodb-document-database",
 			adds:   []string{"score.yaml"},
 		},
+		{
+			subDir: "12-mysql-database",
+			adds:   []string{"score.yaml"},
+		},
+		{
+			subDir: "13-kafka-topic",
+			adds:   []string{"score.yaml"},
+		},
 	} {
 		t.Run(tc.subDir, func(t *testing.T) {
 			oldReader := rand.Reader
