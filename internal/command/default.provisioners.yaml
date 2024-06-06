@@ -748,6 +748,6 @@
   info_logs: |
     - "{{.Uid}}: To connect to elasticsearch:\n
         download certificate from container per command like: \n
-        \tdocker cp [CONTANIER-NAME]:/usr/share/elasticsearch/config/certs/ca/ca.crt /tmp/ \n
+        \tdocker cp [CONTAINER-NAME]:/usr/share/elasticsearch/config/certs/ca/ca.crt /tmp/ \n
         and than check connection per culr like: \n
         \tcurl --cacert /tmp/ca.crt -u {{ .State.username }}:{{ .State.password }} https://localhost:{{ .Init.publishPort }}"
