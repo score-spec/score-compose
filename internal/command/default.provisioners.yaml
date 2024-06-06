@@ -634,7 +634,7 @@
     sk: default-provisioners-elasticsearch-instance
     publishPort: {{ dig "annotations" "compose.score.dev/publish-port" "9200" .Metadata | quote }}
     license: {{ dig "annotations" "compose.score.dev/license" "basic" .Metadata | quote }}
-    stackVersion: {{ dig "annotations" "compose.score.dev/stack-version" "8.13.4" .Metadata | quote }}
+    stackVersion: {{ dig "annotations" "compose.score.dev/stack-version" "8.14.0" .Metadata | quote }}
     esMemLimit: {{ dig "annotations" "compose.score.dev/es-mem-limit" "1073741824" .Metadata | quote }}
   # The state for each elasticsearch resource is a unique host, port, and credentials
   state: |
@@ -748,6 +748,6 @@
   info_logs: |
     - "{{.Uid}}: To connect to elasticsearch:\n
         download certificate from container per command like: \n
-        \tdocker cp [CONTAIER-NAME]:/usr/share/elasticsearch/config/certs/ca/ca.crt /tmp/ \n
+        \tdocker cp [CONTANIER-NAME]:/usr/share/elasticsearch/config/certs/ca/ca.crt /tmp/ \n
         and than check connection per culr like: \n
         \tcurl --cacert /tmp/ca.crt -u {{ .State.username }}:{{ .State.password }} https://localhost:{{ .Init.publishPort }}"
