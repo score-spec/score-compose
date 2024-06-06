@@ -1226,3 +1226,49 @@ containers:
 	assert.NoError(t, err)
 	assert.Contains(t, string(raw), `example.com/fizz: buzz`)
 }
+
+func TestGenerateElasticsearchResource(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  hello:
+    image: foo
+resources:
+  ecs:
+    type: elasticsearch
+`), 0644))
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	// check that state was persisted
+	sd, ok, err := project.LoadStateDirectory(td)
+	assert.NoError(t, err)
+	assert.True(t, ok)
+	assert.Len(t, sd.State.Workloads, 1)
+	assert.Len(t, sd.State.Resources, 1)
+	assert.Contains(t, sd.State.Resources["elasticsearch.default#example.ecs"].Outputs, "host")
+	assert.Contains(t, sd.State.Resources["elasticsearch.default#example.ecs"].Outputs, "port")
+	assert.Contains(t, sd.State.Resources["elasticsearch.default#example.ecs"].Outputs, "username")
+	assert.Contains(t, sd.State.Resources["elasticsearch.default#example.ecs"].Outputs, "password")
+
+	t.Run("validate compose spec", func(t *testing.T) {
+		if os.Getenv("NO_DOCKER") != "" {
+			t.Skip("NO_DOCKER is set")
+			return
+		}
+		dockerCmd, err := exec.LookPath("docker")
+		require.NoError(t, err)
+		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "convert", "--quiet", "--dry-run")
+		cmd.Dir = td
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		assert.NoError(t, cmd.Run())
+	})
+}
