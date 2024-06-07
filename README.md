@@ -39,6 +39,7 @@ The `score.yaml` specification file can be executed against a _Score Implementat
 | route         | default | `host`, `path`, `port` |                                                                                                                                                                 |
 | amqp          | default | (none)                 | `host`, `port`, `vhost`, `username`, `password`                                                                                                                 |
 | mongodb       | default | (none)                 | `host`, `port`, `username`, `password`, `connection`                                                                                                            |
+| kafka-topic   | default | (none)                 | `host`, `port`, `name`, `num_partitions`                                                                                                                        |
 | elasticsearch | default | (none)                 | `host`, `port`, `username`, `password`                                                                                                                          |
 
 These can be found in the default provisioners file. You are encouraged to write your own provisioners and add them to the `.score-compose` directory (with the `.provisioners.yaml` extension) or contribute them upstream to the [default.provisioners.yaml](internal/command/default.provisioners.yaml) file.
@@ -67,7 +68,8 @@ See the [examples](./examples) for more examples of using Score and provisioning
 - [10-amqp-rabbitmq](examples/10-amqp-rabbitmq) - an example the default `amqp` resource provisioner
 - [11-mongodb-document-database](examples/11-mongodb-document-database) - an example the default `mongodb` resource provisioner
 - [12-mysql-database](examples/12-mysql-database) - an example the default `mysql` resource provisioner
-- [13-elasticsearch](examples/13-elasticsearch) - an example the default `elasticsearch` resource provisioner
+- [13-kafka-topic](examples/13-kafka-topic) - an example of the default `kafka-topic` resource provisioner
+- [14-elasticsearch](examples/14-elasticsearch) - an example the default `elasticsearch` resource provisioner
 
 If you're getting started, you can use `score-compose init` to create a basic `score.yaml` file in the current directory along with a `.score-compose/` working directory.
 

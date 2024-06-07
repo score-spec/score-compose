@@ -1,0 +1,29 @@
+apiVersion: score.dev/v1b1
+
+metadata:
+  name: hello-world
+
+containers:
+  main:
+    image: docker.redpanda.com/redpandadata/console:latest
+    variables:
+      KAFKA_BROKERS: "${resources.bus.host}:${resources.bus.port}"
+      _KAFKA_TOPIC: ${resources.bus.name}
+      _KAFKA_PARTITIONS: ${resources.bus.num_partitions}
+
+service:
+  ports:
+    web:
+      port: 8080
+
+resources:
+  bus:
+    type: kafka-topic
+  dns:
+    type: dns
+  route:
+    type: route
+    params:
+      path: /
+      host: ${resources.dns.host}
+      port: web

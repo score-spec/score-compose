@@ -1,4 +1,4 @@
-# 13 - Elasticsearch
+# 14 - Elasticsearch
 
 There is also a `elasticsearch` resource provisioner as an example of a elasticsearch.
 This uses the official image from <https://hub.docker.com/_/elasticsearch> with the tag `8.14.0`.
