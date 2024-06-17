@@ -67,9 +67,9 @@ See the [examples](./examples) for more examples of using Score and provisioning
 - [09-dns-and-route](examples/09-dns-and-route) - an example of using the `dns` and `route` resources to route http requests
 - [10-amqp-rabbitmq](examples/10-amqp-rabbitmq) - an example the default `amqp` resource provisioner
 - [11-mongodb-document-database](examples/11-mongodb-document-database) - an example the default `mongodb` resource provisioner
-- [12-mysql-database](examples/12-mysql-database) - an example the default `mysql` resource provisioner
+- [12-mysql-database](examples/12-mysql-database) - an example of the default `mysql` resource provisioner
 - [13-kafka-topic](examples/13-kafka-topic) - an example of the default `kafka-topic` resource provisioner
-- [14-elasticsearch](examples/14-elasticsearch) - an example the default `elasticsearch` resource provisioner
+- [14-elasticsearch](examples/14-elasticsearch) - an example of the default `elasticsearch` resource provisioner
 
 If you're getting started, you can use `score-compose init` to create a basic `score.yaml` file in the current directory along with a `.score-compose/` working directory.
 
