@@ -76,7 +76,8 @@ func init() {
 var runCmd = &cobra.Command{
 	Use:   "run [--file=score.yaml] [--output=compose.yaml]",
 	Args:  cobra.NoArgs,
-	Short: "Translate the SCORE file to docker-compose configuration",
+	Short: "(Deprecated) Translate the SCORE file to docker-compose configuration",
+	Hidden: true,
 	RunE:  run,
 	// don't print the errors - we print these ourselves in main()
 	SilenceErrors: true,
