@@ -69,7 +69,7 @@ func executeAndResetCommand(ctx context.Context, cmd *cobra.Command, args []stri
 func TestRunHelp(t *testing.T) {
 	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--help"})
 	assert.NoError(t, err)
-	assert.Equal(t, `Translate the SCORE file to docker-compose configuration
+	assert.Equal(t, `(Deprecated) Translate the SCORE file to docker-compose configuration
 
 Usage:
   score-compose run [--file=score.yaml] [--output=compose.yaml] [flags]
