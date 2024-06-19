@@ -213,6 +213,10 @@ services:
 			subDir: "13-kafka-topic",
 			adds:   []string{"score.yaml"},
 		},
+		{
+			subDir: "14-elasticsearch",
+			adds:   []string{"score.yaml"},
+		},
 	} {
 		t.Run(tc.subDir, func(t *testing.T) {
 			oldReader := rand.Reader

@@ -447,7 +447,7 @@
           proxy_buffer_size                       2k;
           client_max_body_size                    10m;
       {{ dig "compose.score.dev/route-provisioner-server-snippet" "" (dig "annotations" (dict) ($.Metadata | default (dict))) | indent 4 }}
-        
+
           location = /favicon.ico {
             return 204;
             access_log     off;
@@ -675,3 +675,135 @@
     port: "{{ .Init.brokerPort }}"
     name: {{ .State.topic }}
     num_partitions: 3
+
+# The default elasticsearch provisioner adds a elasticsearch instance.
+- uri: template://default-provisioners/elasticsearch
+  # By default, match all elasticsearch types regardless of class and id.
+  # If you want to override this, create another provisioner definition with a higher priority.
+  type: elasticsearch
+  # Init template has the random service name and password if needed later
+  init: |
+    serviceName: elasticsearch
+    randomPassword: {{ randAlphaNum 16 | quote }}
+    clusterName: cluster-ecs-{{ randAlphaNum 6 }}
+    username: elastic
+    sk: default-provisioners-elasticsearch-instance
+    publishPort: {{ dig "annotations" "compose.score.dev/publish-port" "9200" .Metadata | quote }}
+    license: {{ dig "annotations" "compose.score.dev/license" "basic" .Metadata | quote }}
+    stackVersion: {{ dig "annotations" "compose.score.dev/stack-version" "8.14.0" .Metadata | quote }}
+    esMemLimit: {{ dig "annotations" "compose.score.dev/es-mem-limit" "1073741824" .Metadata | quote }}
+  # The state for each elasticsearch resource is a unique host, port, and credentials
+  state: |
+    clusterName: {{ dig "clusterName" .Init.clusterName .State | quote }}
+    username: {{ dig "username" .Init.username .State | quote }}
+    password: {{ dig "password" .Init.randomPassword .State | quote }}
+    host: {{ dig "host" .Init.serviceName .State | quote }}
+  outputs: |
+    host: {{ .State.host }}
+    port: {{ .Init.publishPort }}
+    username: {{ .State.username | quote }}
+    password: {{ .State.password | quote }}
+  # Ensure the data volume exists
+  volumes: |
+    ecscerts:
+      driver: local
+    ecsdata:
+      driver: local
+  # Create 2 services, the first is the setup container which creates the certificates, the second is the elasticsearch itself
+  services: |
+    setup:
+      image: docker.elastic.co/elasticsearch/elasticsearch:{{ .Init.stackVersion }}
+      volumes:
+      - type: volume
+        source: ecscerts
+        target: /usr/share/elasticsearch/config/certs
+      user: "0"
+      command:
+      - "bash"
+      - "-c"
+      - |
+        if [ ! -f config/certs/ca.zip ]; then
+          echo "Creating CA";
+          bin/elasticsearch-certutil ca --silent --pem -out config/certs/ca.zip;
+          unzip config/certs/ca.zip -d config/certs;
+        fi;
+        if [ ! -f config/certs/certs.zip ]; then
+          echo "Creating certs";
+          echo -ne \
+          "instances:\n"\
+          "  - name: {{ .State.host }}\n"\
+          "    dns:\n"\
+          "      - {{ .State.host }}\n"\
+          "      - localhost\n"\
+          "    ip:\n"\
+          "      - 127.0.0.1\n"\
+          > config/certs/instances.yml;
+          bin/elasticsearch-certutil cert --silent --pem -out config/certs/certs.zip --in config/certs/instances.yml --ca-cert config/certs/ca/ca.crt --ca-key config/certs/ca/ca.key;
+          unzip config/certs/certs.zip -d config/certs;
+        fi;
+        echo "Setting file permissions"
+        chown -R root:root config/certs;
+        find . -type d -exec chmod 750 \{\} \;;
+        find . -type f -exec chmod 640 \{\} \;;
+        echo "Waiting for Elasticsearch availability";
+        until curl -s --cacert config/certs/ca/ca.crt https://{{ .State.host }}:9200 | grep -q "missing authentication credentials"; do sleep 10; done;
+        echo "All done!";
+      healthcheck:
+        test: ["CMD-SHELL", "[ -f config/certs/{{ .State.host }}/{{ .State.host }}.crt ]"]
+        interval: 1s
+        timeout: 5s
+        retries: 120
+    {{ .State.host }}:
+      depends_on:
+        setup:
+          condition: service_healthy
+      image: docker.elastic.co/elasticsearch/elasticsearch:{{ .Init.stackVersion }}
+      labels:
+        co.elastic.logs/module: elasticsearch
+      volumes:
+      - type: volume
+        source: ecscerts
+        target: /usr/share/elasticsearch/config/certs
+      - type: volume
+        source: ecsdata
+        target: /usr/share/elasticsearch/data
+      ports:
+      - target: 9200
+        published: {{ .Init.publishPort }}
+      environment:
+        - node.name={{ .State.host }}
+        - cluster.name={{ .State.clusterName }}
+        - discovery.type=single-node
+        - bootstrap.memory_lock=true
+        - ELASTIC_PASSWORD={{ .State.password }}
+        - xpack.security.enabled=true
+        - xpack.security.http.ssl.enabled=true
+        - xpack.security.http.ssl.key=certs/{{ .State.host }}/{{ .State.host }}.key
+        - xpack.security.http.ssl.certificate=certs/{{ .State.host }}/{{ .State.host }}.crt
+        - xpack.security.http.ssl.certificate_authorities=certs/ca/ca.crt
+        - xpack.security.transport.ssl.enabled=true
+        - xpack.security.transport.ssl.key=certs/{{ .State.host }}/{{ .State.host }}.key
+        - xpack.security.transport.ssl.certificate=certs/{{ .State.host }}/{{ .State.host }}.crt
+        - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
+        - xpack.security.transport.ssl.verification_mode=certificate
+        - xpack.license.self_generated.type={{ .Init.license }}
+      mem_limit: {{ .Init.esMemLimit }}
+      ulimits:
+        memlock:
+          soft: -1
+          hard: -1
+      healthcheck:
+        test:
+          [
+            "CMD-SHELL",
+            "curl -s --cacert config/certs/ca/ca.crt https://localhost:9200 | grep -q 'missing authentication credentials'",
+          ]
+        interval: 10s
+        timeout: 10s
+        retries: 120
+  info_logs: |
+    - "{{.Uid}}: To connect to elasticsearch:\n
+        download certificate from container per command like: \n
+        \tdocker cp [CONTAINER-NAME]:/usr/share/elasticsearch/config/certs/ca/ca.crt /tmp/ \n
+        and than check connection per culr like: \n
+        \tcurl --cacert /tmp/ca.crt -u {{ .State.username }}:{{ .State.password }} https://localhost:{{ .Init.publishPort }}"

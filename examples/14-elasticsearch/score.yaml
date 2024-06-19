@@ -1,0 +1,28 @@
+apiVersion: score.dev/v1b1
+
+metadata:
+  name: example
+
+containers:
+  hello:
+    image: busybox
+    command: ["/bin/sh", "-c"]
+    args:
+      [
+        "echo",
+        "curl --cacert /tmp/ca.crt -u $ECS_USER:$ECS_PASS https://$ECS_HOST:$ECS_PORT",
+      ]
+    variables:
+      ECS_HOST: ${resources.ecs.host}
+      ECS_PORT: ${resources.ecs.port}
+      ECS_USER: ${resources.ecs.username}
+      ECS_PASS: ${resources.ecs.password}
+
+resources:
+  ecs:
+    type: elasticsearch
+    # metadata:
+    #   annotations:
+    #     "compose.score.dev/stack-version": "8.13.4"
+    #     "compose.score.dev/publish-port": "9201"
+    #     "compose.score.dev/es-mem-limit": "1073741824"

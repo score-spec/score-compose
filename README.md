@@ -16,7 +16,7 @@ The `score.yaml` specification file can be executed against a _Score Implementat
 
 `score-compose` supports as many Score features as possible, however there are certain parts that don't fit well in a local Docker case and are not supported:
 
-| Feature                                                             | Support | Impact                                                                                                                                                                                                                                                                                                                                              | 
+| Feature                                                             | Support | Impact                                                                                                                                                                                                                                                                                                                                              |
 |---------------------------------------------------------------------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `containers.*.resources.limits` / `containers.*.resources.requests` | none    | **Limits will be validated but ignored.** While the compose specification has some support for this, it is requires particular Docker versions that cannot be relied on. *This should have no impact on Workload execution*.                                                                                                                        |
 | `containers.*.livenessProbe` / `containers.*.readinessProbe`        | none    | **Probes will be validated but ignored.** The Score specification only details K8s-like HTTP probes, but the compose specification only supports direct command execution. We cannot convert between the two reliably. *This should have no impact on Workload execution*. Tracked in [#86](https://github.com/score-spec/score-compose/issues/86). |
@@ -26,20 +26,21 @@ The `score.yaml` specification file can be executed against a _Score Implementat
 
 `score-compose` comes with out-of-the-box support for:
 
-| Type         | Class   | Params                 | Output                                                                                                                                                          |
-|--------------|---------|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| environment  | default | (none)                 | `${KEY}`                                                                                                                                                        |
-| service-port | default | `workload`, `port`     | `hostname`, `port`                                                                                                                                              |
-| volume       | default | (none)                 | `source`                                                                                                                                                        |
-| redis        | default | (none)                 | `host`, `port`, `username`, `password`                                                                                                                          |
-| postgres     | default | (none)                 | `host`, `port`, `name` (aka `database`), `username`, `password`                                                                                                 |
-| mysql        | default | (none)                 | `host`, `port`, `name` (aka `database`), `username`, `password`                                                                                                 |
-| s3           | default | (none)                 | `endpoint`, `access_key_id`, `secret_key`, `bucket`, with `region=""`, `aws_access_key_id=<access_key_id>`, and `aws_secret_key=<secret_key>` for compatibility |
-| dns          | default | (none)                 | `host`                                                                                                                                                          |
-| route        | default | `host`, `path`, `port` |                                                                                                                                                                 |
-| amqp         | default | (none)                 | `host`, `port`, `vhost`, `username`, `password`                                                                                                                 |
-| mongodb      | default | (none)                 | `host`, `port`, `username`, `password`, `connection`                                                                                                            |
-| kafka-topic  | default | (none)                 | `host`, `port`, `name`, `num_partitions`                                                                                                                        |
+| Type          | Class   | Params                 | Output                                                                                                                                                          |
+| ------------- | ------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| environment   | default | (none)                 | `${KEY}`                                                                                                                                                        |
+| service-port  | default | `workload`, `port`     | `hostname`, `port`                                                                                                                                              |
+| volume        | default | (none)                 | `source`                                                                                                                                                        |
+| redis         | default | (none)                 | `host`, `port`, `username`, `password`                                                                                                                          |
+| postgres      | default | (none)                 | `host`, `port`, `name` (aka `database`), `username`, `password`                                                                                                 |
+| mysql         | default | (none)                 | `host`, `port`, `name` (aka `database`), `username`, `password`                                                                                                 |
+| s3            | default | (none)                 | `endpoint`, `access_key_id`, `secret_key`, `bucket`, with `region=""`, `aws_access_key_id=<access_key_id>`, and `aws_secret_key=<secret_key>` for compatibility |
+| dns           | default | (none)                 | `host`                                                                                                                                                          |
+| route         | default | `host`, `path`, `port` |                                                                                                                                                                 |
+| amqp          | default | (none)                 | `host`, `port`, `vhost`, `username`, `password`                                                                                                                 |
+| mongodb       | default | (none)                 | `host`, `port`, `username`, `password`, `connection`                                                                                                            |
+| kafka-topic   | default | (none)                 | `host`, `port`, `name`, `num_partitions`                                                                                                                        |
+| elasticsearch | default | (none)                 | `host`, `port`, `username`, `password`                                                                                                                          |
 
 These can be found in the default provisioners file. You are encouraged to write your own provisioners and add them to the `.score-compose` directory (with the `.provisioners.yaml` extension) or contribute them upstream to the [default.provisioners.yaml](internal/command/default.provisioners.yaml) file.
 
@@ -66,8 +67,9 @@ See the [examples](./examples) for more examples of using Score and provisioning
 - [09-dns-and-route](examples/09-dns-and-route) - an example of using the `dns` and `route` resources to route http requests
 - [10-amqp-rabbitmq](examples/10-amqp-rabbitmq) - an example the default `amqp` resource provisioner
 - [11-mongodb-document-database](examples/11-mongodb-document-database) - an example the default `mongodb` resource provisioner
-- [12-mysql-database](examples/12-mysql-database) - an example of the `mysql` resource provisioner
+- [12-mysql-database](examples/12-mysql-database) - an example of the default `mysql` resource provisioner
 - [13-kafka-topic](examples/13-kafka-topic) - an example of the default `kafka-topic` resource provisioner
+- [14-elasticsearch](examples/14-elasticsearch) - an example of the default `elasticsearch` resource provisioner
 
 If you're getting started, you can use `score-compose init` to create a basic `score.yaml` file in the current directory along with a `.score-compose/` working directory.
 
