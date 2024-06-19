@@ -136,7 +136,7 @@ Global Flags:
   -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
 ```
 
-**NOTE**: The `score-compose run` command still exists but should be considered deprecated as it does not support resource provisioning.
+**NOTE**: The `score-compose run` command still exists but is hidden and should be considered deprecated as it does not support resource provisioning.
 
 ## ![Get involved](docs/images/get-involved.svg) Get involved
 
