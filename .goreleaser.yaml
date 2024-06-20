@@ -1,4 +1,5 @@
 # Check the documentation at https://goreleaser.com
+version: 2
 before:
   hooks:
     - go mod tidy
@@ -33,7 +34,7 @@ changelog:
 brews:
   - name: score-compose
     homepage: "https://score.dev"
-    tap:
+    repository:
       owner: score-spec
       name: homebrew-tap
       token: "{{ .Env.TAP_GITHUB_TOKEN }}"

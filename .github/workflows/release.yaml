@@ -28,7 +28,11 @@ jobs:
         run: go test ./... -cover -race
       -
         name: Build binary
-        run: go build -o score-compose ./cmd/score-compose/main.go
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: build --snapshot
       -
         name: Install license check tool
         run: go install github.com/google/addlicense@latest
