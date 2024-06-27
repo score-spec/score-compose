@@ -1,16 +1,8 @@
+<img src="docs/images/banner.png"/>
+
 # score-compose
 
-`score-compose` is an implementation of the Score Workload specification for [Docker compose](https://docs.docker.com/compose/). `score-compose` is a reference implementation for [Score](https://docs.score.dev/) and is used in many cases for local development.
-
-`score-compose` supports most aspects of the Score Workload specification and supports a powerful resource provisioning system for supplying and customising the dynamic configuration of attached services such as databases, queues, storage, and other network or storage APIs.
-
-## ![Score](docs/images/logo.svg) Score overview
-
-<img src="docs/images/banner.png" width="500px"/>
-
-Score aims to improve developer productivity and experience by reducing the risk of configuration inconsistencies between local and remote environments. It provides developer-centric workload specification (`score.yaml`) which captures a workloads runtime requirements in a platform-agnostic manner. Learn more [here](https://github.com/score-spec/spec#-what-is-score).
-
-The `score.yaml` specification file can be executed against a _Score Implementation CLI_, a conversion tool for application developers to generate environment specific configuration. In combination with environment specific parameters, the CLI tool can run your workload in the target environment by generating a platform-specific configuration file. The `score-compose` CLI is a reference implementation used to generate `docker-compose.yaml` files.
+`score-compose` is a reference implementation of the [Score specification](https://github.com/score-spec/spec) for [Docker compose](https://docs.docker.com/compose/), primarily used for local development. It supports most aspects of the Score specification and provides a powerful resource provisioning system for supplying and customising the dynamic configuration of attached services such as databases, queues, storage, and other network or storage APIs.
 
 ## Feature support
 
@@ -44,13 +36,11 @@ The `score.yaml` specification file can be executed against a _Score Implementat
 
 These can be found in the default provisioners file. You are encouraged to write your own provisioners and add them to the `.score-compose` directory (with the `.provisioners.yaml` extension) or contribute them upstream to the [default.provisioners.yaml](internal/command/default.provisioners.yaml) file.
 
-## ![Installation](docs/images/install.svg) Installation
+## Installation
 
-To install `score-compose`, follow the instructions as described in our [installation guide](https://docs.score.dev/docs/get-started/install/).
+To install `score-compose`, follow the instructions as described in our [installation guide](https://docs.score.dev/docs/score-implementation/score-compose/#installation). You will also need a recent version of Docker and the Compose plugin installed. Read more [here](https://docs.docker.com/compose/install/).
 
-You will also need a recent version of Docker and the Compose plugin installed. [Read more here](https://docs.docker.com/compose/install/).
-
-## ![Get Started](docs/images/overview.svg) Get Started
+## Get started
 
 **NOTE**: the following examples and guides relate to `score-compose >= 0.11.0`, check your version using `score-compose --version` and re-install if you're behind!
 
@@ -138,36 +128,28 @@ Global Flags:
 
 **NOTE**: The `score-compose run` command still exists but is hidden and should be considered deprecated as it does not support resource provisioning.
 
-## ![Get involved](docs/images/get-involved.svg) Get involved
-
-- Give the project a star!
-- Contact us via Email:
-  - team@score.dev
-  - abuse@score.dev
-- See our [documentation](https://docs.score.dev)
-
-## ![Contributing](docs/images/contributing.svg) Contributing
-
-- Write a [blog post](https://score.dev/blog)
-- Provide feedback on our [roadmap](https://github.com/score-spec/spec/blob/main/roadmap.md#get-involved)
-- Contribute
-
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
-
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also open an issue with the tag `enhancement`.
-
-1. Fork the Project.
-2. Create your Feature Branch. `git checkout -b feature/feature-name`
-3. Commit your Changes. `git commit -s -m "Add some AmazingFeature"`
-4. Push to the Branch. `git push origin feature/feature-name`
-5. Open a Pull Request.
-
-Read [CONTRIBUTING](CONTRIBUTING.md) for more information.
-
-### Testing
+## Testing
 
 Run the tests using `go test -v ./... -race`. If you do not have `docker` CLI installed locally or want the tests to run
 faster, consider setting `NO_DOCKER=true` to skip any `docker compose` based validation during testing.
+
+## Get in touch
+
+Connect with us through the [Score Slack channel](https://join.slack.com/t/scorecommunity/shared_invite/zt-2a0x563j7-i1vZOK2Yg2o4TwCM1irIuA) or contact us via email at team@score.dev.
+
+We host regular community meetings to discuss updates, share ideas, and collaborate. Here are the details:
+
+| Community call | Info |
+|:-----------|:------------|
+| Meeting Link | Join via [Google Meet](https://meet.google.com/znt-usdc-hzs) or call +49 40 8081618260 (Pin: 599 887 196)
+| Meeting Agenda & Notes | Add to our agenda or review minutes [here](https://github.com/score-spec/spec/discussions/categories/community-meetings)
+| Meeting Time | 1:00-2:00pm UTC, every first Thursday of the month
+
+If you can't attend at the scheduled time but would like to discuss something, please reach out. We’re happy to arrange an ad-hoc meeting that fits your schedule.
+
+### Contribution Guidelines and Governance
+
+Our general contributor guidelines can be found in [CONTRIBUTING.md](CONTRIBUTING.md). Please note that some repositories may have additional guidelines. For more information on our governance model, please refer to [GOVERNANCE.md](https://github.com/score-spec/spec/blob/main/GOVERNANCE.md).
 
 ### Documentation
 
