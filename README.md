@@ -135,17 +135,7 @@ faster, consider setting `NO_DOCKER=true` to skip any `docker compose` based val
 
 ## Get in touch
 
-Connect with us through the [Score Slack channel](https://join.slack.com/t/scorecommunity/shared_invite/zt-2a0x563j7-i1vZOK2Yg2o4TwCM1irIuA) or contact us via email at team@score.dev.
-
-We host regular community meetings to discuss updates, share ideas, and collaborate. Here are the details:
-
-| Community call | Info |
-|:-----------|:------------|
-| Meeting Link | Join via [Google Meet](https://meet.google.com/znt-usdc-hzs) or call +49 40 8081618260 (Pin: 599 887 196)
-| Meeting Agenda & Notes | Add to our agenda or review minutes [here](https://github.com/score-spec/spec/discussions/categories/community-meetings)
-| Meeting Time | 1:00-2:00pm UTC, every first Thursday of the month
-
-If you can't attend at the scheduled time but would like to discuss something, please reach out. We’re happy to arrange an ad-hoc meeting that fits your schedule.
+Learn how to connect and engage with our community [here](https://github.com/score-spec/spec?tab=readme-ov-file#-get-in-touch).
 
 ### Contribution Guidelines and Governance
 
