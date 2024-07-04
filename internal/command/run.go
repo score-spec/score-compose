@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//     https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -74,11 +74,11 @@ func init() {
 }
 
 var runCmd = &cobra.Command{
-	Use:   "run [--file=score.yaml] [--output=compose.yaml]",
-	Args:  cobra.NoArgs,
-	Short: "(Deprecated) Translate the SCORE file to docker-compose configuration",
+	Use:    "run [--file=score.yaml] [--output=compose.yaml]",
+	Args:   cobra.NoArgs,
+	Short:  "(Deprecated) Translate the SCORE file to docker-compose configuration",
 	Hidden: true,
-	RunE:  run,
+	RunE:   run,
 	// don't print the errors - we print these ourselves in main()
 	SilenceErrors: true,
 }
