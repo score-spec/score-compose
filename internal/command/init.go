@@ -152,7 +152,7 @@ acts as a namespace when multiple score files and containers are used.
 			}
 
 			// create and write the default provisioners file if it doesn't already exist
-			dst := "99-default" + loader.DefaultSuffix
+			dst := "zz-default" + loader.DefaultSuffix
 			if f, err := os.OpenFile(filepath.Join(sd.Path, dst), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644); err != nil {
 				if !errors.Is(err, os.ErrExist) {
 					return fmt.Errorf("failed to open default provisioners for writing: %w", err)

@@ -190,7 +190,7 @@ func TestInitNominal_run_twice(t *testing.T) {
 	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 
 	// check default provisioners exists and overwrite it with an empty array
-	dpf, err := os.Stat(filepath.Join(td, ".score-compose", "99-default.provisioners.yaml"))
+	dpf, err := os.Stat(filepath.Join(td, ".score-compose", "zz-default.provisioners.yaml"))
 	assert.NoError(t, err)
 	assert.NoError(t, os.WriteFile(filepath.Join(td, ".score-compose", dpf.Name()), []byte("[]"), 0644))
 
