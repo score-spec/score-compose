@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strings"
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
@@ -95,6 +96,10 @@ be returned as json.
 				case "yaml":
 					return yaml.NewEncoder(cmd.OutOrStdout()).Encode(outputs)
 				default:
+					// ensure there is a new line at the end if one is not already present
+					if !strings.HasSuffix(formatValue, "\n") {
+						formatValue += "\n"
+					}
 					prepared, err := template.New("").Funcs(sprig.FuncMap()).Parse(formatValue)
 					if err != nil {
 						return fmt.Errorf("failed to parse format template: %w", err)
