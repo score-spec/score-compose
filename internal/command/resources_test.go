@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -111,6 +112,7 @@ volume.default#example.vol
 		assert.NoError(t, err)
 		var out map[string]interface{}
 		assert.NoError(t, json.Unmarshal([]byte(stdout), &out))
+		assert.True(t, strings.HasSuffix(stdout, "\n"))
 	})
 
 	t.Run("format yaml", func(t *testing.T) {
@@ -118,11 +120,18 @@ volume.default#example.vol
 		assert.NoError(t, err)
 		var out map[string]interface{}
 		assert.NoError(t, yaml.Unmarshal([]byte(stdout), &out))
+		assert.True(t, strings.HasSuffix(stdout, "\n"))
 	})
 
 	t.Run("format template", func(t *testing.T) {
 		stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"resources", "get-outputs", "volume.default#example.vol", "--format", `{{ . | len }}`})
 		assert.NoError(t, err)
-		assert.Equal(t, "2", stdout)
+		assert.Equal(t, "2\n", stdout)
+	})
+
+	t.Run("format template with newline", func(t *testing.T) {
+		stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"resources", "get-outputs", "volume.default#example.vol", "--format", "{{ . | len }}\n"})
+		assert.NoError(t, err)
+		assert.Equal(t, "2\n", stdout)
 	})
 }
