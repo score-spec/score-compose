@@ -33,11 +33,12 @@ Usage:
   score-compose [command]
 
 Available Commands:
-  completion  Generate the autocompletion script for the specified shell
-  generate    Convert one or more Score files into a Docker compose manifest
-  help        Help about any command
-  init        Initialise a new score-compose project with local state directory and score file
-  resources   Subcommands related to provisioned resources
+  check-version Assert that the version of score-compose matches the required constraint
+  completion    Generate the autocompletion script for the specified shell
+  generate      Convert one or more Score files into a Docker compose manifest
+  help          Help about any command
+  init          Initialise a new score-compose project with local state directory and score file
+  resources     Subcommands related to provisioned resources
 
 Flags:
   -h, --help            help for score-compose
