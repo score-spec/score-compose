@@ -4,12 +4,10 @@ go 1.22
 
 toolchain go1.22.4
 
-replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
-
 require (
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/compose-spec/compose-go/v2 v2.1.3
-	github.com/imdario/mergo v0.3.13
+	github.com/imdario/mergo v0.3.16
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/score-spec/score-go v1.7.2
 	github.com/spf13/cobra v1.8.1
@@ -30,7 +28,6 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/kr/pretty v0.3.1 // indirect
 	github.com/mattn/go-shellwords v1.0.12 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
