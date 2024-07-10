@@ -562,8 +562,8 @@ services:
             compose.score.dev/workload-name: example
         depends_on:
             wait-for-resources:
-                condition: service_started
-                required: false
+                condition: service_completed_successfully
+                required: true
         hostname: example
         image: foo
     generic_service:
@@ -663,8 +663,8 @@ services:
             compose.score.dev/workload-name: example
         depends_on:
             wait-for-resources:
-                condition: service_started
-                required: false
+                condition: service_completed_successfully
+                required: true
         hostname: example
         image: busybox
     foo-service:
