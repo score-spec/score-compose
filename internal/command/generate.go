@@ -244,7 +244,7 @@ arguments.
 					if service.DependsOn == nil {
 						service.DependsOn = make(types.DependsOnConfig)
 					}
-					service.DependsOn[waitServiceName] = types.ServiceDependency{Condition: "service_started"}
+					service.DependsOn[waitServiceName] = types.ServiceDependency{Condition: "service_completed_successfully", Required: true}
 				}
 				superProject.Services[serviceName] = service
 			}
