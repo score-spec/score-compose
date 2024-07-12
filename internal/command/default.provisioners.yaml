@@ -163,7 +163,7 @@
         test: ["CMD", "pg_isready", "-U", "postgres"]
         interval: 2s
         timeout: 2s
-        retries: 10
+        retries: 15
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}-init:
       image: postgres:16-alpine
       entrypoint: ["/bin/sh"]
@@ -254,7 +254,7 @@
         test: ["CMD-SHELL", "mc alias set myminio http://localhost:9000 {{ dig .Init.sk "instanceUsername" "" .Shared }} {{ dig .Init.sk "instancePassword" "" .Shared }}"]
         interval: 2s
         timeout: 2s
-        retries: 10
+        retries: 15
       environment:
         MINIO_ROOT_USER: {{ dig .Init.sk "instanceUsername" "" .Shared | quote }}
         MINIO_ROOT_PASSWORD: {{ dig .Init.sk "instancePassword" "" .Shared | quote }}
@@ -341,7 +341,7 @@
         test: ["CMD-SHELL", "rabbitmq-diagnostics -q check_port_connectivity"]
         interval: 2s
         timeout: 5s
-        retries: 5
+        retries: 15
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}-init:
       image: rabbitmq:3-management-alpine
       entrypoint: ["/bin/sh"]
@@ -519,7 +519,7 @@
         test: ["CMD-SHELL", "echo 'db.runCommand(\"ping\").ok' | mongosh -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD"]
         interval: 2s
         timeout: 5s
-        retries: 5
+        retries: 15
         start_period: 10s
       volumes:
       - type: volume
