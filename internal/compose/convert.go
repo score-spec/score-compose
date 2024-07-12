@@ -95,13 +95,9 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 		if len(cSpec.Volumes) > 0 {
 			volumes = make([]compose.ServiceVolumeConfig, len(cSpec.Volumes))
 			for idx, vol := range cSpec.Volumes {
-				if vol.Path != nil && *vol.Path != "" {
-					return nil, fmt.Errorf("containers.%s.volumes[%d].path: can't mount named volume with sub path '%s': not supported", containerName, idx, *vol.Path)
-				}
-
 				cfg, err := convertVolumeSourceIntoVolume(state, deferredSubstitutionFunction, workloadName, vol)
 				if err != nil {
-					return nil, fmt.Errorf("containers.%s.volumes[%d].source: %w", containerName, idx, err)
+					return nil, fmt.Errorf("containers.%s.volumes[%d]: %w", containerName, idx, err)
 				}
 				volumes[idx] = *cfg
 			}
@@ -293,6 +289,7 @@ func convertVolumeSourceIntoVolume(state *project.State, substitutionFunction fu
 	}
 
 	// now if the resolves source is a volume we can check the outputs or throw an error
+
 	res, ok := state.Resources[framework.ResourceUid(resolvedVolumeSource)]
 	if ok {
 		volType, ok := res.Outputs["type"].(string)
@@ -315,6 +312,12 @@ func convertVolumeSourceIntoVolume(state *project.State, substitutionFunction fu
 			}
 			outputVolume.Source = s.Source
 			outputVolume.Volume = s.Volume
+			if vol.Path != nil && *vol.Path != "" {
+				if outputVolume.Volume == nil {
+					outputVolume.Volume = &compose.ServiceVolumeVolume{}
+				}
+				outputVolume.Volume.Subpath = filepath.Join(outputVolume.Volume.Subpath, *vol.Path)
+			}
 		case "tmpfs":
 			s := struct {
 				Type  string                      `json:"type"`
@@ -324,6 +327,9 @@ func convertVolumeSourceIntoVolume(state *project.State, substitutionFunction fu
 				return nil, fmt.Errorf("resource '%s' outputs cannot decode for tmpfs: %w", resolvedVolumeSource, err)
 			}
 			outputVolume.Tmpfs = s.Tmpfs
+			if vol.Path != nil && *vol.Path != "" {
+				return nil, fmt.Errorf("can't mount named tmpfs volume with sub path '%s': not supported", *vol.Path)
+			}
 		case "bind":
 			s := struct {
 				Type   string                     `json:"type"`
@@ -334,6 +340,9 @@ func convertVolumeSourceIntoVolume(state *project.State, substitutionFunction fu
 				return nil, fmt.Errorf("resource '%s' outputs cannot decode for bind: %w", resolvedVolumeSource, err)
 			}
 			outputVolume.Source = s.Source
+			if vol.Path != nil && *vol.Path != "" {
+				outputVolume.Source = filepath.Join(outputVolume.Source, *vol.Path)
+			}
 			outputVolume.Bind = s.Bind
 		default:
 			return nil, fmt.Errorf("resource '%s' has invalid type '%s'", resolvedVolumeSource, volType)
