@@ -1030,6 +1030,11 @@ func TestInitAndGenerate_with_volume_types(t *testing.T) {
 
 	// write custom providers
 	assert.NoError(t, os.WriteFile(filepath.Join(td, ".score-compose", "00-custom.provisioners.yaml"), []byte(`
+- uri: template://docker-volume
+  type: volume
+  outputs: |
+    type: volume
+    source: named-volume
 - uri: template://tmpfs-volume
   type: tmp-volume
   outputs: |
@@ -1058,11 +1063,17 @@ containers:
       source: ${resources.v1}
     - target: /mnt/v2
       source: ${resources.v2}
+      path: thing
+    - target: /mnt/v3
+      source: ${resources.v3}
+      path: other/thing
 resources:
   v1:
     type: tmp-volume
   v2:
     type: bind-volume
+  v3:
+    type: volume
 `), 0644))
 
 	// generate
@@ -1080,10 +1091,15 @@ services:
         image: busybox
         volumes:
             - type: bind
-              source: /dev/something
+              source: /dev/something/thing
               target: /mnt/v2
               bind:
                 create_host_path: true
+            - type: volume
+              source: named-volume
+              target: /mnt/v3
+              volume:
+                subpath: other/thing
             - type: tmpfs
               source: tmp-volume.default#example.v1
               target: /mnt/v1

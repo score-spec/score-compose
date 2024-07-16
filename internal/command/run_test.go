@@ -251,26 +251,6 @@ func TestExample_invalid_spec(t *testing.T) {
 	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 }
 
-func TestVolumeSubPathNotSupported(t *testing.T) {
-	td := t.TempDir()
-	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
-apiVersion: score.dev/v1b1
-metadata:
-  name: example-workload-name123
-containers:
-  container-one1:
-    image: localhost:4000/repo/my-image:tag
-    volumes:
-    - source: volume-name
-      target: /mnt/something
-      path: /sub/path
-`), 0600))
-	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"run", "--file", filepath.Join(td, "score.yaml"), "--output", filepath.Join(td, "compose.yaml")})
-	assert.EqualError(t, err, "building docker-compose configuration: containers.container-one1.volumes[0].path: can't mount named volume with sub path '/sub/path': not supported")
-	assert.Equal(t, "", stdout)
-	assert.NotEqual(t, "", strings.TrimSpace(stderr))
-}
-
 func TestFilesNotSupported(t *testing.T) {
 	td := t.TempDir()
 	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`

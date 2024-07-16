@@ -123,7 +123,7 @@ func TestScoreConvert(t *testing.T) {
 						},
 						Volumes: []score.ContainerVolumesElem{
 							{
-								Source:   "data",
+								Source:   "${resources.data}",
 								Target:   "/mnt/data",
 								ReadOnly: util.Ref(true),
 							},
@@ -135,7 +135,7 @@ func TestScoreConvert(t *testing.T) {
 						Type: "environment",
 					},
 					"app-db": {
-						Type: "postgress",
+						Type: "mysql",
 					},
 					"some-dns": {
 						Type: "dns",
@@ -163,7 +163,7 @@ func TestScoreConvert(t *testing.T) {
 						Volumes: []compose.ServiceVolumeConfig{
 							{
 								Type:     "volume",
-								Source:   "data",
+								Source:   "example",
 								Target:   "/mnt/data",
 								ReadOnly: true,
 							},
@@ -196,7 +196,7 @@ func TestScoreConvert(t *testing.T) {
 						},
 						Volumes: []score.ContainerVolumesElem{
 							{
-								Source:   "data",
+								Source:   "${resources.data}",
 								Target:   "/mnt/data",
 								ReadOnly: util.Ref(true),
 							},
@@ -236,7 +236,7 @@ func TestScoreConvert(t *testing.T) {
 						Volumes: []compose.ServiceVolumeConfig{
 							{
 								Type:     "volume",
-								Source:   "data",
+								Source:   "example",
 								Target:   "/mnt/data",
 								ReadOnly: true,
 							},
@@ -354,10 +354,8 @@ func TestScoreConvert(t *testing.T) {
 			},
 		},
 
-		// Errors handling
-		//
 		{
-			Name: "Should report an error for volumes with sub path (not supported)",
+			Name: "Volume with sub-path should succeed",
 			Source: &score.Workload{
 				Metadata: score.WorkloadMetadata{
 					"name": "test",
@@ -367,7 +365,7 @@ func TestScoreConvert(t *testing.T) {
 						Image: "busybox",
 						Volumes: []score.ContainerVolumesElem{
 							{
-								Source:   "data",
+								Source:   "${resources.data}",
 								Target:   "/mnt/data",
 								Path:     util.Ref("sub/path"),
 								ReadOnly: util.Ref(true),
@@ -381,9 +379,34 @@ func TestScoreConvert(t *testing.T) {
 					},
 				},
 			},
-			Error: errors.New("not supported"),
+			Project: &compose.Project{
+				Services: compose.Services{
+					"test-backend": {
+						Name: "test-backend",
+						Annotations: map[string]string{
+							"compose.score.dev/workload-name": "test",
+						},
+						Image:       "busybox",
+						Hostname:    "test",
+						Environment: compose.MappingWithEquals{},
+						Volumes: []compose.ServiceVolumeConfig{
+							{
+								Type:     "volume",
+								Source:   "example",
+								Target:   "/mnt/data",
+								ReadOnly: true,
+								Volume: &compose.ServiceVolumeVolume{
+									Subpath: "sub/path",
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 
+		// Errors handling
+		//
 		{
 			Name: "Should report an error for volume that doesn't exist in resources",
 			Source: &score.Workload{
@@ -395,7 +418,7 @@ func TestScoreConvert(t *testing.T) {
 					},
 				},
 			},
-			Error: errors.New("containers.test.volumes[0].source: resource 'data' does not exist"),
+			Error: errors.New("containers.test.volumes[0]: resource 'data' does not exist"),
 		},
 
 		{
@@ -410,7 +433,7 @@ func TestScoreConvert(t *testing.T) {
 				},
 				Resources: map[string]score.Resource{"data": {Type: "thing"}},
 			},
-			Error: errors.New("containers.test.volumes[0].source: resource 'data' does not exist"),
+			Error: errors.New("containers.test.volumes[0]: resource 'thing.default#test.data' has no 'type' output"),
 		},
 	}
 
@@ -418,21 +441,22 @@ func TestScoreConvert(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 
 			state := &project.State{
-				Workloads: map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{
-					"test": {Spec: score.Workload{Resources: map[string]score.Resource{
-						"env":      {Type: "environment"},
-						"app-db":   {Type: "thing"},
-						"some-dns": {Type: "thing"},
-					}}},
-				},
+				Workloads: map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{},
 				Resources: map[framework.ResourceUid]framework.ScoreResourceState[framework.NoExtras]{},
 			}
+			state, _ = state.WithWorkload(tt.Source, nil, project.WorkloadExtras{})
+			state, _ = state.WithPrimedResources()
+
 			evt := new(envprov.Provisioner)
 			state.Resources["environment.default#test.env"] = framework.ScoreResourceState[framework.NoExtras]{OutputLookupFunc: evt.LookupOutput}
 			po, _ := evt.GenerateSubProvisioner("app-db", "").Provision(nil, nil)
-			state.Resources["thing.default#test.app-db"] = framework.ScoreResourceState[framework.NoExtras]{OutputLookupFunc: po.OutputLookupFunc}
+			state.Resources["mysql.default#test.app-db"] = framework.ScoreResourceState[framework.NoExtras]{OutputLookupFunc: po.OutputLookupFunc}
 			po, _ = evt.GenerateSubProvisioner("some-dns", "").Provision(nil, nil)
-			state.Resources["thing.default#test.some-dns"] = framework.ScoreResourceState[framework.NoExtras]{OutputLookupFunc: po.OutputLookupFunc}
+			state.Resources["dns.default#test.some-dns"] = framework.ScoreResourceState[framework.NoExtras]{OutputLookupFunc: po.OutputLookupFunc}
+			state.Resources["volume.default#test.data"] = framework.ScoreResourceState[framework.NoExtras]{Outputs: map[string]interface{}{
+				"type":   "volume",
+				"source": "example",
+			}}
 
 			proj, err := ConvertSpec(state, tt.Source)
 
