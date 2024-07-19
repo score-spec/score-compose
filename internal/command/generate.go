@@ -384,7 +384,7 @@ func parseResourceUid(raw string) framework.ResourceUid {
 	secondParts := strings.SplitN(parts[1], ".", 2)
 	resType := firstParts[0]
 	var resClass *string
-	if len(firstParts) > 0 {
+	if len(firstParts) > 1 {
 		resClass = &firstParts[1]
 	}
 	if len(secondParts) == 1 {

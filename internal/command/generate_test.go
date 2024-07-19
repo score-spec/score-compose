@@ -1295,3 +1295,67 @@ resources:
 		assert.NoError(t, cmd.Run())
 	})
 }
+
+func TestGeneratePublishPorts(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  hello:
+    image: foo
+resources:
+  db1:
+    type: postgres
+  db2:
+    type: postgres
+    id: thing
+`), 0644))
+
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{
+		"generate", "score.yaml",
+		"--publish", "8080:example:80",
+		"--publish", "42:postgres#example.db1.host:13",
+		"--publish", "43:postgres.default#example.db1.host:14",
+		"--publish", "44:postgres.default#thing.host:15",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	t.Run("validate compose spec", func(t *testing.T) {
+		if os.Getenv("NO_DOCKER") != "" {
+			t.Skip("NO_DOCKER is set")
+			return
+		}
+		dockerCmd, err := exec.LookPath("docker")
+		require.NoError(t, err)
+		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "convert", "--quiet", "--dry-run")
+		cmd.Dir = td
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		assert.NoError(t, cmd.Run())
+	})
+
+	for _, tc := range [][2]string{
+		{"something", "--publish[0] expected 3 :-separated parts"},
+		{"x:foo:y", "--publish[0] could not parse host port 'x' as integer"},
+		{"8080:foo:y", "--publish[0] could not parse container port 'y' as integer"},
+		{"42:thing:13", "--publish[0] failed to find a workload named 'thing'"},
+		{"42:x#y:13", "--publish[0] must match RES_UID.OUTPUT"},
+		{"42:x#y.z:13", "--publish[0] failed to find a resource with uid 'x#y'"},
+		{"42:postgres#thing.foo:13", "--publish[0] resource 'postgres.default#thing' has no output 'foo'"},
+	} {
+		t.Run("invalid publish "+tc[0], func(t *testing.T) {
+			stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{
+				"generate", "score.yaml",
+				"--publish", tc[0],
+			})
+			assert.EqualError(t, err, tc[1])
+			assert.Equal(t, "", stdout)
+		})
+	}
+}
