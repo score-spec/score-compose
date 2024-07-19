@@ -52,6 +52,12 @@ Examples:
   # Provide overrides when one score file is provided
   score-compose generate score.yaml --override-file=./overrides.score.yaml --override-property=metadata.key=value
 
+  # Publish a port exposed by a workload for local testing
+  score-compose generate score.yaml --publish 8080:my-workload:80
+
+  # Publish a port from a resource host and port for local testing, the middle expression is RESOURCE_ID.OUTPUT_KEY
+  score-compose generate score.yaml --publish 5432:postgres#my-workload.db.host:5432
+
 Flags:
       --build stringArray               An optional build context to use for the given container --build=container=./dir or --build=container={"context":"./dir"}
       --env-file string                 Location to store a skeleton .env file for compose - this will override existing content
@@ -60,6 +66,7 @@ Flags:
   -o, --output string                   The output file to write the composed compose file to (default "compose.yaml")
       --override-property stringArray   An optional set of path=key overrides to set or remove
       --overrides-file string           An optional file of Score overrides to merge in
+      --publish stringArray             An optional set of HOST_PORT:<ref>:CONTAINER_PORT to publish on the host system.
 
 Global Flags:
       --quiet           Mute any logging output
