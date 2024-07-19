@@ -111,6 +111,12 @@ Examples:
   # Provide overrides when one score file is provided
   score-compose generate score.yaml --override-file=./overrides.score.yaml --override-property=metadata.key=value
 
+  # Publish a port exposed by a workload for local testing
+  score-compose generate score.yaml --publish 8080:my-workload:80
+
+  # Publish a port from a resource host and port for local testing, the middle expression is RESOURCE_ID.OUTPUT_KEY
+  score-compose generate score.yaml --publish 5432:postgres#my-workload.db.host:5432
+
 Flags:
       --build stringArray               An optional build context to use for the given container --build=container=./dir or --build=container={"context":"./dir"}
       --env-file string                 Location to store a skeleton .env file for compose - this will override existing content
@@ -119,6 +125,7 @@ Flags:
   -o, --output string                   The output file to write the composed compose file to (default "compose.yaml")
       --override-property stringArray   An optional set of path=key overrides to set or remove
       --overrides-file string           An optional file of Score overrides to merge in
+      --publish stringArray             An optional set of HOST_PORT:<ref>:CONTAINER_PORT to publish on the host system.
 
 Global Flags:
       --quiet           Mute any logging output
@@ -126,6 +133,19 @@ Global Flags:
 ```
 
 **NOTE**: The `score-compose run` command still exists but is hidden and should be considered deprecated as it does not support resource provisioning.
+
+### Using the `--publish` flag
+
+`score-compose` installs all workloads and resource services into the compose docker network but does not publish ports on the host by default. To access ports inside the network, the user must either exec into a target container, run a new `socat` container with published ports, use a `route` resource that publishes "public" ports, or modify the compose.yaml directly.
+
+The `--publish` flag on the `generate` command can be used to automatically add published ports to the services in the compose.yaml file in a safe and dynamic way.
+
+- To publish a container port from a workload to the host, use `--publish HOST_PORT:<workload>:CONTAINER_PORT`.
+- To publish a a port from one of the resource services, use `--publish HOST_PORT:<resource uid>.output:CONTAINER_PORT`. Examples of this are:
+  - `15432:postgres#my-workload.res.host:5432` - `host` is the output on the `postgres.default#my-workload.res` Postgres resource that contains the service hostname.
+  - `9001:s3.default#storage.service:9001` - `service` is the service name output on the `s3.default#storage` S3 resource.
+
+This deprecates the use of the `compose.score.dev/publish-port` resource metadata annotation in most cases. 
 
 ## Testing
 
