@@ -138,10 +138,10 @@ Global Flags:
 
 `score-compose` installs all workloads and resource services into the compose docker network but does not publish ports on the host by default. To access ports inside the network, the user must either exec into a target container, run a new `socat` container with published ports, use a `route` resource that publishes "public" ports, or modify the compose.yaml directly.
 
-The `--publish` flag on the `generate` command can be used to automatically add published ports to the services in the compose.yaml file in a safe and dynamic way.
+The `--publish` flag on the `generate` command can be used to automatically add published ports to the services in the compose.yaml file in a safe and dynamic way. Note that this is an _ephemeral_ flag not stored in the state file. As such it should be added to the _last_ invocation of `score-compose generate` to avoid it being overridden by subsequent calls.
 
 - To publish a container port from a workload to the host, use `--publish HOST_PORT:<workload>:CONTAINER_PORT`.
-- To publish a a port from one of the resource services, use `--publish HOST_PORT:<resource uid>.output:CONTAINER_PORT`. Examples of this are:
+- To publish a a port from one of the resource services, use `--publish HOST_PORT:<resource uid>.<output key>:CONTAINER_PORT`. Examples of this are:
   - `15432:postgres#my-workload.res.host:5432` - `host` is the output on the `postgres.default#my-workload.res` Postgres resource that contains the service hostname.
   - `9001:s3.default#storage.service:9001` - `service` is the service name output on the `s3.default#storage` S3 resource.
 

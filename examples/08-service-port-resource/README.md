@@ -72,3 +72,17 @@ services:
 And when run, the logs show `workload-b` requesting the index page from the nginx server every 5 seconds.
 
 **NOTE**: no dependency relationship is created between the workloads, because Score assumes these workloads may start or restart in any order. Like all good software, the services should be implemented in a way that allows them to start up without the dependency being immediately available. In this case we use `|| true` in the wget statement to ensure `workload-b` retries the request.
+
+## Accessing workload ports
+
+Normally, the ports exposed by a workload, including the `service` ports are not accessible on the docker host. However the `--publish` flag exists to allow this.
+
+The flag can take the form `HOST_PORT:<workload name>:CONTAINER_PORT`, where the container port can be _any_ port on the container you wish to map to the host. This skips any service port mappings.
+
+In the example above, we can publish the `workload-a` port, by calling `generate` with `--publish 8080:workload-a:80`. This modifies the output `compose.yaml` file with an addition ports section:
+
+```yaml
+ports:
+  - target: 80
+    published: "8080"
+```

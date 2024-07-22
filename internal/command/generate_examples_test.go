@@ -28,9 +28,10 @@ import (
 )
 
 type exampleTestCase struct {
-	subDir   string
-	adds     []string
-	expected string
+	subDir           string
+	adds             []string
+	expected         string
+	expectedContains string
 }
 
 func TestExample(t *testing.T) {
@@ -153,7 +154,12 @@ volumes:
 		},
 		{
 			subDir: "06-resource-provisioning",
-			adds:   []string{"score.yaml", "score2.yaml"},
+			adds:   []string{"score.yaml", "score2.yaml", "--publish 6379:redis#main-cache.host:6379"},
+			expectedContains: `
+        ports:
+            - target: 6379
+              published: "6379"
+`,
 		},
 		{
 			subDir: "07-overrides",
@@ -171,7 +177,7 @@ services:
 		},
 		{
 			subDir: "08-service-port-resource",
-			adds:   []string{"scoreA.yaml", "scoreB.yaml"},
+			adds:   []string{"scoreA.yaml", "scoreB.yaml", "--publish 8080:workload-a:80"},
 			expected: `name: 08-service-port-resource
 services:
     workload-a-example:
@@ -179,6 +185,9 @@ services:
             compose.score.dev/workload-name: workload-a
         hostname: workload-a
         image: nginx
+        ports:
+            - target: 80
+              published: "8080"
     workload-b-example:
         annotations:
             compose.score.dev/workload-name: workload-b
@@ -239,10 +248,13 @@ services:
 				assert.Equal(t, "", stdout)
 			}
 
-			if tc.expected != "" {
+			if tc.expected != "" || tc.expectedContains != "" {
 				raw, err := os.ReadFile("compose.yaml")
 				require.NoError(t, err)
-				assert.Equal(t, tc.expected, string(raw))
+				if tc.expected != "" {
+					assert.Equal(t, tc.expected, string(raw))
+				}
+				assert.Contains(t, string(raw), tc.expectedContains)
 			}
 
 			if os.Getenv("NO_DOCKER") == "" {

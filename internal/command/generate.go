@@ -337,6 +337,7 @@ arguments.
 								Published: strconv.Itoa(hp),
 								Target:    uint32(cp),
 							})
+							superProject.Services[sv] = config
 							slog.Info(fmt.Sprintf("Published port %d of service '%s' to host port %d", cp, sv, hp))
 						}
 					}
