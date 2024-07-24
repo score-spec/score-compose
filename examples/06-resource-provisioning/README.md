@@ -112,6 +112,22 @@ This makes it much easier to use the outputs in your integration tests and CI pi
 
 **NOTE**: experts may wish to look at the `.score-compose/state.yaml` file directly.
 
+## Publishing resource ports
+
+You can use the `--publish` flag on the `generate` command to expose the publish the redis port on the docker host to access it from external tests, web browsers, or IDEs. In this case the resource uid for the `main-cache` is `redis.default#main-cache` and it has a `host` output. So the publish command may look like:
+
+```
+$ score-compose generate score.yaml score2.yaml --publish '6379:redis.default#main-cache.host:6379'
+```
+
+This adds the following section to the dynamic redis service:
+
+```yaml
+ports:
+  - target: 6379
+    published: "6379"
+```
+
 ## The `*.provisioners.yaml` files
 
 When you run `score-compose init`, a [99-default.provisioners.yaml](https://github.com/score-spec/score-compose/blob/main/internal/command/default.provisioners.yaml) file is created, which is a YAML file holding the definition of the built-in provisioners.

@@ -20,6 +20,7 @@ import (
 	"log/slog"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 
 	composeloader "github.com/compose-spec/compose-go/v2/loader"
@@ -46,6 +47,7 @@ const (
 	generateCmdBuildFlag            = "build"
 	generateCmdOutputFlag           = "output"
 	generateCmdEnvFileFlag          = "env-file"
+	generateCmdPublishFlag          = "publish"
 )
 
 var generateCommand = &cobra.Command{
@@ -59,6 +61,7 @@ By default this command looks for score.yaml in the current directory, but can t
 arguments.
 
 "score-compose init" MUST be run first. An error will be thrown if the project directory is not present.
+
 `,
 	Example: `
   # Specify Score files
@@ -68,7 +71,13 @@ arguments.
   score-compose generate
 
   # Provide overrides when one score file is provided
-  score-compose generate score.yaml --override-file=./overrides.score.yaml --override-property=metadata.key=value`,
+  score-compose generate score.yaml --override-file=./overrides.score.yaml --override-property=metadata.key=value
+
+  # Publish a port exposed by a workload for local testing
+  score-compose generate score.yaml --publish 8080:my-workload:80
+
+  # Publish a port from a resource host and port for local testing, the middle expression is RESOURCE_ID.OUTPUT_KEY
+  score-compose generate score.yaml --publish 5432:postgres#my-workload.db.host:5432`,
 
 	// don't print the errors - we print these ourselves in main()
 	SilenceErrors: true,
@@ -262,6 +271,80 @@ arguments.
 			}
 		}
 
+		if v, err := cmd.Flags().GetStringArray(generateCmdPublishFlag); err != nil {
+			return fmt.Errorf("failed to read publish property: %w", err)
+		} else {
+			for i, k := range v {
+				parts := strings.Split(k, ":")
+				if len(parts) <= 2 {
+					return fmt.Errorf("--%s[%d] expected 3 :-separated parts", generateCmdPublishFlag, i)
+				}
+				// raw host port
+				rhp := parts[0]
+				// raw ref
+				rr := strings.Join(parts[1:len(parts)-1], ":")
+				// raw container port
+				rcp := parts[len(parts)-1]
+
+				hp, err := strconv.Atoi(rhp)
+				if err != nil {
+					return fmt.Errorf("--%s[%d] could not parse host port '%s' as integer", generateCmdPublishFlag, i, rhp)
+				} else if hp <= 1 {
+					return fmt.Errorf("--%s[%d] host port must be > 1", generateCmdPublishFlag, i)
+				}
+
+				cp, err := strconv.Atoi(rcp)
+				if err != nil {
+					return fmt.Errorf("--%s[%d] could not parse container port '%s' as integer", generateCmdPublishFlag, i, rcp)
+				} else if cp <= 1 {
+					return fmt.Errorf("--%s[%d] container port must be > 1", generateCmdPublishFlag, i)
+				}
+
+				if strings.Contains(rr, "#") {
+					parts := strings.Split(rr, ".")
+					if len(parts) < 2 {
+						return fmt.Errorf("--%s[%d] must match RES_UID.OUTPUT", generateCmdPublishFlag, i)
+					}
+					rr = strings.Join(parts[0:len(parts)-1], ".")
+					outputKey := parts[len(parts)-1]
+
+					resUid := parseResourceUid(rr)
+					res, ok := currentState.Resources[resUid]
+					if !ok {
+						return fmt.Errorf("--%s[%d] failed to find a resource with uid '%s'", generateCmdPublishFlag, i, rr)
+					}
+
+					if v, ok := res.Outputs[outputKey]; !ok {
+						return fmt.Errorf("--%s[%d] resource '%s' has no output '%s'", generateCmdPublishFlag, i, resUid, outputKey)
+					} else if sv, ok := v.(string); !ok {
+						return fmt.Errorf("--%s[%d] resource '%s' output '%s' is not a string", generateCmdPublishFlag, i, resUid, outputKey)
+					} else if config, ok := superProject.Services[sv]; !ok {
+						return fmt.Errorf("--%s[%d] host '%s' does not exist", generateCmdPublishFlag, i, sv)
+					} else {
+						config.Ports = append(config.Ports, types.ServicePortConfig{
+							Published: strconv.Itoa(hp),
+							Target:    uint32(cp),
+						})
+						superProject.Services[sv] = config
+						slog.Info(fmt.Sprintf("Published port %d of service '%s' to host port %d", cp, sv, hp))
+					}
+				} else if _, ok := currentState.Workloads[rr]; !ok {
+					return fmt.Errorf("--%s[%d] failed to find a workload named '%s'", generateCmdPublishFlag, i, rr)
+				} else {
+					for sv, config := range superProject.Services {
+						if config.Hostname == rr {
+							config.Ports = append(config.Ports, types.ServicePortConfig{
+								Published: strconv.Itoa(hp),
+								Target:    uint32(cp),
+							})
+							superProject.Services[sv] = config
+							slog.Info(fmt.Sprintf("Published port %d of service '%s' to host port %d", cp, sv, hp))
+						}
+					}
+				}
+			}
+		}
+
 		sd.State = *currentState
 		if err := sd.Persist(); err != nil {
 			return fmt.Errorf("failed to persist updated state directory: %w", err)
@@ -294,6 +377,21 @@ arguments.
 		}
 		return nil
 	},
+}
+
+func parseResourceUid(raw string) framework.ResourceUid {
+	parts := strings.SplitN(raw, "#", 2)
+	firstParts := strings.SplitN(parts[0], ".", 2)
+	secondParts := strings.SplitN(parts[1], ".", 2)
+	resType := firstParts[0]
+	var resClass *string
+	if len(firstParts) > 1 {
+		resClass = &firstParts[1]
+	}
+	if len(secondParts) == 1 {
+		return framework.NewResourceUid("", "", resType, resClass, &parts[1])
+	}
+	return framework.NewResourceUid(secondParts[0], secondParts[1], resType, resClass, nil)
 }
 
 // loadRawScoreFiles loads raw score specs as yaml from the given files and finds all the workload names. It throws
@@ -331,6 +429,7 @@ func init() {
 	generateCommand.Flags().String(generateCmdImageFlag, "", "An optional container image to use for any container with image == '.'")
 	generateCommand.Flags().StringArray(generateCmdBuildFlag, []string{}, "An optional build context to use for the given container --build=container=./dir or --build=container={\"context\":\"./dir\"}")
 	generateCommand.Flags().String(generateCmdEnvFileFlag, "", "Location to store a skeleton .env file for compose - this will override existing content")
+	generateCommand.Flags().StringArray(generateCmdPublishFlag, []string{}, "An optional set of HOST_PORT:<ref>:CONTAINER_PORT to publish on the host system.")
 	rootCmd.AddCommand(generateCommand)
 }
 
