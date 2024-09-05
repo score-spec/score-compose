@@ -97,6 +97,14 @@ arguments.
 		}
 		slog.Debug("Input Workload names", "names", workloadNames)
 
+		// Forbid --image and --build when multiple score files are provided
+		if v, _ := cmd.Flags().GetString(generateCmdImageFlag); v != "" && len(workloadNames) > 1 {
+			return fmt.Errorf("--%s cannot be used when multiple score files are provided", generateCmdImageFlag)
+		}
+		if v, _ := cmd.Flags().GetStringArray(generateCmdBuildFlag); len(v) > 0 && len(workloadNames) > 1 {
+			return fmt.Errorf("--%s cannot be used when multiple score files are provided", generateCmdBuildFlag)
+		}
+
 		// Now read and apply any overrides files to the score files
 		if v, _ := cmd.Flags().GetString(generateCmdOverridesFileFlag); v != "" {
 			if len(workloadNames) == 0 {
