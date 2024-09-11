@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/score-spec/score-go/framework"
+	"github.com/score-spec/score-go/uriget"
 	"github.com/spf13/cobra"
 
 	"github.com/score-spec/score-compose/internal/project"
@@ -70,6 +71,7 @@ resources: {}
 	initCmdFileFlag         = "file"
 	initCmdFileProjectFlag  = "project"
 	initCmdFileNoSampleFlag = "no-sample"
+	initCmdProvisionerFlag  = "provisioner"
 )
 
 //go:embed default.provisioners.yaml
@@ -87,6 +89,10 @@ not be checked into source control. Add it to your .gitignore file if you use Gi
 
 The project name will be used as a Docker compose project name when the final compose files are written. This name
 acts as a namespace when multiple score files and containers are used.
+
+Custom provisioners can be installed by uri using the --provisioner flag. The provisioners will be installed and take
+precedence in the order they are defined over the default provisioners. If init has already been called with provisioners
+the new provisioners will take precedence.
 `,
 	Example: `
   # Define a score file to generate
@@ -96,7 +102,10 @@ acts as a namespace when multiple score files and containers are used.
   score-compose init --project score-compose2
 
   # Or disable the default score file generation if you already have a score file
-  score-compose init --no-sample`,
+  score-compose init --no-sample
+
+  # Optionally loading in provisoners from a remote url
+  score-compose init --provisioner https://raw.githubusercontent.com/user/repo/main/example.yaml`,
 
 	// don't print the errors - we print these ourselves in main()
 	SilenceErrors: true,
@@ -188,6 +197,18 @@ acts as a namespace when multiple score files and containers are used.
 			slog.Info(fmt.Sprintf("Found existing Score file '%s'", initCmdScoreFile))
 		}
 
+		if v, _ := cmd.Flags().GetStringArray(initCmdProvisionerFlag); len(v) > 0 {
+			for i, vi := range v {
+				data, err := uriget.GetFile(cmd.Context(), vi)
+				if err != nil {
+					return fmt.Errorf("failed to load provisioner %d: %w", i+1, err)
+				}
+				if err := loader.SaveProvisionerToDirectory(sd.Path, vi, data); err != nil {
+					return fmt.Errorf("failed to save provisioner %d: %w", i+1, err)
+				}
+			}
+		}
+
 		if provs, err := loader.LoadProvisionersFromDirectory(sd.Path, loader.DefaultSuffix); err != nil {
 			return fmt.Errorf("failed to load existing provisioners: %w", err)
 		} else {
@@ -204,6 +225,7 @@ func init() {
 	initCmd.Flags().StringP(initCmdFileFlag, "f", scoreFileDefault, "The score file to initialize")
 	initCmd.Flags().StringP(initCmdFileProjectFlag, "p", "", "Set the name of the docker compose project (defaults to the current directory name)")
 	initCmd.Flags().Bool(initCmdFileNoSampleFlag, false, "Disable generation of the sample score file")
+	initCmd.Flags().StringArray(initCmdProvisionerFlag, nil, "A provisioner file to install. Supports http://host/file, https://host/file, git-ssh://git@host/repo.git/file, and  git-https://host/repo.git/file formats.")
 
 	rootCmd.AddCommand(initCmd)
 }

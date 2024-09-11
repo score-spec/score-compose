@@ -16,12 +16,17 @@ package loader
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/binary"
 	"fmt"
 	"log/slog"
+	"math"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 
@@ -91,4 +96,45 @@ func LoadProvisionersFromDirectory(path string, suffix string) ([]provisioners.P
 		}
 	}
 	return out, nil
+}
+
+// SaveProvisionerToDirectory saves the provisioner content (data) from the provisionerUrl to a new provisioners file
+// in the path directory.
+func SaveProvisionerToDirectory(path string, provisionerUrl string, data []byte) error {
+	// First validate whether this file contains valid provisioner data.
+	if _, err := LoadProvisioners(data); err != nil {
+		return fmt.Errorf("invalid provisioners file: %w", err)
+	}
+	// Append a heading indicating the source and time
+	data = append([]byte(fmt.Sprintf("# Downloaded from %s at %s\n", provisionerUrl, time.Now())), data...)
+	hashValue := sha256.Sum256([]byte(provisionerUrl))
+	hashName := base64.RawURLEncoding.EncodeToString(hashValue[:16]) + DefaultSuffix
+	// We use a time prefix to always put the most recently downloaded files first lexicographically. So subtract
+	// time from uint64 and convert it into a base64 two's complement binary representation.
+	timePrefix := base64.RawURLEncoding.EncodeToString(binary.BigEndian.AppendUint64([]byte{}, uint64(math.MaxInt64-time.Now().UnixNano())))
+
+	targetPath := filepath.Join(path, timePrefix+"."+hashName)
+	tmpPath := targetPath + ".tmp"
+	if err := os.WriteFile(tmpPath, data, 0600); err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	} else if err := os.Rename(tmpPath, targetPath); err != nil {
+		return fmt.Errorf("failed to rename temp file: %w", err)
+	}
+	slog.Info(fmt.Sprintf("Wrote provisioner from '%s' to %s", provisionerUrl, targetPath))
+
+	// Remove any old files that have the same source.
+	if items, err := os.ReadDir(path); err != nil {
+		return err
+	} else {
+		for _, item := range items {
+			if strings.HasSuffix(item.Name(), hashName) && !strings.HasPrefix(item.Name(), timePrefix) {
+				if err := os.Remove(filepath.Join(path, item.Name())); err != nil {
+					return fmt.Errorf("failed to remove old copy of provisioner loaded from '%s': %w", provisionerUrl, err)
+				}
+				slog.Debug(fmt.Sprintf("Removed old copy of provisioner loaded from '%s'", provisionerUrl))
+			}
+		}
+	}
+
+	return nil
 }
