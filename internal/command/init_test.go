@@ -40,6 +40,10 @@ not be checked into source control. Add it to your .gitignore file if you use Gi
 The project name will be used as a Docker compose project name when the final compose files are written. This name
 acts as a namespace when multiple score files and containers are used.
 
+Custom provisioners can be installed by uri using the --provisioner flag. The provisioners will be installed and take
+precedence in the order they are defined over the default provisioners. If init has already been called with provisioners
+the new provisioners will take precedence.
+
 Usage:
   score-compose init [flags]
 
@@ -54,11 +58,15 @@ Examples:
   # Or disable the default score file generation if you already have a score file
   score-compose init --no-sample
 
+  # Optionally loading in provisoners from a remote url
+  score-compose init --provisioner https://raw.githubusercontent.com/user/repo/main/example.yaml
+
 Flags:
-  -f, --file string      The score file to initialize (default "./score.yaml")
-  -h, --help             help for init
-      --no-sample        Disable generation of the sample score file
-  -p, --project string   Set the name of the docker compose project (defaults to the current directory name)
+  -f, --file string               The score file to initialize (default "./score.yaml")
+  -h, --help                      help for init
+      --no-sample                 Disable generation of the sample score file
+  -p, --project string            Set the name of the docker compose project (defaults to the current directory name)
+      --provisioner stringArray   A provisioner file to install. Supports http://host/file, https://host/file, git-ssh://git@host/repo.git/file, and  git-https://host/repo.git/file formats.
 
 Global Flags:
       --quiet           Mute any logging output
