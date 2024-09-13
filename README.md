@@ -76,10 +76,26 @@ acts as a namespace when multiple score files and containers are used.
 Usage:
   score-compose init [flags]
 
+Examples:
+
+  # Define a score file to generate
+  score-compose init --file score2.yaml
+
+  # Or override the docker compose project name
+  score-compose init --project score-compose2
+
+  # Or disable the default score file generation if you already have a score file
+  score-compose init --no-sample
+
+  # Optionally loading in provisoners from a remote url
+  score-compose init --provisioners https://raw.githubusercontent.com/user/repo/main/example.yaml
+
 Flags:
-  -f, --file string      The score file to initialize (default "./score.yaml")
-  -h, --help             help for init
-  -p, --project string   Set the name of the docker compose project (defaults to the current directory name)
+  -f, --file string                The score file to initialize (default "./score.yaml")
+  -h, --help                       help for init
+      --no-sample                  Disable generation of the sample score file
+  -p, --project string             Set the name of the docker compose project (defaults to the current directory name)
+      --provisioner stringArray    A provisioners file to install. May be specified multiple times. Supports http://host/file, https://host/file, git-ssh://git@host/repo.git/file, and  git-https://host/repo.git/file formats.
 
 Global Flags:
       --quiet           Mute any logging output

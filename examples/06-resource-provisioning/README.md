@@ -130,7 +130,7 @@ ports:
 
 ## The `*.provisioners.yaml` files
 
-When you run `score-compose init`, a [99-default.provisioners.yaml](https://github.com/score-spec/score-compose/blob/main/internal/command/default.provisioners.yaml) file is created, which is a YAML file holding the definition of the built-in provisioners.
+When you run `score-compose init`, a [zz-default.provisioners.yaml](https://github.com/score-spec/score-compose/blob/main/internal/command/default.provisioners.yaml) file is created, which is a YAML file holding the definition of the built-in provisioners.
 
 When you run `score-compose generate`, all `*.provisioners.yaml` files are loaded in lexicographic order from the `.score-compose` directory. This allows projects to include their own custom provisioners that extend or override the defaults.
 
@@ -143,7 +143,30 @@ Each entry in the file has the following common fields, other fields may also ex
   id: <optional resource id>
 ```
 
-The uri of each provisioner is a combination of it's implementation (either `template://` or `cmd://`) and a unique identifier.
+The uri of each provisioner is a combination of its implementation (either `template://` or `cmd://`) and a unique identifier.
+Provisioners are matched in first-match order when loading the provisioner files lexicographically, so any custom provisioner
+files are matched first before `zz-default.provisioners.yaml`.
+
+### Installing provisioner files
+
+To easily install provisioners, `score-compose` provides the `--provisioners` flag for `init`, which downloads the provisioner
+file via a URL and installs it with the highest priority.
+
+For example, when running the following, the provisioners file B will be matched before A because B was installed after A:
+
+```
+score-compose init --provisioners https://example.com/provisioner-A.yaml --provisionerss https://example.com/provisioner-B.yaml
+```
+
+The provisioners can be loaded from the following kinds of urls:
+
+- Files: `./a/relative/path.provisioners.yaml`, `/an/absolute/path.provisioners.yaml`, `file://a/file/uri.provisioners.yaml`.
+- Http: `http://example.com/a.provisioners.yaml`, `https://example.com/b.provisioners.yaml`
+- Git over ssh: `git-ssh://git@github.com/user/repo.git/common.provisioners.yaml`
+- Git over http: `git-http://github.com/user/repo.git/common.provisioners.yaml`
+
+This is commonly used to import custom provisioners or common provisioners used by your team or organization and supported
+by your platform.
 
 ### The `template://` provisioner
 

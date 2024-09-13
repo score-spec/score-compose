@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/score-spec/score-compose/internal/project"
+	"github.com/score-spec/score-compose/internal/provisioners/loader"
 )
 
 func TestInitHelp(t *testing.T) {
@@ -39,6 +40,10 @@ not be checked into source control. Add it to your .gitignore file if you use Gi
 
 The project name will be used as a Docker compose project name when the final compose files are written. This name
 acts as a namespace when multiple score files and containers are used.
+
+Custom provisioners can be installed by uri using the --provisioners flag. The provisioners will be installed and take
+precedence in the order they are defined over the default provisioners. If init has already been called with provisioners
+the new provisioners will take precedence.
 
 Usage:
   score-compose init [flags]
@@ -54,11 +59,15 @@ Examples:
   # Or disable the default score file generation if you already have a score file
   score-compose init --no-sample
 
+  # Optionally loading in provisoners from a remote url
+  score-compose init --provisioners https://raw.githubusercontent.com/user/repo/main/example.yaml
+
 Flags:
-  -f, --file string      The score file to initialize (default "./score.yaml")
-  -h, --help             help for init
-      --no-sample        Disable generation of the sample score file
-  -p, --project string   Set the name of the docker compose project (defaults to the current directory name)
+  -f, --file string                The score file to initialize (default "./score.yaml")
+  -h, --help                       help for init
+      --no-sample                  Disable generation of the sample score file
+  -p, --project string             Set the name of the docker compose project (defaults to the current directory name)
+      --provisioners stringArray   A provisioners file to install. May be specified multiple times. Supports http://host/file, https://host/file, git-ssh://git@host/repo.git/file, and  git-https://host/repo.git/file formats.
 
 Global Flags:
       --quiet           Mute any logging output
@@ -220,4 +229,35 @@ func TestInitNominal_run_twice(t *testing.T) {
 		assert.Equal(t, map[framework.ResourceUid]framework.ScoreResourceState[framework.NoExtras]{}, sd.State.Resources)
 		assert.Equal(t, map[string]interface{}{}, sd.State.SharedState)
 	}
+}
+
+func TestInitWithProvisioners(t *testing.T) {
+	td := t.TempDir()
+	wd, _ := os.Getwd()
+	require.NoError(t, os.Chdir(td))
+	defer func() {
+		require.NoError(t, os.Chdir(wd))
+	}()
+
+	td2 := t.TempDir()
+	assert.NoError(t, os.WriteFile(filepath.Join(td2, "one.provisioners.yaml"), []byte(`
+- uri: template://one
+  type: thing
+  outputs: "{}"
+`), 0644))
+	assert.NoError(t, os.WriteFile(filepath.Join(td2, "two.provisioners.yaml"), []byte(`
+- uri: template://two
+  type: thing
+  outputs: "{}"
+`), 0644))
+
+	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--provisioners", filepath.Join(td2, "one.provisioners.yaml"), "--provisioners", "file://" + filepath.Join(td2, "two.provisioners.yaml")})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	assert.NotEqual(t, "", strings.TrimSpace(stderr))
+
+	provs, err := loader.LoadProvisionersFromDirectory(filepath.Join(td, ".score-compose"), loader.DefaultSuffix)
+	assert.NoError(t, err)
+	assert.Equal(t, "template://two", provs[0].Uri())
+	assert.Equal(t, "template://one", provs[1].Uri())
 }
