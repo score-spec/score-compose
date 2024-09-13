@@ -88,13 +88,14 @@ Examples:
   score-compose init --no-sample
 
   # Optionally loading in provisoners from a remote url
-  score-compose init --provisioner https://raw.githubusercontent.com/user/repo/main/example.yaml
+  score-compose init --provisioners https://raw.githubusercontent.com/user/repo/main/example.yaml
 
 Flags:
-  -f, --file string                 The score file to initialize (default "./score.yaml")
-  -h, --help                        help for init
-  -p, --project string              Set the name of the docker compose project (defaults to the current directory name)
-        --provisioner stringArray   A provisioner file to install. Supports http://host/file, https://host/file, git-ssh://git@host/repo.git/file, and  git-https://host/repo.git/file formats.
+  -f, --file string                The score file to initialize (default "./score.yaml")
+  -h, --help                       help for init
+      --no-sample                  Disable generation of the sample score file
+  -p, --project string             Set the name of the docker compose project (defaults to the current directory name)
+      --provisioner stringArray    A provisioner file to install. Supports http://host/file, https://host/file, git-ssh://git@host/repo.git/file, and  git-https://host/repo.git/file formats.
 
 Global Flags:
       --quiet           Mute any logging output

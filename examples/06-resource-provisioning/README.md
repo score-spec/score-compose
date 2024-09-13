@@ -149,13 +149,13 @@ files are matched first before `zz-default.provisioners.yaml`.
 
 ### Installing provisioner files
 
-To easily install provisioners, `score-compose` provides the `--provisioner` flag for `init`, which downloads the provisioner
+To easily install provisioners, `score-compose` provides the `--provisioners` flag for `init`, which downloads the provisioner
 file via a URL and installs it with the highest priority.
 
 For example, when running the following, the provisioners file B will be matched before A because B was installed after A:
 
 ```
-score-compose init --provisioner https://example.com/provisioner-A.yaml --provisioners https://example.com/provisioner-B.yaml
+score-compose init --provisioners https://example.com/provisioner-A.yaml --provisionerss https://example.com/provisioner-B.yaml
 ```
 
 The provisioners can be loaded from the following kinds of urls:

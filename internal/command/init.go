@@ -71,7 +71,7 @@ resources: {}
 	initCmdFileFlag         = "file"
 	initCmdFileProjectFlag  = "project"
 	initCmdFileNoSampleFlag = "no-sample"
-	initCmdProvisionerFlag  = "provisioner"
+	initCmdProvisionerFlag  = "provisioners"
 )
 
 //go:embed default.provisioners.yaml
@@ -90,7 +90,7 @@ not be checked into source control. Add it to your .gitignore file if you use Gi
 The project name will be used as a Docker compose project name when the final compose files are written. This name
 acts as a namespace when multiple score files and containers are used.
 
-Custom provisioners can be installed by uri using the --provisioner flag. The provisioners will be installed and take
+Custom provisioners can be installed by uri using the --provisioners flag. The provisioners will be installed and take
 precedence in the order they are defined over the default provisioners. If init has already been called with provisioners
 the new provisioners will take precedence.
 `,
@@ -105,7 +105,7 @@ the new provisioners will take precedence.
   score-compose init --no-sample
 
   # Optionally loading in provisoners from a remote url
-  score-compose init --provisioner https://raw.githubusercontent.com/user/repo/main/example.yaml`,
+  score-compose init --provisioners https://raw.githubusercontent.com/user/repo/main/example.yaml`,
 
 	// don't print the errors - we print these ourselves in main()
 	SilenceErrors: true,
