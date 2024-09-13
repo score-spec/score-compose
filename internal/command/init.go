@@ -225,7 +225,7 @@ func init() {
 	initCmd.Flags().StringP(initCmdFileFlag, "f", scoreFileDefault, "The score file to initialize")
 	initCmd.Flags().StringP(initCmdFileProjectFlag, "p", "", "Set the name of the docker compose project (defaults to the current directory name)")
 	initCmd.Flags().Bool(initCmdFileNoSampleFlag, false, "Disable generation of the sample score file")
-	initCmd.Flags().StringArray(initCmdProvisionerFlag, nil, "A provisioner file to install. Supports http://host/file, https://host/file, git-ssh://git@host/repo.git/file, and  git-https://host/repo.git/file formats.")
+	initCmd.Flags().StringArray(initCmdProvisionerFlag, nil, "A provisioners file to install. May be specified multiple times. Supports http://host/file, https://host/file, git-ssh://git@host/repo.git/file, and  git-https://host/repo.git/file formats.")
 
 	rootCmd.AddCommand(initCmd)
 }
