@@ -468,7 +468,7 @@
   services: |
     {{ $p := (dig .Init.sk "instancePort" 0 .Shared) }}
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
-      image: "nginx:1"
+      image: "nginx:1-alpine"
       restart: always
       ports:
         - published: {{ $p }}
