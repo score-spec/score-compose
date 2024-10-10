@@ -145,7 +145,7 @@
   # Create 2 services, the first is the database itself, the second is the init container which runs the scripts
   services: |
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
-      image: postgres:16-alpine
+      image: postgres:17-alpine
       restart: always
       environment:
         POSTGRES_USER: postgres
@@ -165,7 +165,7 @@
         timeout: 2s
         retries: 15
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}-init:
-      image: postgres:16-alpine
+      image: postgres:17-alpine
       entrypoint: ["/bin/sh"]
       environment:
         POSTGRES_PASSWORD: {{ dig .Init.sk "instancePassword" "" .Shared | quote }}
@@ -185,7 +185,7 @@
         source: {{ .MountsDirectory }}/{{ dig .Init.sk "instanceServiceName" "" .Shared }}-db-scripts
         target: /db-scripts
   info_logs: |
-    - "{{.Uid}}: To connect to postgres, enter password {{ .State.password | squote }} at: \"docker run -it --network {{ .ComposeProjectName }}_default --rm postgres:16-alpine psql -h {{ dig .Init.sk "instanceServiceName" "" .Shared }} -U {{ .State.username }} --dbname {{ .State.database }}\""
+    - "{{.Uid}}: To connect to postgres, enter password {{ .State.password | squote }} at: \"docker run -it --network {{ .ComposeProjectName }}_default --rm postgres:17-alpine psql -h {{ dig .Init.sk "instanceServiceName" "" .Shared }} -U {{ .State.username }} --dbname {{ .State.database }}\""
     {{ if ne .Init.publishPort "0" }}
     - "{{.Uid}}: Or connect your postgres client to \"postgres://{{ .State.username }}:{{ .State.password }}@localhost:{{ .Init.publishPort }}/{{ .State.database }}\""
     {{ end }}
@@ -510,7 +510,7 @@
     {{ .State.serviceName }}:
       labels:
         dev.score.compose.res.uid: {{ .Uid }}
-      image: mongo:7
+      image: mongo:8
       restart: always
       environment:
         MONGO_INITDB_ROOT_USERNAME: {{ .State.username | quote }}
