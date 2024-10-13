@@ -1,6 +1,7 @@
 name: release
 
-on: [push]
+on:
+  push:
 
 permissions:
   contents: read
