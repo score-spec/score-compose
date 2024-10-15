@@ -38,5 +38,5 @@ jobs:
           tags: score-compose:test
       - name: Test docker image
         run: |
-          docker run --rm -it score-compose:test --version
-          docker run --rm -it score-compose:test init
+          docker run --rm score-compose:test --version
+          docker run --rm score-compose:test init
