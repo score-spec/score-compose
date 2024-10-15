@@ -34,3 +34,9 @@ jobs:
         with:
           context: .
           push: false
+          load: true
+          tags: score-compose:test
+      - name: Test docker image
+        run: |
+          docker run --rm -it score-compose:test --version
+          docker run --rm -it score-compose:test init
