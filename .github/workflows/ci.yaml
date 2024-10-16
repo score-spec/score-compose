@@ -34,3 +34,10 @@ jobs:
         with:
           context: .
           push: false
+          load: true
+          tags: score-compose:test
+      - name: Test docker image
+        run: |
+          docker run --rm score-compose:test --version
+          docker run -v .:/score-compose --rm score-compose:test init
+          cat score.yaml
