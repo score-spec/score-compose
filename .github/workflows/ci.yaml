@@ -39,4 +39,5 @@ jobs:
       - name: Test docker image
         run: |
           docker run --rm score-compose:test --version
-          docker run --rm score-compose:test init
+          docker run -v .:/score-compose --rm score-compose:test init
+          cat score.yaml
