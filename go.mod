@@ -7,7 +7,7 @@ toolchain go1.23.0
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/compose-spec/compose-go/v2 v2.3.0
-	github.com/imdario/mergo v0.3.16
+	github.com/imdario/mergo v1.0.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/score-spec/score-go v1.8.1
 	github.com/spf13/cobra v1.8.1
@@ -50,3 +50,5 @@ require (
 	golang.org/x/sys v0.26.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 )
+
+replace github.com/imdario/mergo => dario.cat/mergo v1.0.0
