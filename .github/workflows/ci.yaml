@@ -17,6 +17,8 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
+      - name: Run Go Vet
+        run: go vet ./...    
       - name: Run Go Tests
         run: go test ./... -cover -race
       - name: Build binary
