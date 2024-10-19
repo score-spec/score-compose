@@ -226,11 +226,12 @@ func init() {
 	initCmd.Flags().StringP(initCmdFileProjectFlag, "p", "", "Set the name of the docker compose project (defaults to the current directory name)")
 	initCmd.Flags().Bool(initCmdFileNoSampleFlag, false, "Disable generation of the sample score file")
 	initCmd.Flags().StringArray(initCmdProvisionerFlag, nil, "Provisioner files to install. May be specified multiple times. Supports:\n"+
-		"- HTTP:      http://host/file\n"+
-		"- HTTPS:     https://host/file\n"+
-		"- Git (SSH): git-ssh://git@host/repo.git/file\n"+
-		"- Git (HTTPS): git-https://host/repo.git/file\n"+
-		"- OCI:       oci://[registry/][namespace/]repository[:tag|@digest]")
+		"- HTTP        : http://host/file\n"+
+		"- HTTPS       : https://host/file\n"+
+		"- Git (SSH)   : git-ssh://git@host/repo.git/file\n"+
+		"- Git (HTTPS) : git-https://host/repo.git/file\n"+
+		"- OCI         : oci://[registry/][namespace/]repository[:tag|@digest]")
+
 	rootCmd.AddCommand(initCmd)
 }
 

@@ -67,7 +67,12 @@ Flags:
   -h, --help                       help for init
       --no-sample                  Disable generation of the sample score file
   -p, --project string             Set the name of the docker compose project (defaults to the current directory name)
-      --provisioners stringArray   A provisioners file to install. May be specified multiple times. Supports http://host/file, https://host/file, git-ssh://git@host/repo.git/file, and  git-https://host/repo.git/file formats.
+      --provisioners stringArray   Provisioner files to install. May be specified multiple times. Supports:
+                                   - HTTP        : http://host/file
+                                   - HTTPS       : https://host/file
+                                   - Git (SSH)   : git-ssh://git@host/repo.git/file
+                                   - Git (HTTPS) : git-https://host/repo.git/file
+                                   - OCI         : oci://[registry/][namespace/]repository[:tag|@digest]
 
 Global Flags:
       --quiet           Mute any logging output
