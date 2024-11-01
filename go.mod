@@ -6,7 +6,7 @@ toolchain go1.23.0
 
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0
-	github.com/compose-spec/compose-go/v2 v2.4.0
+	github.com/compose-spec/compose-go/v2 v2.4.3
 	github.com/imdario/mergo v1.0.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/score-spec/score-go v1.8.3
