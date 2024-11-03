@@ -230,7 +230,7 @@ func init() {
 		"- HTTPS       : https://host/file\n"+
 		"- Git (SSH)   : git-ssh://git@host/repo.git/file\n"+
 		"- Git (HTTPS) : git-https://host/repo.git/file\n"+
-		"- OCI         : oci://[registry/][namespace/]repository[:tag|@digest]")
+		"- OCI         : oci://[registry/][namespace/]repository[:tag|@digest][#file]")
 
 	rootCmd.AddCommand(initCmd)
 }

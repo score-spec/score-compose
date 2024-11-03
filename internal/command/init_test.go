@@ -72,7 +72,7 @@ Flags:
                                    - HTTPS       : https://host/file
                                    - Git (SSH)   : git-ssh://git@host/repo.git/file
                                    - Git (HTTPS) : git-https://host/repo.git/file
-                                   - OCI         : oci://[registry/][namespace/]repository[:tag|@digest]
+                                   - OCI         : oci://[registry/][namespace/]repository[:tag|@digest][#file]
 
 Global Flags:
       --quiet           Mute any logging output
