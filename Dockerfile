@@ -14,8 +14,8 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o /usr/local/bin/score-compose ./cmd/score-compose
 
-# We can use scratch since we don't rely on any linux libs or state.
-FROM scratch
+# We can use gcr.io/distroless/static since we don't rely on any linux libs or state, but we need ca-certificates to connect to https/oci with the init command.
+FROM gcr.io/distroless/static
 
 # Set the current working directory inside the container.
 WORKDIR /score-compose
