@@ -4,6 +4,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  packages: write
 jobs:
   test:
     runs-on: ubuntu-latest
