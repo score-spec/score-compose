@@ -3,6 +3,7 @@ on:
   pull_request:
 permissions:
   contents: read
+  id-token: write
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -43,3 +44,8 @@ jobs:
           docker run --rm score-compose:test --version
           docker run -v .:/score-compose --rm score-compose:test init
           cat score.yaml
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+      - name: Sign container image
+        run: |
+          cosign sign --yes ghcr.io/score-spec/score-compose@sha256:02b7118bc4c514af6ac7514dd563cf8ea1ce5725a3d487c351215cb51e7f7b11
