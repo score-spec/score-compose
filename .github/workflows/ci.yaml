@@ -55,4 +55,4 @@ jobs:
         uses: sigstore/cosign-installer@v3
       - name: Sign container image
         run: |
-          cosign sign --yes ghcr.io/score-spec/score-compose@02b7118bc4c514af6ac7514dd563cf8ea1ce5725a3d487c351215cb51e7f7b11
+          cosign sign --yes ghcr.io/score-spec/score-compose@sha256:02b7118bc4c514af6ac7514dd563cf8ea1ce5725a3d487c351215cb51e7f7b11
