@@ -3,7 +3,10 @@ on:
   push:
     tags:
       - 0.**
-permissions: write-all
+permissions:
+  id-token: write
+  packages: write
+  contents: read
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -36,6 +39,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push docker image
+        id: build-push-container
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -44,3 +48,8 @@ jobs:
           tags: |
             ghcr.io/score-spec/score-compose:${{ github.ref_name }}
             ghcr.io/score-spec/score-compose:latest
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+      - name: Sign container image
+        run: |
+          cosign sign --yes ghcr.io/score-spec/score-compose@${{ steps.build-push-container.outputs.digest }}
