@@ -1,3 +1,5 @@
+[![release](https://github.com/score-spec/score-compose/actions/workflows/release.yaml/badge.svg)](https://github.com/score-spec/score-compose/actions/workflows/release.yaml)
+
 <img src="docs/images/banner.png"/>
 
 # score-compose
