@@ -21,6 +21,8 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
@@ -48,8 +50,6 @@ jobs:
           tags: |
             ghcr.io/score-spec/score-compose:${{ github.ref_name }}
             ghcr.io/score-spec/score-compose:latest
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@v3
       - name: Sign container image
         run: |
           cosign sign --yes ghcr.io/score-spec/score-compose@${{ steps.build-push-container.outputs.digest }}
