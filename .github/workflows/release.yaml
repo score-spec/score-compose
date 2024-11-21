@@ -3,13 +3,13 @@ on:
   push:
     tags:
       - 0.**
-permissions:
-  id-token: write
-  packages: write
-  contents: write
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      packages: write
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
