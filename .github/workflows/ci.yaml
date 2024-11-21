@@ -1,6 +1,10 @@
 name: ci
 on:
+  # We run the CI checks on any pull request updates or pushes to the main branch after PR merge.
   pull_request:
+  push:
+    branches:
+      - main
 permissions:
   contents: read
 jobs:
