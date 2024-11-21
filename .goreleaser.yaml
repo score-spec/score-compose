@@ -41,3 +41,12 @@ brews:
     commit_author:
       name: rachfop
       email: prachford@icloud.com
+signs:
+  - cmd: cosign
+    args:
+      - sign-blob
+      - '--oidc-provider=github-actions'
+      - '${artifact}'
+      - --yes
+    artifacts: all
+    output: true
