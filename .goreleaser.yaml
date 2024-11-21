@@ -43,9 +43,13 @@ brews:
       email: prachford@icloud.com
 signs:
   - cmd: cosign
+    signature: "${artifact}.sig"
+    certificate: "${artifact}.pem"
     args:
       - sign-blob
       - '--oidc-provider=github-actions'
+      - '--output-certificate=${certificate}' 
+      - '--output-signature=${signature}'
       - '${artifact}'
       - --yes
     artifacts: all
