@@ -201,7 +201,7 @@
     randomServiceName: minio-{{ randAlphaNum 6 }}
     randomUsername: user-{{ randAlpha 8 }}
     randomPassword: {{ randAlphaNum 16 | quote }}
-    randomBucket: bucket-{{ randAlpha 8 | lower }}-{{ .Id | lower | trunc 47 }}
+    randomBucket: bucket-{{ randAlpha 8 | lower }}
     randomAccessKeyId: {{ randAlphaNum 20 | quote }}
     randomSecretKey: {{ randAlphaNum 40 | quote }}
     sk: default-provisioners-minio-instance
@@ -225,15 +225,17 @@
     secret_key: {{ dig .Init.sk "instanceSecretKey" "" .Shared | quote }}
     endpoint: http://{{ dig .Init.sk "instanceServiceName" "" .Shared }}:9000
     # for compatibility with Humanitec's existing s3 resource
-    region: ""
+    region: "us-east-1"
     aws_access_key_id: {{ dig .Init.sk "instanceAccessKeyId" "" .Shared | quote }}
     aws_secret_key: {{ dig .Init.sk "instanceSecretKey" "" .Shared | quote }}
   # we store 2 files, 1 is always the same and overridden, the other is per bucket
   files: |
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}-setup-scripts/00-svcacct.sh: |
+      set -eu
       mc alias set myminio http://{{ dig .Init.sk "instanceServiceName" "" .Shared }}:9000 {{ dig .Init.sk "instanceUsername" "" .Shared }} {{ dig .Init.sk "instancePassword" "" .Shared }}
       mc admin user svcacct info myminio {{ dig .Init.sk "instanceAccessKeyId" "" .Shared | quote }} || mc admin user svcacct add myminio {{ dig .Init.sk "instanceUsername" "" .Shared | quote }} --access-key {{ dig .Init.sk "instanceAccessKeyId" "" .Shared | quote }} --secret-key {{ dig .Init.sk "instanceSecretKey" "" .Shared | quote }}
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}-setup-scripts/10-bucket-{{ .State.bucket }}.sh: |
+      set -eu
       mc alias set myminio http://{{ dig .Init.sk "instanceServiceName" "" .Shared }}:9000 {{ dig .Init.sk "instanceUsername" "" .Shared }} {{ dig .Init.sk "instancePassword" "" .Shared }}
       mc mb -p myminio/{{ .State.bucket }}
   volumes: |
@@ -264,7 +266,7 @@
         target: /data
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}-init:
       image: quay.io/minio/minio
-      entrypoint: ["/bin/sh"]
+      entrypoint: ["/bin/bash"]
       command:
       - "-c"
       - "for s in $$(ls /setup-scripts -1); do sh /setup-scripts/$$s; done"
