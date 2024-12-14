@@ -1,0 +1,35 @@
+# Score provides a developer-centric and platform-agnostic 
+# Workload specification to improve developer productivity and experience. 
+# Score eliminates configuration management between local and remote environments.
+#
+# Specification reference: https://docs.score.dev/docs/reference/score-spec-reference/
+---
+
+# Score specification version
+apiVersion: score.dev/v1b1
+
+metadata:
+  name: example
+
+containers:
+  hello-world:
+    image: nginx:latest
+
+    # Uncomment the following for a custom entrypoint command
+    # command: []
+
+    # Uncomment the following for custom arguments
+    # args: []
+
+    # Environment variables to inject into the container
+    variables:
+      EXAMPLE_VARIABLE: "example-value"
+
+service:
+  ports:
+    # Expose the http port from nginx on port 8080
+    www:
+      port: 8080
+      targetPort: 80
+
+resources: {}

@@ -15,9 +15,11 @@
 package command
 
 import (
+	"context"
 	_ "embed"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -30,6 +32,21 @@ import (
 	"github.com/score-spec/score-compose/internal/project"
 	"github.com/score-spec/score-compose/internal/provisioners/loader"
 )
+
+func GetStdinFile(ctx context.Context) ([]byte, error) {
+	// Check if stdin is being piped
+	stat, err := os.Stdin.Stat()
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if stdin is a pipe
+	if (stat.Mode() & os.ModeCharDevice) == 0 {
+		return io.ReadAll(os.Stdin)
+	}
+
+	return nil, fmt.Errorf("no stdin data provided")
+}
 
 const (
 	DefaultScoreFileContent = `# Score provides a developer-centric and platform-agnostic 
@@ -199,11 +216,28 @@ the new provisioners will take precedence.
 
 		if v, _ := cmd.Flags().GetStringArray(initCmdProvisionerFlag); len(v) > 0 {
 			for i, vi := range v {
+				var data []byte
+
+				if vi == "-" {
+					data, err = GetStdinFile(cmd.Context())
+				} else {
+					// Existing URI loading logic
+					data, err = uriget.GetFile(cmd.Context(), vi)
+				}
+
 				data, err := uriget.GetFile(cmd.Context(), vi)
 				if err != nil {
 					return fmt.Errorf("failed to load provisioner %d: %w", i+1, err)
 				}
-				if err := loader.SaveProvisionerToDirectory(sd.Path, vi, data); err != nil {
+
+				var saveFilename string
+				if vi == "-" {
+					saveFilename = fmt.Sprintf("stdin-provisioner-%d%s", i+1, loader.DefaultSuffix)
+				} else {
+					saveFilename = vi
+				}
+
+				if err := loader.SaveProvisionerToDirectory(sd.Path, saveFilename, data); err != nil {
 					return fmt.Errorf("failed to save provisioner %d: %w", i+1, err)
 				}
 			}
@@ -230,7 +264,9 @@ func init() {
 		"- HTTPS       : https://host/file\n"+
 		"- Git (SSH)   : git-ssh://git@host/repo.git/file\n"+
 		"- Git (HTTPS) : git-https://host/repo.git/file\n"+
-		"- OCI         : oci://[registry/][namespace/]repository[:tag|@digest][#file]")
+		"- OCI         : oci://[registry/][namespace/]repository[:tag|@digest][#file]\n"+
+		"- Local File  : /path/to/local/file\n"+
+		"- Stdin       : - (read from standard input)")
 
 	rootCmd.AddCommand(initCmd)
 }
