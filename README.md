@@ -1,4 +1,4 @@
-[![ci](https://github.com/score-spec/score-compose/actions/workflows/ci.yaml/badge.svg)](https://github.com/score-spec/score-compose/actions/workflows/ci.yaml) [![release](https://github.com/score-spec/score-compose/actions/workflows/release.yaml/badge.svg)](https://github.com/score-spec/score-compose/actions/workflows/release.yaml)
+[![ci](https://github.com/score-spec/score-compose/actions/workflows/ci.yaml/badge.svg)](https://github.com/score-spec/score-compose/actions/workflows/ci.yaml) [![release](https://github.com/score-spec/score-compose/actions/workflows/release.yaml/badge.svg)](https://github.com/score-spec/score-compose/actions/workflows/release.yaml) [![release](https://img.shields.io/github/issues-search/score-spec/score-compose?query=type%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22&label=Good%20first%20issues&style=flat&logo=github)](https://github.com/score-spec/score-compose/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
 
 <img src="docs/images/banner.png"/>
 
