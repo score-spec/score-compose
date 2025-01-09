@@ -41,7 +41,7 @@
 | mongodb       | default | (none)                 | `host`, `port`, `username`, `password`, `connection`                                                                                                            |
 | kafka-topic   | default | (none)                 | `host`, `port`, `name`, `num_partitions`                                                                                                                        |
 | elasticsearch | default | (none)                 | `host`, `port`, `username`, `password`                                                                                                                          |
-| mssql         | default | (none)                 | `host`, `port`, `connection`, `database`, `username`, `password`                                                                                              |
+| mssql         | default | (none)                 | `host`, `port`, `connection`, `database`, `username`, `password`, `pid`                                                                                         |
 
 These can be found in the default provisioners file. You are encouraged to write your own provisioners and add them to the `.score-compose` directory (with the `.provisioners.yaml` extension) or contribute them upstream to the [default.provisioners.yaml](internal/command/default.provisioners.yaml) file.
 

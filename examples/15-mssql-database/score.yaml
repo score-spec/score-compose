@@ -1,14 +1,14 @@
 apiVersion: score.dev/v1b1
 
 metadata:
-  name: hello-world
+  name: example
 
 containers:
   first:
     image: nginx
     variables:
-      CONNECTION_STRING: "mysql://${resources.db.username}:${resources.db.password}@${resources.db.host}:${resources.db.port}/${resources.db.name}"
+      CONNECTION_STRING: "Server=${resources.db.host}; Database=${resources.db.name}; User=${resources.db.username}; Password=${resources.db.password};"
 
 resources:
   db:
-    type: mysql
+    type: mssql
