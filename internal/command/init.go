@@ -232,7 +232,7 @@ the new provisioners will take precedence.
 
 				var saveFilename string
 				if vi == "-" {
-					saveFilename = fmt.Sprintf("stdin-provisioner-%d%s", i+1, loader.DefaultSuffix)
+					saveFilename = "from-stdin.provisioners.yaml"
 				} else {
 					saveFilename = vi
 				}
