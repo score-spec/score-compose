@@ -17,4 +17,4 @@ resources:
 
 The provided outputs are `host`, `port`, `connection`, `database`, `username`, `password`, `pid`.
 The latter is equal to a mssql
-connection string like `Server=${resources.db.host}; Database=${resources.db.name}; User=${resources.db.username}; Password=${resources.db.password};`.
+connection string like `Server=${resources.db.host}; Database=${resources.db.database}; User=${resources.db.username}; Password=${resources.db.password};`.
