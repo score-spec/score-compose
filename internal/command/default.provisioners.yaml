@@ -808,7 +808,7 @@
     publishPort: {{ dig "annotations" "compose.score.dev/publish-port" "0" .Metadata | quote }}
     pid: {{ dig "annotations" "compose.score.dev/mssql-pid" "Developer" .Metadata | quote }}
   state: |
-    service: mssql-{{ .SourceWorkload }}-{{ substr 0 8 .Guid | lower }}
+    service: {{ .Init.sk }}
     database: master
     username: sa
     password: {{ dig "password" .Init.randomPassword .State | quote }}
@@ -843,10 +843,10 @@
       {{ end }}
       volumes:
       - type: volume
-        source: {{{ .Init.sk }}-data
+        source: {{ .Init.sk }}-data
         target: /var/opt/mssql
   info_logs: |
-    - "{{.Uid}}: To connect to mssql, enter password {{ .State.password | squote }} at: \"docker run -it --network {{ .ComposeProjectName }}_default --rm mcr.microsoft.com/mssql/server:latest mysql /opt/mssql-tools/bin/sqlcmd -S localhost -U {{ dig .Init.username }} -p\""
+    - "{{.Uid}}: To connect to mssql, enter password {{ .State.password | squote }} at: \"docker run -it --network {{ .ComposeProjectName }}_default --rm mcr.microsoft.com/mssql/server:latest mysql /opt/mssql-tools/bin/sqlcmd -S localhost -U {{ .State.username }} -p\""
     {{ if ne .Init.publishPort "0" }}
     - "{{.Uid}}: Or connect your mssql client to \"
     Server=tcp:{{ .State.service }},1433;Initial Catalog={{ .State.database }};User ID={{ .State.username }};Password={{ .State.password }};\""

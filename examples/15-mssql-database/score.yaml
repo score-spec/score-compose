@@ -7,7 +7,7 @@ containers:
   first:
     image: nginx
     variables:
-      CONNECTION_STRING: "Server=${resources.db.host}; Database=${resources.db.name}; User=${resources.db.username}; Password=${resources.db.password};"
+      CONNECTION_STRING: "Server=${resources.db.host}; Database=${resources.db.database}; User=${resources.db.username}; Password=${resources.db.password};"
 
 resources:
   db:
