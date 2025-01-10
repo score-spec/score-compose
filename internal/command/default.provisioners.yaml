@@ -817,10 +817,10 @@
   outputs: |
     host: {{ .State.service }}
     port: {{ .State.publishPort }}
-    connection: "Server=tcp:{{ .State.service }},1433;Initial Catalog={{ .State.database }};User ID={{ .State.username }};Password={{ .State.passowrd }};"
+    connection: "Server=tcp:{{ .State.service }},1433;Initial Catalog={{ .State.database }};User ID={{ .State.username }};Password={{ .State.password }};"
     database: {{ .State.database }}
     username: {{ .State.username }}
-    password: {{ .State.passowrd }}
+    password: {{ .State.password }}
     pid: {{ .Init.pid }}
   volumes: |
     {{ .Init.sk }}-data:
@@ -835,7 +835,7 @@
         MSSQL_ENABLE_HADR: "1"
         MSSQL_AGENT_ENABLED: "1"
         MSSQL_PID: {{ .State.pid }}
-        MSSQL_SA_PASSWORD: {{ .State.passowrd }}
+        MSSQL_SA_PASSWORD: {{ .State.password }}
       {{ if ne .Init.publishPort "0" }}
       ports:
       - target: 1433
@@ -849,5 +849,5 @@
     - "{{.Uid}}: To connect to mssql, enter password {{ .State.password | squote }} at: \"docker run -it --network {{ .ComposeProjectName }}_default --rm mcr.microsoft.com/mssql/server:latest mysql /opt/mssql-tools/bin/sqlcmd -S localhost -U {{ dig .Init.username }} -p\""
     {{ if ne .Init.publishPort "0" }}
     - "{{.Uid}}: Or connect your mssql client to \"
-    Server=tcp:{{ .State.service }},1433;Initial Catalog={{ .State.database }};User ID={{ .State.username }};Password={{ .State.passowrd }};\""
+    Server=tcp:{{ .State.service }},1433;Initial Catalog={{ .State.database }};User ID={{ .State.username }};Password={{ .State.password }};\""
     {{ end }}
