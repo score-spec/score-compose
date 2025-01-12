@@ -806,22 +806,19 @@
     randomPassword: {{ randAlphaNum 16 | quote }}
     sk: default-provisioners-mssql
     publishPort: {{ dig "annotations" "compose.score.dev/publish-port" "0" .Metadata | quote }}
-    pid: {{ dig "annotations" "compose.score.dev/mssql-pid" "Developer" .Metadata | quote }}
   state: |
     service: {{ .Init.sk }}
     database: master
     username: sa
     password: {{ dig "password" .Init.randomPassword .State | quote }}
     publishPort: {{ .Init.publishPort }}
-    pid: {{ .Init.pid }}
   outputs: |
-    host: {{ .State.service }}
+    server: {{ .State.service }}
     port: {{ .State.publishPort }}
     connection: "Server=tcp:{{ .State.service }},1433;Initial Catalog={{ .State.database }};User ID={{ .State.username }};Password={{ .State.password }};"
     database: {{ .State.database }}
     username: {{ .State.username }}
     password: {{ .State.password }}
-    pid: {{ .Init.pid }}
   volumes: |
     {{ .Init.sk }}-data:
       driver: local
@@ -834,7 +831,6 @@
         ACCEPT_EULA: "Y"
         MSSQL_ENABLE_HADR: "1"
         MSSQL_AGENT_ENABLED: "1"
-        MSSQL_PID: {{ .State.pid }}
         MSSQL_SA_PASSWORD: {{ .State.password }}
       {{ if ne .Init.publishPort "0" }}
       ports:
@@ -846,7 +842,7 @@
         source: {{ .Init.sk }}-data
         target: /var/opt/mssql
   info_logs: |
-    - "{{.Uid}}: To connect to mssql, enter password {{ .State.password | squote }} at: \"docker run -it --network {{ .ComposeProjectName }}_default --rm mcr.microsoft.com/mssql/server:latest mysql /opt/mssql-tools/bin/sqlcmd -S localhost -U {{ .State.username }} -p\""
+    - "{{.Uid}}: To connect to mssql: \"docker run -it --network {{ .ComposeProjectName }}_default --rm mcr.microsoft.com/mssql/server:latest mysql /opt/mssql-tools/bin/sqlcmd -S localhost -U {{ .State.username }} -p {{ .State.password | squote }}\""
     {{ if ne .Init.publishPort "0" }}
     - "{{.Uid}}: Or connect your mssql client to \"
     Server=tcp:{{ .State.service }},1433;Initial Catalog={{ .State.database }};User ID={{ .State.username }};Password={{ .State.password }};\""

@@ -12,9 +12,8 @@ resources:
     # metadata:
       # annotations:
         # "compose.score.dev/publish-port": "1434"
-        # "compose.score.dev/mssql-pid": "Developer" refer to https://mcr.microsoft.com/artifact/mar/mssql/server/about
 ```
 
-The provided outputs are `host`, `port`, `connection`, `database`, `username`, `password`, `pid`.
+The provided outputs are `server`, `port`, `connection`, `database`, `username`, `password`.
 The latter is equal to a mssql
-connection string like `Server=${resources.db.host}; Database=${resources.db.database}; User=${resources.db.username}; Password=${resources.db.password};`.
+connection string like `Server=${resources.db.server}; Database=${resources.db.database}; User=${resources.db.username}; Password=${resources.db.password};`.
