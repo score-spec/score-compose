@@ -1,4 +1,11 @@
-[![ci](https://github.com/score-spec/score-compose/actions/workflows/ci.yaml/badge.svg)](https://github.com/score-spec/score-compose/actions/workflows/ci.yaml) [![release](https://github.com/score-spec/score-compose/actions/workflows/release.yaml/badge.svg)](https://github.com/score-spec/score-compose/actions/workflows/release.yaml) [![good first issues](https://img.shields.io/github/issues-search/score-spec/score-compose?query=type%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22&label=good%20first%20issues&style=flat&logo=github)](https://github.com/score-spec/score-compose/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/score-spec/score-compose/badge)](https://scorecard.dev/viewer/?uri=github.com/score-spec/score-compose) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/9900/badge)](https://www.bestpractices.dev/projects/9900)
+[![ci](https://github.com/score-spec/score-compose/actions/workflows/ci.yaml/badge.svg)](https://github.com/score-spec/score-compose/actions/workflows/ci.yaml)
+[![release](https://github.com/score-spec/score-compose/actions/workflows/release.yaml/badge.svg)](https://github.com/score-spec/score-compose/actions/workflows/release.yaml)
+[![good first issues](https://img.shields.io/github/issues-search/score-spec/score-compose?query=type%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22&label=good%20first%20issues&style=flat&logo=github)](https://github.com/score-spec/score-compose/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fscore-spec%2Fscore-compose.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fscore-spec%2Fscore-compose?ref=badge_shield)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/score-spec/score-compose/badge)](https://scorecard.dev/viewer/?uri=github.com/score-spec/score-compose)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/9900/badge)](https://www.bestpractices.dev/projects/9900)
 
 <img src="docs/images/banner.png"/>
 
@@ -185,13 +192,3 @@ You can find our documentation at [docs.score.dev](https://docs.score.dev/docs).
 ### Roadmap
 
 See [Roadmap](https://github.com/score-spec/spec/blob/main/roadmap.md). You can [submit an idea](https://github.com/score-spec/spec/blob/main/roadmap.md#get-involved) anytime.
-
-### License
-
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fscore-spec%2Fscore-compose.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fscore-spec%2Fscore-compose?ref=badge_shield)
-
-### Code of conduct
-
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
