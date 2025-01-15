@@ -68,13 +68,20 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 	}
 	sort.Strings(containerNames)
 
+	variablesSubstitutor := framework.Substituter{
+		Replacer: deferredSubstitutionFunction,
+		UnEscaper: func(s string) (string, error) {
+			return s, nil
+		},
+	}
+
 	var firstService string
 	for _, containerName := range containerNames {
 		cSpec := spec.Containers[containerName]
 
 		var env = make(compose.MappingWithEquals, len(cSpec.Variables))
 		for key, val := range cSpec.Variables {
-			resolved, err := framework.SubstituteString(val, deferredSubstitutionFunction)
+			resolved, err := variablesSubstitutor.SubstituteString(val)
 			if err != nil {
 				return nil, fmt.Errorf("containers.%s.variables.%s: %w", containerName, key, err)
 			}
