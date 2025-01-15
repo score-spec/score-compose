@@ -21,6 +21,7 @@ containers:
       GREETING: Hello
       NAME: ${resources.env.NAME}
       WORKLOAD_NAME: ${metadata.name}
+      ESCAPED: $$_$${fizzbuzz}
 
 resources:
   env:
@@ -48,6 +49,7 @@ services:
         entrypoint:
             - /bin/sh
         environment:
+            ESCAPED: $$_$${fizzbuzz}
             GREETING: Hello
             NAME: ${NAME}
             WORKLOAD_NAME: hello-world

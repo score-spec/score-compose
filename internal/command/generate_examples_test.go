@@ -68,6 +68,7 @@ services:
         entrypoint:
             - /bin/sh
         environment:
+            ESCAPED: $$_$${fizzbuzz}
             GREETING: Hello
             NAME: ${NAME}
             WORKLOAD_NAME: hello-world

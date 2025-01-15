@@ -12,6 +12,7 @@ containers:
       GREETING: Hello
       NAME: ${resources.env.NAME}
       WORKLOAD_NAME: ${metadata.name}
+      ESCAPED: $$_$${fizzbuzz}
 
 resources:
   env:
