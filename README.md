@@ -41,6 +41,7 @@
 | mongodb       | default | (none)                 | `host`, `port`, `username`, `password`, `connection`                                                                                                            |
 | kafka-topic   | default | (none)                 | `host`, `port`, `name`, `num_partitions`                                                                                                                        |
 | elasticsearch | default | (none)                 | `host`, `port`, `username`, `password`                                                                                                                          |
+| mssql         | default | (none)                 | `server`, `port`, `connection`, `database`, `username`, `password`                                                                                              |
 
 These can be found in the default provisioners file. You are encouraged to write your own provisioners and add them to the `.score-compose` directory (with the `.provisioners.yaml` extension) or contribute them upstream to the [default.provisioners.yaml](internal/command/default.provisioners.yaml) file.
 
@@ -68,6 +69,7 @@ See the [examples](./examples) for more examples of using Score and provisioning
 - [12-mysql-database](examples/12-mysql-database) - an example of the default `mysql` resource provisioner
 - [13-kafka-topic](examples/13-kafka-topic) - an example of the default `kafka-topic` resource provisioner
 - [14-elasticsearch](examples/14-elasticsearch) - an example of the default `elasticsearch` resource provisioner
+- [15-mssql-database](examples/15-mssql-database) - an example of the default `mssql` resource provisioner
 
 If you're getting started, you can use `score-compose init` to create a basic `score.yaml` file in the current directory along with a `.score-compose/` working directory.
 
