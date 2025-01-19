@@ -7,10 +7,12 @@ containers:
   hello:
     image: busybox
     command: ["/bin/sh"]
-    args: ["-c", "while true; do cat /fileA.txt; cat /fileB.txt; sleep 5; done"]
+    args: ["-c", "while true; do cat /fileA.txt; cat /fileB.txt; cat /fileC.bin; sleep 5; done"]
     files:
       - target: /fileA.txt
         source: fileA.txt
       - target: /fileB.txt
         content: |
           I am ${metadata.name}
+      - target: /fileC.bin
+        binaryContent: aGVsbG8gd29ybGQ=

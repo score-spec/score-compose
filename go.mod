@@ -7,7 +7,7 @@ require (
 	github.com/compose-spec/compose-go/v2 v2.4.7
 	github.com/imdario/mergo v1.0.1
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/score-spec/score-go v1.8.5
+	github.com/score-spec/score-go v1.9.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.10.0
