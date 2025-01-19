@@ -15,6 +15,9 @@ metadata:
 containers:
   example:
     image: nginx
+    readinessProbe:
+      exec:
+        command: ["/usr/bin/curl", "-f", "-m", "5", "http://localhost"]
 service:
   ports:
     web:
