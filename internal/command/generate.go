@@ -23,9 +23,9 @@ import (
 	"strconv"
 	"strings"
 
+	"dario.cat/mergo"
 	composeloader "github.com/compose-spec/compose-go/v2/loader"
 	"github.com/compose-spec/compose-go/v2/types"
-	"github.com/imdario/mergo"
 	"github.com/score-spec/score-go/framework"
 	"github.com/score-spec/score-go/loader"
 	"github.com/score-spec/score-go/schema"
