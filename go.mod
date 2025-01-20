@@ -3,9 +3,9 @@ module github.com/score-spec/score-compose
 go 1.23.4
 
 require (
+	dario.cat/mergo v1.0.1
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/compose-spec/compose-go/v2 v2.4.7
-	github.com/imdario/mergo v1.0.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/score-spec/score-go v1.9.0
 	github.com/spf13/cobra v1.8.1
@@ -16,7 +16,6 @@ require (
 )
 
 require (
-	dario.cat/mergo v1.0.1 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -50,5 +49,3 @@ require (
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	oras.land/oras-go/v2 v2.5.0 // indirect
 )
-
-replace github.com/imdario/mergo => dario.cat/mergo v1.0.0
