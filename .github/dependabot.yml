@@ -4,11 +4,20 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      ci:
+        patterns:
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      ci:
+        patterns:
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      ci:
+        patterns:
