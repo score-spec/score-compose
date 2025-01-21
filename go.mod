@@ -1,6 +1,6 @@
 module github.com/score-spec/score-compose
 
-go 1.23.4
+go 1.23.5
 
 require (
 	dario.cat/mergo v1.0.1
