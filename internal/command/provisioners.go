@@ -67,7 +67,7 @@ func listProvisioners(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load provisioners: %w", err)
 	}
 	for _, provisioner := range loadedProvisioners {
-		slog.Info(fmt.Sprintf("Provisioner: %s", provisioner.Uri()))
+		slog.Info(fmt.Sprintf("Class: %s, Type: %s", provisioner.Class(), provisioner.Type()))
 	}
 	return nil
 }

@@ -101,12 +101,16 @@ type Provisioner interface {
 	Uri() string
 	Match(resUid framework.ResourceUid) bool
 	Provision(ctx context.Context, input *Input) (*ProvisionOutput, error)
+	Class() string
+	Type() string
 }
 
 type ephemeralProvisioner struct {
 	uri       string
 	matchUid  framework.ResourceUid
 	provision func(ctx context.Context, input *Input) (*ProvisionOutput, error)
+	class     string
+	typ       string
 }
 
 func (e *ephemeralProvisioner) Uri() string {
@@ -119,6 +123,14 @@ func (e *ephemeralProvisioner) Match(resUid framework.ResourceUid) bool {
 
 func (e *ephemeralProvisioner) Provision(ctx context.Context, input *Input) (*ProvisionOutput, error) {
 	return e.provision(ctx, input)
+}
+
+func (e *ephemeralProvisioner) Class() string {
+	return e.class
+}
+
+func (e *ephemeralProvisioner) Type() string {
+	return e.typ
 }
 
 // NewEphemeralProvisioner is mostly used for internal testing and uses the given provisioner function to provision an exact resource.
