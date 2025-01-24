@@ -45,6 +45,17 @@ func (p *Provisioner) Uri() string {
 	return p.ProvisionerUri
 }
 
+func (p *Provisioner) Class() string {
+	if p.ResClass == nil {
+		return ""
+	}
+	return *p.ResClass
+}
+
+func (p *Provisioner) Type() string {
+	return p.ResType
+}
+
 func (p *Provisioner) Match(resUid framework.ResourceUid) bool {
 	if resUid.Type() != p.ResType {
 		return false

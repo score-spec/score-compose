@@ -82,18 +82,22 @@ func (e *Provisioner) LookupOutput(keys ...string) (interface{}, error) {
 
 func (e *Provisioner) GenerateSubProvisioner(resName string, resUid framework.ResourceUid) provisioners.Provisioner {
 	return &envVarResourceTracker{
-		uid:    resUid,
-		inner:  e,
-		prefix: strings.ToUpper(resName),
+		uid:      resUid,
+		inner:    e,
+		prefix:   strings.ToUpper(resName),
+		resClass: resUid.Class(),
+		resType:  resUid.Type(),
 	}
 }
 
 // envVarResourceTracker is a child object of EnvVarTracker and is used as a fallback behavior for resource types
 // that are not supported natively: we treat them like environment variables instead with a prefix of the resource name.
 type envVarResourceTracker struct {
-	uid    framework.ResourceUid
-	prefix string
-	inner  *Provisioner
+	uid      framework.ResourceUid
+	prefix   string
+	inner    *Provisioner
+	resClass string
+	resType  string
 }
 
 func (e *envVarResourceTracker) Uri() string {
@@ -124,6 +128,22 @@ func (e *envVarResourceTracker) LookupOutput(keys ...string) (interface{}, error
 	k = strings.ReplaceAll(k, ".", "_")
 	k = strings.ToUpper(k)
 	return e.inner.lookupOutput(true, k)
+}
+
+func (e *envVarResourceTracker) Class() string {
+	return e.resClass
+}
+
+func (e *envVarResourceTracker) Type() string {
+	return e.resType
+}
+
+func (p *Provisioner) Class() string {
+	return p.Class()
+}
+
+func (p *Provisioner) Type() string {
+	return p.Type()
 }
 
 var _ provisioners.Provisioner = (*Provisioner)(nil)

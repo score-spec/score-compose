@@ -342,3 +342,11 @@ func (l *legacyVolumeProvisioner) Match(resUid framework.ResourceUid) bool {
 func (l *legacyVolumeProvisioner) Provision(ctx context.Context, input *provisioners.Input) (*provisioners.ProvisionOutput, error) {
 	return &provisioners.ProvisionOutput{ResourceOutputs: map[string]interface{}{}}, nil
 }
+
+func (l *legacyVolumeProvisioner) Class() string {
+	return l.MatchResourceUid.Class()
+}
+
+func (l *legacyVolumeProvisioner) Type() string {
+	return l.MatchResourceUid.Type()
+}
