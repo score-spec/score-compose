@@ -58,6 +58,14 @@ func listProvisioners(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get provisioner file: %w", err)
 	}
+	err = displayProvisioners(provisionerFiles)
+	if err != nil {
+		return fmt.Errorf("failed to display provisioners: %w", err)
+	}
+	return nil
+}
+
+func displayProvisioners(provisionerFiles []string) error {
 	for _, provisionerFile := range provisionerFiles {
 		provisionerContent, err := os.ReadFile(provisionerFile)
 		if err != nil {
