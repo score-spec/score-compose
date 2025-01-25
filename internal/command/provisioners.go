@@ -21,9 +21,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/olekukonko/tablewriter"
+
 	"github.com/spf13/cobra"
 
 	"github.com/score-spec/score-compose/internal/project"
+	"github.com/score-spec/score-compose/internal/provisioners"
 	"github.com/score-spec/score-compose/internal/provisioners/loader"
 )
 
@@ -54,9 +57,21 @@ func listProvisioners(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no state directory found, run 'score-compose init' first")
 	}
 	slog.Info(fmt.Sprintf("Listing provisioners in project '%s'", sd.State.Extras.ComposeProjectName))
-	provisionerFiles, err := getProvisionerFiles(sd.Path, sd.State.Extras.ComposeProjectName)
+	currentState := &sd.State
+	provisionerFiles, err := getProvisionerFiles(sd.Path, currentState.Extras.ComposeProjectName)
 	if err != nil {
 		return fmt.Errorf("failed to get provisioner file: %w", err)
+	}
+
+	resIds, err := currentState.GetSortedResourceUids()
+	if err != nil {
+		return fmt.Errorf("failed to get sorted resource uids: %w", err)
+	}
+	for _, resId := range resIds {
+		_, ok := currentState.Resources[resId]
+		if !ok {
+			return fmt.Errorf("resource %s not found", resId)
+		}
 	}
 	err = displayProvisioners(provisionerFiles)
 	if err != nil {
@@ -66,6 +81,9 @@ func listProvisioners(cmd *cobra.Command, args []string) error {
 }
 
 func displayProvisioners(provisionerFiles []string) error {
+	headers := []string{"Type", "Class"}
+	rows := [][]string{}
+	provisioners := []provisioners.Provisioner{}
 	for _, provisionerFile := range provisionerFiles {
 		provisionerContent, err := os.ReadFile(provisionerFile)
 		if err != nil {
@@ -75,11 +93,28 @@ func displayProvisioners(provisionerFiles []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to load provisioners: %w", err)
 		}
-		for _, provisioner := range loadedProvisioners {
-			slog.Info(fmt.Sprintf("Class: %s, Type: %s", provisioner.Class(), provisioner.Type()))
-		}
+		provisioners = append(provisioners, loadedProvisioners...)
 	}
+
+	for _, provisioner := range provisioners {
+		rows = append(rows, []string{provisioner.Type(), provisioner.Class()})
+	}
+
+	if len(rows) == 0 {
+		slog.Info("No provisioners found")
+		return nil
+	}
+
+	displayTable(headers, rows)
+
 	return nil
+}
+
+func displayTable(headers []string, rows [][]string) {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader(headers)
+	table.AppendBulk(rows)
+	table.Render()
 }
 
 // getProvisionerFile returns the path to the provisioner file matching the given hash,
@@ -99,7 +134,7 @@ func getProvisionerFiles(path string, projectName string) ([]string, error) {
 			customProvisionerFiles = append(customProvisionerFiles, filepath.Join(path, entry.Name()))
 		}
 	}
-	if len(customProvisionerFiles) > 0 {
+	if len(customProvisionerFiles) == 0 {
 		defaultFile := filepath.Join(path, "zz-default.provisioners.yaml")
 		if _, err := os.Stat(defaultFile); err != nil {
 			return []string{}, fmt.Errorf("default provisioners file not found: %w", err)
