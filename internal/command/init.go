@@ -15,11 +15,9 @@
 package command
 
 import (
-	"context"
 	_ "embed"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -32,21 +30,6 @@ import (
 	"github.com/score-spec/score-compose/internal/project"
 	"github.com/score-spec/score-compose/internal/provisioners/loader"
 )
-
-func GetStdinFile(ctx context.Context) ([]byte, error) {
-	// Check if stdin is being piped
-	stat, err := os.Stdin.Stat()
-	if err != nil {
-		return nil, err
-	}
-
-	// Check if stdin is a pipe
-	if (stat.Mode() & os.ModeCharDevice) == 0 {
-		return io.ReadAll(os.Stdin)
-	}
-
-	return nil, fmt.Errorf("no stdin data provided")
-}
 
 const (
 	DefaultScoreFileContent = `# Score provides a developer-centric and platform-agnostic 
@@ -219,7 +202,7 @@ the new provisioners will take precedence.
 				var data []byte
 
 				if vi == "-" {
-					data, err = GetStdinFile(cmd.Context())
+					data, err = uriget.GetFile(cmd.Context(), "-")
 				} else {
 					// Existing URI loading logic
 					data, err = uriget.GetFile(cmd.Context(), vi)
