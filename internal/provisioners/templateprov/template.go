@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -103,6 +104,21 @@ func (p *Provisioner) Class() string {
 
 func (p *Provisioner) Type() string {
 	return p.ResType
+}
+
+func (p *Provisioner) Outputs() []string {
+	if p.OutputsTemplate == "" {
+		return []string{}
+	}
+	// Should need a re-work to be more robust, elegant, and efficient
+	// Find all the words followed by a colon
+	re := regexp.MustCompile(`\w+:`)
+	matches := re.FindAllString(p.OutputsTemplate, -1)
+	var outputs []string
+	for _, match := range matches {
+		outputs = append(outputs, strings.TrimSuffix(match, ":"))
+	}
+	return outputs
 }
 
 func (p *Provisioner) Match(resUid framework.ResourceUid) bool {

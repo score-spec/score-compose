@@ -331,6 +331,10 @@ type legacyVolumeProvisioner struct {
 	MatchResourceUid framework.ResourceUid
 }
 
+func (l *legacyVolumeProvisioner) Outputs() []string {
+	return []string{}
+}
+
 func (l *legacyVolumeProvisioner) Uri() string {
 	return "builtin://legacy-volume"
 }

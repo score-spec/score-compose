@@ -81,7 +81,7 @@ func listProvisioners(cmd *cobra.Command, args []string) error {
 }
 
 func displayProvisioners(provisionerFiles []string) error {
-	headers := []string{"Type", "Class"}
+	headers := []string{"Type", "Class", "Outputs"}
 	rows := [][]string{}
 	provisioners := []provisioners.Provisioner{}
 	for _, provisionerFile := range provisionerFiles {
@@ -97,7 +97,7 @@ func displayProvisioners(provisionerFiles []string) error {
 	}
 
 	for _, provisioner := range provisioners {
-		rows = append(rows, []string{provisioner.Type(), provisioner.Class()})
+		rows = append(rows, []string{provisioner.Type(), provisioner.Class(), strings.Join(provisioner.Outputs(), ", ")})
 	}
 
 	if len(rows) == 0 {

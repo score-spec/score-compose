@@ -81,12 +81,22 @@ func (e *Provisioner) LookupOutput(keys ...string) (interface{}, error) {
 }
 
 func (e *Provisioner) GenerateSubProvisioner(resName string, resUid framework.ResourceUid) provisioners.Provisioner {
+	class := "default"
+	if strings.Contains(string(resUid), ".") {
+		class = resUid.Class()
+	}
+
+	rType := ""
+	if strings.Contains(string(resUid), "#") {
+		rType = resUid.Type()
+	}
+
 	return &envVarResourceTracker{
 		uid:      resUid,
 		inner:    e,
 		prefix:   strings.ToUpper(resName),
-		resClass: resUid.Class(),
-		resType:  resUid.Type(),
+		resClass: class,
+		resType:  rType,
 	}
 }
 
@@ -144,6 +154,14 @@ func (p *Provisioner) Class() string {
 
 func (p *Provisioner) Type() string {
 	return p.Type()
+}
+
+func (p *Provisioner) Outputs() []string {
+	return nil
+}
+
+func (e *envVarResourceTracker) Outputs() []string {
+	return nil
 }
 
 var _ provisioners.Provisioner = (*Provisioner)(nil)
