@@ -39,6 +39,7 @@ type Provisioner struct {
 	ResClass       *string  `yaml:"class,omitempty"`
 	ResId          *string  `yaml:"id,omitempty"`
 	Args           []string `yaml:"args"`
+	ResOutputs     []string `yaml:"outputs,omitempty"`
 }
 
 func (p *Provisioner) Uri() string {
@@ -54,6 +55,10 @@ func (p *Provisioner) Class() string {
 
 func (p *Provisioner) Type() string {
 	return p.ResType
+}
+
+func (p *Provisioner) Outputs() []string {
+	return p.ResOutputs
 }
 
 func (p *Provisioner) Match(resUid framework.ResourceUid) bool {
