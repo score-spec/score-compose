@@ -106,6 +106,41 @@ func (p *Provisioner) Type() string {
 	return p.ResType
 }
 
+func (p *Provisioner) Params() []string {
+	params := []string{}
+	if p.StateTemplate != "" {
+		params = append(params, retrieveParams(p.StateTemplate)...)
+	}
+
+	if p.OutputsTemplate != "" {
+		params = append(params, retrieveParams(p.OutputsTemplate)...)
+	}
+
+	if p.SharedStateTemplate != "" {
+		params = append(params, retrieveParams(p.SharedStateTemplate)...)
+	}
+
+	return params
+}
+
+func retrieveParams(data string) []string {
+	re := regexp.MustCompile(`\.Params\.(\w+)`)
+	matches := re.FindAllString(data, -1)
+
+	uniqueMatchesMap := make(map[string]bool)
+	var params []string
+
+	for _, match := range matches {
+		if _, exists := uniqueMatchesMap[match]; !exists {
+			uniqueMatchesMap[match] = true
+			params = append(params, strings.TrimPrefix(match, ".Params."))
+		}
+	}
+
+	return params
+
+}
+
 func (p *Provisioner) Outputs() []string {
 	if p.OutputsTemplate == "" {
 		return []string{}

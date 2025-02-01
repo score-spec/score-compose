@@ -39,6 +39,7 @@ type Provisioner struct {
 	ResClass       *string  `yaml:"class,omitempty"`
 	ResId          *string  `yaml:"id,omitempty"`
 	Args           []string `yaml:"args"`
+	ResourceParams []string `yaml:"params,omitempty"`
 	ResOutputs     []string `yaml:"outputs,omitempty"`
 }
 
@@ -55,6 +56,10 @@ func (p *Provisioner) Class() string {
 
 func (p *Provisioner) Type() string {
 	return p.ResType
+}
+
+func (p *Provisioner) Params() []string {
+	return p.ResourceParams
 }
 
 func (p *Provisioner) Outputs() []string {
