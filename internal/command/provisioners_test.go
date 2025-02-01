@@ -116,12 +116,6 @@ func TestDisplayProvisioners(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// _, filename, _, ok := runtime.Caller(0)
-			// if !ok {
-			// 	t.Fatal("Not able to get current working directory")
-			// }
-			// currDir := filepath.Dir(filename)
-			// fixturesDir := filepath.Join(currDir, "fixtures")
 			files := []string{filepath.Join("fixtures", "/", tt.fixture)}
 
 			// Capture the output
