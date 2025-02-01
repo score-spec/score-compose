@@ -1,0 +1,19 @@
+- uri: template://default-provisioners/service-port
+  type: service-port
+  outputs: |
+    {{ if not .Params.workload }}{{ fail "expected 'workload' param for the target workload name" }}{{ end }}
+    {{ if not .Params.port }}{{ fail "expected 'port' param for the name of the target workload service port" }}{{ end }}
+    {{ $w := (index .WorkloadServices .Params.workload) }}
+    {{ if not $w }}{{ fail "unknown workload" }}{{ end }}
+    {{ $p := (index $w.Ports .Params.port) }}
+    {{ if not $p }}{{ fail "unknown service port" }}{{ end }}
+    hostname: {{ $w.ServiceName | quote }}
+    port: {{ $p.TargetPort }}
+- uri: template://default-provisioners/mssql
+  type: test-type
+  class: test-class
+  outputs: |
+    {{ if not .Params.param1 }}{{ fail "expected 'param1' param for the target workload name" }}{{ end }}
+    {{ if not .Params.param2 }}{{ fail "expected 'param2' param for the target workload name" }}{{ end }} 
+    output1: test
+    output2: test

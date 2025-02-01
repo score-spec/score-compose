@@ -160,7 +160,15 @@ func (p *Provisioner) Outputs() []string {
 	return nil
 }
 
+func (p *Provisioner) Params() []string {
+	return nil
+}
+
 func (e *envVarResourceTracker) Outputs() []string {
+	return nil
+}
+
+func (e *envVarResourceTracker) Params() []string {
 	return nil
 }
 

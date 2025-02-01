@@ -103,6 +103,7 @@ type Provisioner interface {
 	Provision(ctx context.Context, input *Input) (*ProvisionOutput, error)
 	Class() string
 	Type() string
+	Params() []string
 	Outputs() []string
 }
 
@@ -112,6 +113,7 @@ type ephemeralProvisioner struct {
 	provision func(ctx context.Context, input *Input) (*ProvisionOutput, error)
 	class     string
 	eType     string
+	params    []string
 	outputs   []string
 }
 
@@ -136,6 +138,10 @@ func (e *ephemeralProvisioner) Class() string {
 
 func (e *ephemeralProvisioner) Type() string {
 	return e.eType
+}
+
+func (e *ephemeralProvisioner) Params() []string {
+	return e.params
 }
 
 // NewEphemeralProvisioner is mostly used for internal testing and uses the given provisioner function to provision an exact resource.

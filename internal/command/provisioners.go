@@ -56,7 +56,7 @@ func listProvisioners(cmd *cobra.Command, args []string) error {
 	} else if !ok {
 		return fmt.Errorf("no state directory found, run 'score-compose init' first")
 	}
-	slog.Info(fmt.Sprintf("Listing provisioners in project '%s'", sd.State.Extras.ComposeProjectName))
+	slog.Debug(fmt.Sprintf("Listing provisioners in project '%s'", sd.State.Extras.ComposeProjectName))
 	currentState := &sd.State
 	provisionerFiles, err := getProvisionerFiles(sd.Path, currentState.Extras.ComposeProjectName)
 	if err != nil {
@@ -81,7 +81,6 @@ func listProvisioners(cmd *cobra.Command, args []string) error {
 }
 
 func displayProvisioners(provisionerFiles []string) error {
-	headers := []string{"Type", "Class", "Outputs"}
 	rows := [][]string{}
 	provisioners := []provisioners.Provisioner{}
 	for _, provisionerFile := range provisionerFiles {
@@ -97,7 +96,7 @@ func displayProvisioners(provisionerFiles []string) error {
 	}
 
 	for _, provisioner := range provisioners {
-		rows = append(rows, []string{provisioner.Type(), provisioner.Class(), strings.Join(provisioner.Outputs(), ", ")})
+		rows = append(rows, []string{provisioner.Type(), provisioner.Class(), strings.Join(provisioner.Params(), ", "), strings.Join(provisioner.Outputs(), ", ")})
 	}
 
 	if len(rows) == 0 {
@@ -105,6 +104,7 @@ func displayProvisioners(provisionerFiles []string) error {
 		return nil
 	}
 
+	headers := []string{"Type", "Class", "Params", "Outputs"}
 	displayTable(headers, rows)
 
 	return nil
@@ -114,6 +114,7 @@ func displayTable(headers []string, rows [][]string) {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader(headers)
 	table.AppendBulk(rows)
+	table.SetAutoWrapText(false)
 	table.Render()
 }
 
