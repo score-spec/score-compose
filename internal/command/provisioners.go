@@ -129,20 +129,20 @@ func getProvisionerFiles(path string, projectName string) ([]string, error) {
 	slog.Debug(fmt.Sprintf("Looking for provisioner file for project '%s' in path '%s'", projectName, path))
 
 	// Look for a file matching the hash
-	customProvisionerFiles := []string{}
+	provisionerFiles := []string{}
 	for _, entry := range entries {
 		if !entry.IsDir() && strings.HasPrefix(entry.Name(), "Z-") && strings.HasSuffix(entry.Name(), ".provisioners.yaml") {
-			customProvisionerFiles = append(customProvisionerFiles, filepath.Join(path, entry.Name()))
+			provisionerFiles = append(provisionerFiles, filepath.Join(path, entry.Name()))
 		}
 	}
-	if len(customProvisionerFiles) == 0 {
+	if len(provisionerFiles) == 0 {
 		defaultFile := filepath.Join(path, "zz-default.provisioners.yaml")
 		if _, err := os.Stat(defaultFile); err != nil {
 			return []string{}, fmt.Errorf("default provisioners file not found: %w", err)
 		}
-		return []string{defaultFile}, nil
+		provisionerFiles = append(provisionerFiles, defaultFile)
 	}
-	return customProvisionerFiles, nil
+	return provisionerFiles, nil
 }
 
 func init() {
