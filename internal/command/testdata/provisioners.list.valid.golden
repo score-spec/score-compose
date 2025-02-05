@@ -1,6 +1,26 @@
-+--------------+------------+----------------+------------------+
-|     TYPE     |   CLASS    |     PARAMS     |     OUTPUTS      |
-+--------------+------------+----------------+------------------+
-| service-port | (any)      | workload, port | hostname, port   |
-| test-type    | test-class | param1, param2 | output1, output2 |
-+--------------+------------+----------------+------------------+
++---------------+------------+------------------+--------------------------------+
+|     TYPE      |   CLASS    |      PARAMS      |            OUTPUTS             |
++---------------+------------+------------------+--------------------------------+
+| service-port  | (any)      | workload, port   | hostname, port                 |
+| test-type     | test-class | param1, param2   | output1, output2               |
+| volume        | (any)      |                  | type, source                   |
+| service-port  | (any)      | workload, port   | hostname, port                 |
+| redis         | (any)      |                  | host, port, username, password |
+| postgres      | (any)      |                  | host, port, name, database,    |
+|               |            |                  | username, password             |
+| s3            | (any)      |                  | bucket, access_key_id,         |
+|               |            |                  | secret_key, endpoint, http,    |
+|               |            |                  | region, aws_access_key_id,     |
+|               |            |                  | aws_secret_key                 |
+| amqp          | (any)      |                  | host, port, vhost, username,   |
+|               |            |                  | password                       |
+| dns           | (any)      |                  | host                           |
+| route         | (any)      | port, host, path |                                |
+| mongodb       | (any)      |                  | host, port, username,          |
+|               |            |                  | password, connection, mongodb  |
+| mysql         | (any)      |                  | host, port, name, database,    |
+|               |            |                  | username, password             |
+| kafka-topic   | (any)      |                  | host, port, name,              |
+|               |            |                  | num_partitions                 |
+| elasticsearch | (any)      |                  | host, port, username, password |
++---------------+------------+------------------+--------------------------------+
