@@ -46,6 +46,7 @@ p: {{ .ComposeProjectName }}
 c: 1
 `,
 		"outputs": `
+{{ if not .Params.ptest }}{{ end }}
 b: {{ .State.b | upper }}
 c: {{ .Shared.c }}
 `,
@@ -95,4 +96,8 @@ some-svc:
 	assert.Equal(t, map[string]compose.NetworkConfig{"default": {Driver: "default"}}, out.ComposeNetworks)
 	assert.Equal(t, map[string]compose.VolumeConfig{"some-vol": {Driver: "default"}}, out.ComposeVolumes)
 	assert.Equal(t, map[string]compose.ServiceConfig{"some-svc": {Name: "foo"}}, out.ComposeServices)
+	assert.Equal(t, []string{"b", "c"}, p.Outputs())
+	assert.Equal(t, []string{"ptest"}, p.Params())
+	assert.Equal(t, "(any)", p.Class())
+	assert.Equal(t, resUid.Type(), p.Type())
 }

@@ -145,8 +145,6 @@ func (p *Provisioner) Outputs() []string {
 	if p.OutputsTemplate == "" {
 		return []string{}
 	}
-	// Should need a re-work to be more robust, elegant, and efficient
-	// Find all the words followed by a colon
 	re := regexp.MustCompile(`\w+:`)
 	matches := re.FindAllString(p.OutputsTemplate, -1)
 	var outputs []string
