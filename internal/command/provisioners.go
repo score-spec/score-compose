@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
@@ -62,29 +63,38 @@ func listProvisioners(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load provisioners in %s: %w", sd.Path, err)
 	}
 
+	if len(provisioners) == 0 {
+		slog.Info("No provisioners found")
+		return nil
+	}
+
 	err = displayProvisioners(provisioners)
 	if err != nil {
 		return fmt.Errorf("failed to display provisioners: %w", err)
 	}
+
 	return nil
 }
 
 func displayProvisioners(loadedProvisioners []provisioners.Provisioner) error {
-	rows := [][]string{}
+	rows := make([][]string, len(loadedProvisioners))
 
-	for _, provisioner := range loadedProvisioners {
+	sortedProvisioners := sortProvisionersByType(loadedProvisioners)
+	for _, provisioner := range sortedProvisioners {
 		rows = append(rows, []string{provisioner.Type(), provisioner.Class(), strings.Join(provisioner.Params(), ", "), strings.Join(provisioner.Outputs(), ", ")})
-	}
-
-	if len(rows) == 0 {
-		slog.Info("No provisioners found")
-		return nil
 	}
 
 	headers := []string{"Type", "Class", "Params", "Outputs"}
 	displayTable(headers, rows)
 
 	return nil
+}
+
+func sortProvisionersByType(provisioners []provisioners.Provisioner) []provisioners.Provisioner {
+	sort.Slice(provisioners, func(i, j int) bool {
+		return provisioners[i].Type() < provisioners[j].Type()
+	})
+	return provisioners
 }
 
 func displayTable(headers []string, rows [][]string) {

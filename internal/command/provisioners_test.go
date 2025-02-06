@@ -47,6 +47,8 @@ func TestDisplayProvisioners(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	provisioners = sortProvisionersByType(provisioners)
+
 	// Capture the output
 	old := os.Stdout
 	r, w, _ := os.Pipe()
