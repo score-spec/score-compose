@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
@@ -57,45 +56,23 @@ func listProvisioners(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no state directory found, run 'score-compose init' first")
 	}
 	slog.Debug(fmt.Sprintf("Listing provisioners in project '%s'", sd.State.Extras.ComposeProjectName))
-	currentState := &sd.State
-	provisionerFiles, err := getProvisionerFiles(sd.Path, currentState.Extras.ComposeProjectName)
+
+	provisioners, err := loader.LoadProvisionersFromDirectory(sd.Path, loader.DefaultSuffix)
 	if err != nil {
-		return fmt.Errorf("failed to get provisioner file: %w", err)
+		return fmt.Errorf("failed to load provisioners in %s: %w", sd.Path, err)
 	}
 
-	resIds, err := currentState.GetSortedResourceUids()
-	if err != nil {
-		return fmt.Errorf("failed to get sorted resource uids: %w", err)
-	}
-	for _, resId := range resIds {
-		_, ok := currentState.Resources[resId]
-		if !ok {
-			return fmt.Errorf("resource %s not found", resId)
-		}
-	}
-	err = displayProvisioners(provisionerFiles)
+	err = displayProvisioners(provisioners)
 	if err != nil {
 		return fmt.Errorf("failed to display provisioners: %w", err)
 	}
 	return nil
 }
 
-func displayProvisioners(provisionerFiles []string) error {
+func displayProvisioners(loadedProvisioners []provisioners.Provisioner) error {
 	rows := [][]string{}
-	provisioners := []provisioners.Provisioner{}
-	for _, provisionerFile := range provisionerFiles {
-		provisionerContent, err := os.ReadFile(provisionerFile)
-		if err != nil {
-			return fmt.Errorf("failed to read provisioner file: %w", err)
-		}
-		loadedProvisioners, err := loader.LoadProvisioners(provisionerContent)
-		if err != nil {
-			return fmt.Errorf("failed to load provisioners: %w", err)
-		}
-		provisioners = append(provisioners, loadedProvisioners...)
-	}
 
-	for _, provisioner := range provisioners {
+	for _, provisioner := range loadedProvisioners {
 		rows = append(rows, []string{provisioner.Type(), provisioner.Class(), strings.Join(provisioner.Params(), ", "), strings.Join(provisioner.Outputs(), ", ")})
 	}
 
@@ -115,34 +92,11 @@ func displayTable(headers []string, rows [][]string) {
 	table.SetHeader(headers)
 	table.AppendBulk(rows)
 	table.SetAutoWrapText(false)
+	table.SetRowLine(true)
+	table.SetCenterSeparator("+")
+	table.SetColumnSeparator("|")
+	table.SetRowSeparator("-")
 	table.Render()
-}
-
-// getProvisionerFile returns the path to the provisioner file matching the given hash,
-// or falls back to the default file if no match is found
-func getProvisionerFiles(path string, projectName string) ([]string, error) {
-	entries, err := os.ReadDir(path)
-	if err != nil {
-		return []string{}, fmt.Errorf("failed to read directory: %w", err)
-	}
-
-	slog.Debug(fmt.Sprintf("Looking for provisioner file for project '%s' in path '%s'", projectName, path))
-
-	// Look for a file matching the hash
-	provisionerFiles := []string{}
-	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasPrefix(entry.Name(), "Z-") && strings.HasSuffix(entry.Name(), ".provisioners.yaml") {
-			provisionerFiles = append(provisionerFiles, filepath.Join(path, entry.Name()))
-		}
-	}
-	if len(provisionerFiles) == 0 {
-		defaultFile := filepath.Join(path, "zz-default.provisioners.yaml")
-		if _, err := os.Stat(defaultFile); err != nil {
-			return []string{}, fmt.Errorf("default provisioners file not found: %w", err)
-		}
-		provisionerFiles = append(provisionerFiles, defaultFile)
-	}
-	return provisionerFiles, nil
 }
 
 func init() {
