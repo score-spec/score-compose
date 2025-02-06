@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -120,7 +121,8 @@ func (p *Provisioner) Params() []string {
 		params = append(params, retrieveParams(p.SharedStateTemplate)...)
 	}
 
-	return params
+	slices.Sort(params)
+	return slices.Compact(params)
 }
 
 func retrieveParams(data string) []string {
@@ -151,6 +153,8 @@ func (p *Provisioner) Outputs() []string {
 	for _, match := range matches {
 		outputs = append(outputs, strings.TrimSuffix(match, ":"))
 	}
+
+	slices.Sort(outputs)
 	return outputs
 }
 
