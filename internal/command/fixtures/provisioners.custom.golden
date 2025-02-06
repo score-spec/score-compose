@@ -3,19 +3,31 @@
   outputs: |
     o1: o1
     o2: o2
-- uri: template://test-provisioners/without-class-with-params-in-outputs
-  type: without-class-with-params-in-outputs
-  outputs: |
-    {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
-    {{ if not .Params.p2 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
-    o1: o1
-    o2: o2
+
 - uri: template://test-provisioners/with-class-without-params
   type: with-class-without-params
   class: c1
   outputs: |
     o1: o1
     o2: o2
+
+- uri: template://test-provisioners/without-class-with-params-in-outputs
+  type: without-class-with-params-in-outputs
+  outputs: |
+    {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
+    {{ if not .Params.po1 }}{{ fail "expected 'po1' param for the target workload name" }}{{ end }}
+    o1: o1
+    o2: o2
+
+- uri: template://test-provisioners/with-class-with-params-in-outputs
+  type: with-class-with-params-in-outputs
+  class: c1
+  outputs: |
+    {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
+    {{ if not .Params.po1 }}{{ fail "expected 'po1' param for the target workload name" }}{{ end }}
+    o1: o1
+    o2: o2
+
 - uri: template://test-provisioners/without-class-with-params-in-shared
   type: without-class-with-params-in-shared
   outputs: |
@@ -23,7 +35,8 @@
     o2: o2
   shared: |
     {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
-    {{ if not .Params.p2 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
+    {{ if not .Params.psh1 }}{{ fail "expected 'psh1' param for the target workload name" }}{{ end }}
+
 - uri: template://test-provisioners/with-class-with-params-in-shared
   type: with-class-with-params-in-shared
   class: c1
@@ -32,7 +45,8 @@
     o2: o2
   shared: |
     {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
-    {{ if not .Params.p2 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
+    {{ if not .Params.psh1 }}{{ fail "expected 'psh1' param for the target workload name" }}{{ end }}
+
 - uri: template://test-provisioners/without-class-with-params-in-state
   type: without-class-with-params-in-state
   outputs: |
@@ -40,71 +54,90 @@
     o2: o2
   state: |
     {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
-    {{ if not .Params.p2 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
+    {{ if not .Params.psh1 }}{{ fail "expected 'psh1' param for the target workload name" }}{{ end }}
+
 - uri: template://test-provisioners/with-class-with-params-in-state
   type: with-class-with-params-in-state
   class: c1
   outputs: |
     o1: o1
     o2: o2
-  shared: |
+  state: |
     {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
-    {{ if not .Params.p2 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
-- uri: template://test-provisioners/without-class-with-params-in-state-outputs
-  type: without-class-with-params-in-state-outputs
+    {{ if not .Params.pst1 }}{{ fail "expected 'pst1' param for the target workload name" }}{{ end }}
+
+- uri: template://test-provisioners/without-class-with-params-in-shared-outputs
+  type: without-class-with-params-in-shared-outputs
   outputs: |
     {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
-    {{ if not .Params.p2 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
-    {{ if not .Params.po1 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
+    {{ if not .Params.po1 }}{{ fail "expected 'po1' param for the target workload name" }}{{ end }}
     o1: o1
     o2: o2
   shared: |
     {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
-    {{ if not .Params.p2 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
-    {{ if not .Params.ps1 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
+    {{ if not .Params.psh1 }}{{ fail "expected 'psh1' param for the target workload name" }}{{ end }}
+
+- uri: template://test-provisioners/with-class-with-params-in-shared-outputs
+  type: with-class-with-params-in-shared-outputs
+  class: c1
+  outputs: |
+    {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
+    {{ if not .Params.po1 }}{{ fail "expected 'po1' param for the target workload name" }}{{ end }}
+    o1: o1
+    o2: o2
+  shared: |
+    {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
+    {{ if not .Params.psh1 }}{{ fail "expected 'psh1' param for the target workload name" }}{{ end }}
+
+
+- uri: template://test-provisioners/without-class-with-params-in-state-outputs
+  type: without-class-with-params-in-state-outputs
+  outputs: |
+    {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
+    {{ if not .Params.po1 }}{{ fail "expected 'po1' param for the target workload name" }}{{ end }}
+    o1: o1
+    o2: o2
+  state: |
+    {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
+    {{ if not .Params.pst1 }}{{ fail "expected 'pst1' param for the target workload name" }}{{ end }}
+
 - uri: template://test-provisioners/with-class-with-params-in-state-outputs
   type: with-class-with-params-in-state-outputs
   class: c1
   outputs: |
     {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
-    {{ if not .Params.p2 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
-    {{ if not .Params.po1 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
+    {{ if not .Params.po1 }}{{ fail "expected 'po1' param for the target workload name" }}{{ end }}
     o1: o1
     o2: o2
   shared: |
     {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
-    {{ if not .Params.p2 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
-    {{ if not .Params.ps1 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
-- uri: template://test-provisioners/without-class-with-params-in-state-outputs-state
-  type: without-class-with-params-in-state-outputs-state
+    {{ if not .Params.pst1 }}{{ fail "expected 'pst1' param for the target workload name" }}{{ end }}
+
+- uri: template://test-provisioners/without-class-with-params-in-state-outputs-state-shared
+  type: without-class-with-params-in-state-outputs-shared
   outputs: |
     {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
-    {{ if not .Params.p2 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
-    {{ if not .Params.po1 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
+    {{ if not .Params.po1 }}{{ fail "expected 'po1' param for the target workload name" }}{{ end }}
     o1: o1
     o2: o2
   state: |
     {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
-    {{ if not .Params.p2 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
-    {{ if not .Params.pst1 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
+    {{ if not .Params.pst1 }}{{ fail "expected 'pst1' param for the target workload name" }}{{ end }}
   shared: |
     {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
-    {{ if not .Params.p2 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
-    {{ if not .Params.ps1 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
-- uri: template://test-provisioners/with-class-with-params-in-state-outputs-state
-  type: with-class-with-params-in-state-outputs-state
+    {{ if not .Params.psh1 }}{{ fail "expected 'psh1' param for the target workload name" }}{{ end }}
+
+- uri: template://test-provisioners/with-class-with-params-in-state-outputs-shared
+  type: with-class-with-params-in-state-outputs-shared
   class: c1
   outputs: |
     {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
-    {{ if not .Params.p2 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
-    {{ if not .Params.po1 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
+    {{ if not .Params.po1 }}{{ fail "expected 'po1' param for the target workload name" }}{{ end }}
     o1: o1
     o2: o2
   state: |
     {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
-    {{ if not .Params.p2 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
-    {{ if not .Params.pst1 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
+    {{ if not .Params.pst1 }}{{ fail "expected 'pst1' param for the target workload name" }}{{ end }}
   shared: |
     {{ if not .Params.p1 }}{{ fail "expected 'p1' param for the target workload name" }}{{ end }}
-    {{ if not .Params.p2 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
-    {{ if not .Params.pst1 }}{{ fail "expected 'p2' param for the target workload name" }}{{ end }}
+    {{ if not .Params.psh1 }}{{ fail "expected 'psh1' param for the target workload name" }}{{ end }}
