@@ -77,7 +77,7 @@ func listProvisioners(cmd *cobra.Command, args []string) error {
 }
 
 func displayProvisioners(loadedProvisioners []provisioners.Provisioner) error {
-	rows := make([][]string, len(loadedProvisioners))
+	rows := [][]string{}
 
 	sortedProvisioners := sortProvisionersByType(loadedProvisioners)
 	for _, provisioner := range sortedProvisioners {
