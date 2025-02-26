@@ -35,7 +35,7 @@ var (
 		Short: "Subcommands related to provisioners",
 	}
 	provisionersList = &cobra.Command{
-		Use:   "list [--format|-f table|json]",
+		Use:   "list [--format table|json]",
 		Short: "List the provisioners",
 		Long: `The list command will list out the provisioners. This requires an active score compose state
 after 'init' or 'generate' has been run. The list of provisioners will be empty if no provisioners are defined.
