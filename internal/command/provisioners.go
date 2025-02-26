@@ -21,13 +21,12 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/olekukonko/tablewriter"
-
 	"github.com/spf13/cobra"
 
 	"github.com/score-spec/score-compose/internal/project"
 	"github.com/score-spec/score-compose/internal/provisioners"
 	"github.com/score-spec/score-compose/internal/provisioners/loader"
+	"github.com/score-spec/score-compose/internal/util"
 )
 
 var (
@@ -36,7 +35,7 @@ var (
 		Short: "Subcommands related to provisioners",
 	}
 	provisionersList = &cobra.Command{
-		Use:   "list",
+		Use:   "list [--format|-f table|json]",
 		Short: "List the provisioners",
 		Long: `The list command will list out the provisioners. This requires an active score compose state
 after 'init' or 'generate' has been run. The list of provisioners will be empty if no provisioners are defined.
@@ -46,6 +45,13 @@ after 'init' or 'generate' has been run. The list of provisioners will be empty 
 		RunE:          listProvisioners,
 	}
 )
+
+type provisionerOutput struct {
+	Type    string
+	Class   string
+	Params  string
+	Outputs string
+}
 
 func listProvisioners(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
@@ -68,26 +74,45 @@ func listProvisioners(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	err = displayProvisioners(provisioners)
-	if err != nil {
-		return fmt.Errorf("failed to display provisioners: %w", err)
-	}
+	outputFormat := cmd.Flag("format").Value.String()
+
+	displayProvisioners(provisioners, outputFormat)
 
 	return nil
 }
 
-func displayProvisioners(loadedProvisioners []provisioners.Provisioner) error {
-	rows := [][]string{}
+func displayProvisioners(loadedProvisioners []provisioners.Provisioner, outputFormat string) {
+	var outputFormatter util.OutputFormatter
 
 	sortedProvisioners := sortProvisionersByType(loadedProvisioners)
-	for _, provisioner := range sortedProvisioners {
-		rows = append(rows, []string{provisioner.Type(), provisioner.Class(), strings.Join(provisioner.Params(), ", "), strings.Join(provisioner.Outputs(), ", ")})
+
+	switch outputFormat {
+	case "json":
+		var outputs []provisionerOutput
+		for _, provisioner := range sortedProvisioners {
+			outputs = append(outputs, provisionerOutput{
+				Type:    provisioner.Type(),
+				Class:   provisioner.Class(),
+				Params:  strings.Join(provisioner.Params(), ", "),
+				Outputs: strings.Join(provisioner.Outputs(), ", "),
+			})
+		}
+		outputFormatter = &util.JSONOutputFormatter[[]provisionerOutput]{Data: outputs}
+	default:
+		rows := [][]string{}
+
+		for _, provisioner := range sortedProvisioners {
+			rows = append(rows, []string{provisioner.Type(), provisioner.Class(), strings.Join(provisioner.Params(), ", "), strings.Join(provisioner.Outputs(), ", ")})
+		}
+
+		headers := []string{"Type", "Class", "Params", "Outputs"}
+
+		outputFormatter = &util.TableOutputFormatter{
+			Headers: headers,
+			Rows:    rows,
+		}
 	}
-
-	headers := []string{"Type", "Class", "Params", "Outputs"}
-	displayTable(headers, rows)
-
-	return nil
+	outputFormatter.Display()
 }
 
 func sortProvisionersByType(provisioners []provisioners.Provisioner) []provisioners.Provisioner {
@@ -97,19 +122,8 @@ func sortProvisionersByType(provisioners []provisioners.Provisioner) []provision
 	return provisioners
 }
 
-func displayTable(headers []string, rows [][]string) {
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader(headers)
-	table.AppendBulk(rows)
-	table.SetAutoWrapText(false)
-	table.SetRowLine(true)
-	table.SetCenterSeparator("+")
-	table.SetColumnSeparator("|")
-	table.SetRowSeparator("-")
-	table.Render()
-}
-
 func init() {
+	provisionersList.Flags().StringP("format", "f", "table", "Format of the output: table (default), json")
 	provisionersGroup.AddCommand(provisionersList)
 	rootCmd.AddCommand(provisionersGroup)
 }

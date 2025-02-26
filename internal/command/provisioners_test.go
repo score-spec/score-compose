@@ -31,48 +31,62 @@ var (
 )
 
 func TestDisplayProvisioners(t *testing.T) {
-	test := struct {
+	tests := []struct {
 		name             string
 		fixture          string
+		format           string
 		expectedResponse string
 		expectedError    string
 	}{
-		fixture:          "provisioners.custom.golden",
-		expectedResponse: "provisioners.list.valid.golden",
-		expectedError:    "",
+		{
+			name:             "display provisioners in table format",
+			fixture:          "provisioners.custom.golden",
+			format:           "table",
+			expectedResponse: "provisioners.list.valid.table.golden",
+			expectedError:    "",
+		},
+		{
+			name:             "display provisioners in json format",
+			fixture:          "provisioners.custom.golden",
+			format:           "json",
+			expectedResponse: "provisioners.list.valid.json.golden",
+			expectedError:    "",
+		},
 	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			provisioners, err := loader.LoadProvisionersFromDirectory("fixtures/", test.fixture)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	provisioners, err := loader.LoadProvisionersFromDirectory("fixtures/", test.fixture)
-	if err != nil {
-		t.Fatal(err)
+			// Capture the output
+			old := os.Stdout
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+
+			displayProvisioners(provisioners, test.format)
+
+			w.Close()
+			os.Stdout = old
+			out, _ := io.ReadAll(r)
+
+			got := string(out)
+
+			expected, err := goldenValue(t, "testdata", test.expectedResponse, got, *update)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if test.expectedError != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), test.expectedError)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, expected, got)
+			}
+		})
 	}
-
-	// Capture the output
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	err = displayProvisioners(provisioners)
-
-	w.Close()
-	os.Stdout = old
-	out, _ := io.ReadAll(r)
-
-	got := string(out)
-
-	expected, err := goldenValue(t, "testdata", test.expectedResponse, got, *update)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if test.expectedError != "" {
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), test.expectedError)
-	} else {
-		assert.NoError(t, err)
-		assert.Equal(t, expected, got)
-	}
-
 }
 
 func goldenValue(t *testing.T, path string, goldenFile string, actual string, update bool) (string, error) {
