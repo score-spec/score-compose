@@ -26,6 +26,9 @@
       driver: local
       labels:
         dev.score.compose.res.uid: {{ .Uid }}
+  expected_outputs:
+    - source
+    - type
 
 # The default provisioner for service resources, this expects a workload and port name and will return the hostname and
 # port required to contact it. This will validate that the workload and port exist, but won't enforce a dependency
@@ -41,6 +44,9 @@
     {{ if not $p }}{{ fail "unknown service port" }}{{ end }}
     hostname: {{ $w.ServiceName | quote }}
     port: {{ $p.TargetPort }}
+  expected_outputs:
+    - hostname
+    - port
 
 # The default redis provisioner adds a redis service to the project which returns a host, port, username, and password.
 - uri: template://default-provisioners/redis
@@ -97,6 +103,11 @@
           nocopy: true
   info_logs: |
     - "{{.Uid}}: To connect to redis: \"docker run -it --network {{ .ComposeProjectName }}_default --rm redis redis-cli -h {{ .State.serviceName | squote }} -a {{ .State.password | squote }}\""
+  expected_outputs:
+    - host
+    - port
+    - username
+    - password
 
 # The default postgres provisioner adds a postgres instance and then ensures that the required databases are created on
 # startup.
@@ -189,6 +200,13 @@
     {{ if ne .Init.publishPort "0" }}
     - "{{.Uid}}: Or connect your postgres client to \"postgres://{{ .State.username }}:{{ .State.password }}@localhost:{{ .Init.publishPort }}/{{ .State.database }}\""
     {{ end }}
+  expected_outputs:
+    - host
+    - port
+    - name
+    - database
+    - username
+    - password
 
 # This resource provides a minio based S3 bucket with AWS-style credentials.
 # This provides some common and well known outputs that can be used with any generic AWS s3 client.
@@ -285,6 +303,14 @@
     {{ if ne .Init.publishPort 0 }}
     - "{{.Uid}}: Or enter {{ dig .Init.sk "instanceUsername" "" .Shared }} / {{ dig .Init.sk "instancePassword" "" .Shared }} at https://localhost:{{ .Init.publishPort }}"
     {{ end }}
+  expected_outputs:
+    - bucket
+    - access_key_id
+    - secret_key
+    - endpoint
+    - region
+    - aws_access_key_id
+    - aws_secret_key
 
 # The default AMQP provisioner provides a simple rabbitmq instance with default configuration and plugins.
 - uri: template://default-provisioners/rabbitmq
@@ -369,6 +395,12 @@
     {{ if ne .Init.publishManagementPort 0 }}
     - "{{.Uid}}: Browse the rabbitmq UI at \"http://localhost:{{ .Init.publishManagementPort }}\""
     {{ end }}
+  expected_outputs:
+    - host
+    - port
+    - vhost
+    - username
+    - password
 
 # The default dns provisioner just outputs localhost as the hostname every time.
 # This is because without actual control of a dns resolver we can't do any accurate routing on any other name. This
@@ -381,6 +413,8 @@
     instanceHostname: {{ dig "instanceHostname" .Init.randomHostname .State | quote }}
   outputs: |
     host: {{ .State.instanceHostname }}
+  expected_outputs:
+    - host
 
 # The default route provisioner sets up an nginx service with an HTTP service that can route on our prefix paths.
 # It assumes the hostnames and routes provided have no overlaps. Weird behavior may happen if there are overlaps.
@@ -531,6 +565,12 @@
           nocopy: true
   info_logs: |
     - "{{.Uid}}: To connect to mongo: \"docker exec -ti {{ .ComposeProjectName }}-{{ .State.serviceName }}-1 mongosh -u {{ .State.username }} -p {{ .State.password }}\""
+  expected_outputs:
+    - host
+    - port
+    - username
+    - password
+    - connection
 
 # The default mysql provisioner adds a mysql instance and then ensures that the required databases are created on
 # startup.
@@ -611,6 +651,13 @@
     - "{{.Uid}}: Or connect your mysql client to \"
     mysql://{{ .State.username }}:{{ .State.password }}@{{ dig .Init.sk "instanceServiceName" "" .Shared }}:{{ .Init.publishPort }}/{{ .State.database }}\""
     {{ end }}
+  expected_outputs:
+    - host
+    - port
+    - name
+    - database
+    - username
+    - password
 
 - uri: template://default-provisioners/kafka-topic
   type: kafka-topic
@@ -667,6 +714,11 @@
     port: "{{ .Init.brokerPort }}"
     name: {{ .State.topic }}
     num_partitions: 3
+  expected_outputs:
+    - host
+    - port
+    - name
+    - num_partitions
 
 # The default elasticsearch provisioner adds a elasticsearch instance.
 - uri: template://default-provisioners/elasticsearch
@@ -799,6 +851,11 @@
         \tdocker cp [CONTAINER-NAME]:/usr/share/elasticsearch/config/certs/ca/ca.crt /tmp/ \n
         and than check connection per culr like: \n
         \tcurl --cacert /tmp/ca.crt -u {{ .State.username }}:{{ .State.password }} https://localhost:{{ .Init.publishPort }}"
+  expected_outputs:
+    - host
+    - port
+    - username
+    - password
 
 - uri: template://default-provisioners/mssql
   type: mssql
@@ -847,3 +904,10 @@
     - "{{.Uid}}: Or connect your mssql client to \"
     Server=tcp:{{ .State.service }},1433;Initial Catalog={{ .State.database }};User ID={{ .State.username }};Password={{ .State.password }};\""
     {{ end }}
+  expected_outputs:
+    - server
+    - port
+    - connection
+    - database
+    - username
+    - password

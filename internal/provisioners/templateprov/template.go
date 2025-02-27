@@ -74,6 +74,9 @@ type Provisioner struct {
 	// InfoLogsTemplate allows the provisioner to return informational messages for the user which may help connecting or
 	// testing the provisioned resource
 	InfoLogsTemplate string `yaml:"info_logs,omitempty"`
+
+	// ExpectedOutputs is a list of expected outputs that the provisioner should return.
+	ExpectedOutputs []string `yaml:"expected_outputs,omitempty"`
 }
 
 func Parse(raw map[string]interface{}) (*Provisioner, error) {
@@ -144,16 +147,11 @@ func retrieveParams(data string) []string {
 }
 
 func (p *Provisioner) Outputs() []string {
-	if p.OutputsTemplate == "" {
+	if p.ExpectedOutputs == nil {
 		return []string{}
 	}
-	re := regexp.MustCompile(`\w+:`)
-	matches := re.FindAllString(p.OutputsTemplate, -1)
-	var outputs []string
-	for _, match := range matches {
-		outputs = append(outputs, strings.TrimSuffix(match, ":"))
-	}
-
+	outputs := make([]string, len(p.ExpectedOutputs))
+	copy(outputs, p.ExpectedOutputs)
 	slices.Sort(outputs)
 	return outputs
 }
