@@ -31,8 +31,10 @@ func TestProvision(t *testing.T) {
 	td := t.TempDir()
 	resUid := framework.NewResourceUid("w", "r", "thing", nil, nil)
 	p, err := Parse(map[string]interface{}{
-		"uri":  "template://example",
-		"type": resUid.Type(),
+		"uri":              "template://example",
+		"type":             resUid.Type(),
+		"expected_outputs": []string{"b", "c"},
+		"supported_params": []string{"ptest"},
 		"init": `
 a: {{ .Uid }}
 b: {{ .Type }}
