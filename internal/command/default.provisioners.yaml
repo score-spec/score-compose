@@ -47,6 +47,9 @@
   expected_outputs:
     - hostname
     - port
+  supported_params:
+    - workload
+    - port
 
 # The default redis provisioner adds a redis service to the project which returns a host, port, username, and password.
 - uri: template://default-provisioners/redis
@@ -517,6 +520,10 @@
   info_logs: |
     {{ $p := (dig .Init.sk "instancePort" 0 .Shared) }}
     - "{{.Uid}}: To connect to this route, http://{{ .Params.host }}:{{ $p }}{{ .Params.path }} (make sure {{ .Params.host }} resolves to localhost)"
+  supported_params:
+    - host
+    - port
+    - path
 
 # The default mongodb provisioner adds a mongodb service to the project which returns a host, port, username, and password, and connection string.
 - uri: template://default-provisioners/mongodb

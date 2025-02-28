@@ -46,13 +46,6 @@ after 'init' or 'generate' has been run. The list of provisioners will be empty 
 	}
 )
 
-type provisionerOutput struct {
-	Type    string
-	Class   string
-	Params  string
-	Outputs string
-}
-
 func listProvisioners(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 	wd, _ := os.Getwd()
@@ -88,16 +81,22 @@ func displayProvisioners(loadedProvisioners []provisioners.Provisioner, outputFo
 
 	switch outputFormat {
 	case "json":
-		var outputs []provisionerOutput
+		type jsonData struct {
+			Type    string
+			Class   string
+			Params  []string
+			Outputs []string
+		}
+		var outputs []jsonData
 		for _, provisioner := range sortedProvisioners {
-			outputs = append(outputs, provisionerOutput{
+			outputs = append(outputs, jsonData{
 				Type:    provisioner.Type(),
 				Class:   provisioner.Class(),
-				Params:  strings.Join(provisioner.Params(), ", "),
-				Outputs: strings.Join(provisioner.Outputs(), ", "),
+				Params:  provisioner.Params(),
+				Outputs: provisioner.Outputs(),
 			})
 		}
-		outputFormatter = &util.JSONOutputFormatter[[]provisionerOutput]{Data: outputs}
+		outputFormatter = &util.JSONOutputFormatter[[]jsonData]{Data: outputs}
 	default:
 		rows := [][]string{}
 

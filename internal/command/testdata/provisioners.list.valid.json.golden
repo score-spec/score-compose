@@ -2,85 +2,171 @@
   {
     "Type": "with-class-with-params-in-outputs",
     "Class": "c1",
-    "Params": "p1, po1",
-    "Outputs": "o1, o2"
+    "Params": [
+      "p1",
+      "po1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ]
   },
   {
     "Type": "with-class-with-params-in-shared",
     "Class": "c1",
-    "Params": "p1, psh1",
-    "Outputs": "o1, o2"
+    "Params": [
+      "p1",
+      "psh1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ]
   },
   {
     "Type": "with-class-with-params-in-shared-outputs",
     "Class": "c1",
-    "Params": "p1, po1, psh1",
-    "Outputs": "o1, o2"
+    "Params": [
+      "p1",
+      "po1",
+      "psh1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ]
   },
   {
     "Type": "with-class-with-params-in-state",
     "Class": "c1",
-    "Params": "p1, pst1",
-    "Outputs": "o1, o2"
+    "Params": [
+      "p1",
+      "pst1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ]
   },
   {
     "Type": "with-class-with-params-in-state-outputs",
     "Class": "c1",
-    "Params": "p1, po1, pst1",
-    "Outputs": "o1, o2"
+    "Params": [
+      "p1",
+      "po1",
+      "pst1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ]
   },
   {
     "Type": "with-class-with-params-in-state-outputs-shared",
     "Class": "c1",
-    "Params": "p1, po1, psh1, pst1",
-    "Outputs": "o1, o2"
+    "Params": [
+      "p1",
+      "po1",
+      "psh1",
+      "pst1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ]
   },
   {
     "Type": "with-class-without-params",
     "Class": "c1",
-    "Params": "",
-    "Outputs": "o1, o2"
+    "Params": [],
+    "Outputs": [
+      "o1",
+      "o2"
+    ]
   },
   {
     "Type": "without-class-with-params-in-outputs",
     "Class": "(any)",
-    "Params": "p1, po1",
-    "Outputs": "o1, o2"
+    "Params": [
+      "p1",
+      "po1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ]
   },
   {
     "Type": "without-class-with-params-in-shared",
     "Class": "(any)",
-    "Params": "p1, psh1",
-    "Outputs": "o1, o2"
+    "Params": [
+      "p1",
+      "psh1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ]
   },
   {
     "Type": "without-class-with-params-in-shared-outputs",
     "Class": "(any)",
-    "Params": "p1, po1, psh1",
-    "Outputs": "o1, o2"
+    "Params": [
+      "p1",
+      "po1",
+      "psh1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ]
   },
   {
     "Type": "without-class-with-params-in-state",
     "Class": "(any)",
-    "Params": "p1, psh1",
-    "Outputs": "o1, o2"
+    "Params": [
+      "p1",
+      "psh1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ]
   },
   {
     "Type": "without-class-with-params-in-state-outputs",
     "Class": "(any)",
-    "Params": "p1, po1, pst1",
-    "Outputs": "o1, o2"
+    "Params": [
+      "p1",
+      "po1",
+      "pst1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ]
   },
   {
     "Type": "without-class-with-params-in-state-outputs-shared",
     "Class": "(any)",
-    "Params": "p1, po1, psh1, pst1",
-    "Outputs": "o1, o2"
+    "Params": [
+      "p1",
+      "po1",
+      "psh1",
+      "pst1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ]
   },
   {
     "Type": "without-class-without-params",
     "Class": "(any)",
-    "Params": "",
-    "Outputs": "o1, o2"
+    "Params": [],
+    "Outputs": [
+      "o1",
+      "o2"
+    ]
   }
 ]

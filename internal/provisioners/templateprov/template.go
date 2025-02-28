@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"regexp"
 	"slices"
 	"strings"
 	"text/template"
@@ -75,6 +74,9 @@ type Provisioner struct {
 	// testing the provisioned resource
 	InfoLogsTemplate string `yaml:"info_logs,omitempty"`
 
+	// SupportedParams is a list of parameters that the provisioner expects to be passed in.
+	SupportedParams []string `yaml:"supported_params,omitempty"`
+
 	// ExpectedOutputs is a list of expected outputs that the provisioner should return.
 	ExpectedOutputs []string `yaml:"expected_outputs,omitempty"`
 }
@@ -111,39 +113,13 @@ func (p *Provisioner) Type() string {
 }
 
 func (p *Provisioner) Params() []string {
-	params := []string{}
-	if p.StateTemplate != "" {
-		params = append(params, retrieveParams(p.StateTemplate)...)
+	if p.SupportedParams == nil {
+		return []string{}
 	}
-
-	if p.OutputsTemplate != "" {
-		params = append(params, retrieveParams(p.OutputsTemplate)...)
-	}
-
-	if p.SharedStateTemplate != "" {
-		params = append(params, retrieveParams(p.SharedStateTemplate)...)
-	}
-
+	params := make([]string, len(p.SupportedParams))
+	copy(params, p.SupportedParams)
 	slices.Sort(params)
-	return slices.Compact(params)
-}
-
-func retrieveParams(data string) []string {
-	re := regexp.MustCompile(`\.Params\.(\w+)`)
-	matches := re.FindAllString(data, -1)
-
-	uniqueMatchesMap := make(map[string]bool)
-	var params []string
-
-	for _, match := range matches {
-		if _, exists := uniqueMatchesMap[match]; !exists {
-			uniqueMatchesMap[match] = true
-			params = append(params, strings.TrimPrefix(match, ".Params."))
-		}
-	}
-
 	return params
-
 }
 
 func (p *Provisioner) Outputs() []string {
