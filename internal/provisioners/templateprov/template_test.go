@@ -48,7 +48,6 @@ p: {{ .ComposeProjectName }}
 c: 1
 `,
 		"outputs": `
-{{ if not .Params.ptest }}{{ end }}
 b: {{ .State.b | upper }}
 c: {{ .Shared.c }}
 `,
