@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -72,6 +73,12 @@ type Provisioner struct {
 	// InfoLogsTemplate allows the provisioner to return informational messages for the user which may help connecting or
 	// testing the provisioned resource
 	InfoLogsTemplate string `yaml:"info_logs,omitempty"`
+
+	// SupportedParams is a list of parameters that the provisioner expects to be passed in.
+	SupportedParams []string `yaml:"supported_params,omitempty"`
+
+	// ExpectedOutputs is a list of expected outputs that the provisioner should return.
+	ExpectedOutputs []string `yaml:"expected_outputs,omitempty"`
 }
 
 func Parse(raw map[string]interface{}) (*Provisioner, error) {
@@ -92,6 +99,37 @@ func Parse(raw map[string]interface{}) (*Provisioner, error) {
 
 func (p *Provisioner) Uri() string {
 	return p.ProvisionerUri
+}
+
+func (p *Provisioner) Class() string {
+	if p.ResClass == nil {
+		return "(any)"
+	}
+	return *p.ResClass
+}
+
+func (p *Provisioner) Type() string {
+	return p.ResType
+}
+
+func (p *Provisioner) Params() []string {
+	if p.SupportedParams == nil {
+		return []string{}
+	}
+	params := make([]string, len(p.SupportedParams))
+	copy(params, p.SupportedParams)
+	slices.Sort(params)
+	return params
+}
+
+func (p *Provisioner) Outputs() []string {
+	if p.ExpectedOutputs == nil {
+		return []string{}
+	}
+	outputs := make([]string, len(p.ExpectedOutputs))
+	copy(outputs, p.ExpectedOutputs)
+	slices.Sort(outputs)
+	return outputs
 }
 
 func (p *Provisioner) Match(resUid framework.ResourceUid) bool {
