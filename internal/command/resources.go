@@ -27,6 +27,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/score-spec/score-compose/internal/project"
+	"github.com/score-spec/score-compose/internal/util"
 )
 
 const (
@@ -60,10 +61,18 @@ after 'init' or 'generate' has been run. The list of uids will be empty if no re
 			if err != nil {
 				return fmt.Errorf("failed to sort resources: %w", err)
 			}
+
+			var rows [][]string
 			for _, id := range resIds {
-				_, _ = cmd.OutOrStdout().Write([]byte(id))
-				_, _ = cmd.OutOrStdout().Write([]byte("\n"))
+				rows = append(rows, []string{string(id)})
 			}
+
+			var listOutput = util.TableOutputFormatter{
+				Headers: []string{"UID"},
+				Rows:    rows,
+			}
+
+			listOutput.Display()
 			return nil
 		},
 	}
