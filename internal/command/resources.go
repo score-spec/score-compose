@@ -59,8 +59,7 @@ after 'init' or 'generate' has been run. The list of uids will be empty if no re
 			if err != nil {
 				return fmt.Errorf("failed to sort resources: %w", err)
 			}
-			displayResourcesUid(resIds, cmd)
-			return nil
+			return displayResourcesUid(resIds, cmd)
 		},
 	}
 	getResourceOutputs = &cobra.Command{
@@ -114,11 +113,11 @@ func displayResourcesOutput(outputs map[string]interface{}, cmd *cobra.Command) 
 		}
 		return nil
 	}
-	outputFormatter.Display()
-	return nil
+
+	return outputFormatter.Display()
 }
 
-func displayResourcesUid(resources []framework.ResourceUid, cmd *cobra.Command) {
+func displayResourcesUid(resources []framework.ResourceUid, cmd *cobra.Command) error {
 	outputFormat := cmd.Flag("format").Value.String()
 	var outputFormatter util.OutputFormatter
 
@@ -134,7 +133,7 @@ func displayResourcesUid(resources []framework.ResourceUid, cmd *cobra.Command) 
 			})
 		}
 		outputFormatter = &util.JSONOutputFormatter[[]jsonData]{Data: outputs, Out: cmd.OutOrStdout()}
-	case "table":
+	default:
 		var rows [][]string
 		for _, resource := range resources {
 			rows = append(rows, []string{string(resource)})
@@ -144,12 +143,9 @@ func displayResourcesUid(resources []framework.ResourceUid, cmd *cobra.Command) 
 			Rows:    rows,
 			Out:     cmd.OutOrStdout(),
 		}
-	default:
-		slog.Error(fmt.Sprintf("Unsupported output format '%s'", outputFormat))
-		return
 	}
 
-	outputFormatter.Display()
+	return outputFormatter.Display()
 }
 
 func init() {

@@ -17,7 +17,6 @@ package util
 import (
 	"encoding/json"
 	"io"
-	"log/slog"
 	"os"
 
 	"github.com/olekukonko/tablewriter"
@@ -25,7 +24,7 @@ import (
 )
 
 type OutputFormatter interface {
-	Display()
+	Display() error
 }
 
 type JSONOutputFormatter[T any] struct {
@@ -44,7 +43,7 @@ type TableOutputFormatter struct {
 	Out     io.Writer
 }
 
-func (t *TableOutputFormatter) Display() {
+func (t *TableOutputFormatter) Display() error {
 	// Default to stdout if no output is provided
 	if t.Out == nil {
 		t.Out = os.Stdout
@@ -58,29 +57,31 @@ func (t *TableOutputFormatter) Display() {
 	table.SetColumnSeparator("|")
 	table.SetRowSeparator("-")
 	table.Render()
+	return nil
 }
 
-func (j *JSONOutputFormatter[T]) Display() {
+func (j *JSONOutputFormatter[T]) Display() error {
 	// Default to stdout if no output is provided
 	if j.Out == nil {
 		j.Out = os.Stdout
 	}
 	encoder := json.NewEncoder(j.Out)
 	encoder.SetIndent("", "  ")
-	err := encoder.Encode(j.Data)
-	if err != nil {
-		slog.Error(err.Error())
+	if err := encoder.Encode(j.Data); err != nil {
+		return err
 	}
+	return nil
 }
 
-func (f *YAMLOutputFormatter[T]) Display() {
+func (y *YAMLOutputFormatter[T]) Display() error {
 	// Default to stdout if no output is provided
-	if f.Out == nil {
-		f.Out = os.Stdout
+	if y.Out == nil {
+		y.Out = os.Stdout
 	}
 
-	encoder := yaml.NewEncoder(f.Out)
-	if err := encoder.Encode(f.Data); err != nil {
-		slog.Error(err.Error())
+	encoder := yaml.NewEncoder(y.Out)
+	if err := encoder.Encode(y.Data); err != nil {
+		return err
 	}
+	return nil
 }
