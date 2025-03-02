@@ -21,6 +21,7 @@ import (
 	"os"
 
 	"github.com/olekukonko/tablewriter"
+	"gopkg.in/yaml.v3"
 )
 
 type OutputFormatter interface {
@@ -28,6 +29,11 @@ type OutputFormatter interface {
 }
 
 type JSONOutputFormatter[T any] struct {
+	Data T
+	Out  io.Writer
+}
+
+type YAMLOutputFormatter[T any] struct {
 	Data T
 	Out  io.Writer
 }
@@ -63,6 +69,18 @@ func (j *JSONOutputFormatter[T]) Display() {
 	encoder.SetIndent("", "  ")
 	err := encoder.Encode(j.Data)
 	if err != nil {
+		slog.Error(err.Error())
+	}
+}
+
+func (f *YAMLOutputFormatter[T]) Display() {
+	// Default to stdout if no output is provided
+	if f.Out == nil {
+		f.Out = os.Stdout
+	}
+
+	encoder := yaml.NewEncoder(f.Out)
+	if err := encoder.Encode(f.Data); err != nil {
 		slog.Error(err.Error())
 	}
 }

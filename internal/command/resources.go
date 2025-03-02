@@ -15,7 +15,6 @@
 package command
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -24,7 +23,6 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	"github.com/score-spec/score-go/framework"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 
 	"github.com/score-spec/score-compose/internal/project"
 	"github.com/score-spec/score-compose/internal/util"
@@ -61,7 +59,7 @@ after 'init' or 'generate' has been run. The list of uids will be empty if no re
 			if err != nil {
 				return fmt.Errorf("failed to sort resources: %w", err)
 			}
-			displayResourcesUid(resIds, cmd.Flag("format").Value.String(), cmd)
+			displayResourcesUid(resIds, cmd)
 			return nil
 		},
 	}
@@ -87,33 +85,41 @@ be returned as json.
 				if outputs == nil {
 					outputs = make(map[string]interface{})
 				}
-				formatValue := cmd.Flags().Lookup(getOutputsCmdFormatFlag).Value.String()
-				switch formatValue {
-				case "json":
-					return json.NewEncoder(cmd.OutOrStdout()).Encode(outputs)
-				case "yaml":
-					return yaml.NewEncoder(cmd.OutOrStdout()).Encode(outputs)
-				default:
-					// ensure there is a new line at the end if one is not already present
-					if !strings.HasSuffix(formatValue, "\n") {
-						formatValue += "\n"
-					}
-					prepared, err := template.New("").Funcs(sprig.FuncMap()).Parse(formatValue)
-					if err != nil {
-						return fmt.Errorf("failed to parse format template: %w", err)
-					}
-					if err := prepared.Execute(cmd.OutOrStdout(), outputs); err != nil {
-						return fmt.Errorf("failed to execute template: %w", err)
-					}
-					return nil
-				}
+				return displayResourcesOutput(outputs, cmd)
 			}
 			return fmt.Errorf("no such resource '%s'", args[0])
 		},
 	}
 )
 
-func displayResourcesUid(resources []framework.ResourceUid, outputFormat string, cmd *cobra.Command) {
+func displayResourcesOutput(outputs map[string]interface{}, cmd *cobra.Command) error {
+	outputFormat := cmd.Flags().Lookup(getOutputsCmdFormatFlag).Value.String()
+	var outputFormatter util.OutputFormatter
+	switch outputFormat {
+	case "json":
+		outputFormatter = &util.JSONOutputFormatter[map[string]interface{}]{Data: outputs, Out: cmd.OutOrStdout()}
+	case "yaml":
+		outputFormatter = &util.YAMLOutputFormatter[map[string]interface{}]{Data: outputs, Out: cmd.OutOrStdout()}
+	default:
+		// ensure there is a new line at the end if one is not already present
+		if !strings.HasSuffix(outputFormat, "\n") {
+			outputFormat += "\n"
+		}
+		prepared, err := template.New("").Funcs(sprig.FuncMap()).Parse(outputFormat)
+		if err != nil {
+			return fmt.Errorf("failed to parse format template: %w", err)
+		}
+		if err := prepared.Execute(cmd.OutOrStdout(), outputs); err != nil {
+			return fmt.Errorf("failed to execute template: %w", err)
+		}
+		return nil
+	}
+	outputFormatter.Display()
+	return nil
+}
+
+func displayResourcesUid(resources []framework.ResourceUid, cmd *cobra.Command) {
+	outputFormat := cmd.Flag("format").Value.String()
 	var outputFormatter util.OutputFormatter
 
 	switch outputFormat {
