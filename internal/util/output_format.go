@@ -17,6 +17,7 @@ package util
 import (
 	"encoding/json"
 	"io"
+	"log/slog"
 	"os"
 
 	"github.com/olekukonko/tablewriter"
@@ -38,6 +39,7 @@ type TableOutputFormatter struct {
 }
 
 func (t *TableOutputFormatter) Display() {
+	// Default to stdout if no output is provided
 	if t.Out == nil {
 		t.Out = os.Stdout
 	}
@@ -53,10 +55,14 @@ func (t *TableOutputFormatter) Display() {
 }
 
 func (j *JSONOutputFormatter[T]) Display() {
+	// Default to stdout if no output is provided
 	if j.Out == nil {
 		j.Out = os.Stdout
 	}
 	encoder := json.NewEncoder(j.Out)
 	encoder.SetIndent("", "  ")
-	encoder.Encode(j.Data)
+	err := encoder.Encode(j.Data)
+	if err != nil {
+		slog.Error(err.Error())
+	}
 }
