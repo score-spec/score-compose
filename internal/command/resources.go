@@ -61,18 +61,7 @@ after 'init' or 'generate' has been run. The list of uids will be empty if no re
 			if err != nil {
 				return fmt.Errorf("failed to sort resources: %w", err)
 			}
-
-			var rows [][]string
-			for _, id := range resIds {
-				rows = append(rows, []string{string(id)})
-			}
-
-			var listOutput = util.TableOutputFormatter{
-				Headers: []string{"UID"},
-				Rows:    rows,
-			}
-
-			listOutput.Display()
+			displayResourcesUid(resIds, cmd.Flag("format").Value.String())
 			return nil
 		},
 	}
@@ -124,9 +113,42 @@ be returned as json.
 	}
 )
 
+func displayResourcesUid(resources []framework.ResourceUid, outputFormat string) {
+	var outputFormatter util.OutputFormatter
+
+	switch outputFormat {
+	case "json":
+		type jsonData struct {
+			UID string
+		}
+		var outputs []jsonData
+		for _, resource := range resources {
+			outputs = append(outputs, jsonData{
+				UID: string(resource),
+			})
+		}
+		outputFormatter = &util.JSONOutputFormatter[[]jsonData]{Data: outputs}
+	case "table":
+		var rows [][]string
+		for _, resource := range resources {
+			rows = append(rows, []string{string(resource)})
+		}
+		outputFormatter = &util.TableOutputFormatter{
+			Headers: []string{"UID"},
+			Rows:    rows,
+		}
+	default:
+		slog.Error(fmt.Sprintf("Unsupported output format '%s'", outputFormat))
+		return
+	}
+
+	outputFormatter.Display()
+}
+
 func init() {
 	getResourceOutputs.Flags().StringP(getOutputsCmdFormatFlag, "f", "json", "Format of the output: json, yaml, or a Go template with sprig functions")
 	resourcesGroup.AddCommand(listResources)
+	listResources.Flags().StringP("format", "f", "table", "Format of the output: table (default), json")
 	resourcesGroup.AddCommand(getResourceOutputs)
 	rootCmd.AddCommand(resourcesGroup)
 }
