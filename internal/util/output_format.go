@@ -16,28 +16,39 @@ package util
 
 import (
 	"encoding/json"
-	"fmt"
-	"log/slog"
+	"io"
 	"os"
 
 	"github.com/olekukonko/tablewriter"
+	"gopkg.in/yaml.v3"
 )
 
 type OutputFormatter interface {
-	Display()
+	Display() error
 }
 
 type JSONOutputFormatter[T any] struct {
 	Data T
+	Out  io.Writer
+}
+
+type YAMLOutputFormatter[T any] struct {
+	Data T
+	Out  io.Writer
 }
 
 type TableOutputFormatter struct {
 	Headers []string
 	Rows    [][]string
+	Out     io.Writer
 }
 
-func (t *TableOutputFormatter) Display() {
-	table := tablewriter.NewWriter(os.Stdout)
+func (t *TableOutputFormatter) Display() error {
+	// Default to stdout if no output is provided
+	if t.Out == nil {
+		t.Out = os.Stdout
+	}
+	table := tablewriter.NewWriter(t.Out)
 	table.SetHeader(t.Headers)
 	table.AppendBulk(t.Rows)
 	table.SetAutoWrapText(false)
@@ -46,13 +57,31 @@ func (t *TableOutputFormatter) Display() {
 	table.SetColumnSeparator("|")
 	table.SetRowSeparator("-")
 	table.Render()
+	return nil
 }
 
-func (j *JSONOutputFormatter[T]) Display() {
-	output, err := json.MarshalIndent(j.Data, "", "  ")
-	if err != nil {
-		slog.Error(fmt.Sprintf("Failed to marshal data: %v", err))
-		return
+func (j *JSONOutputFormatter[T]) Display() error {
+	// Default to stdout if no output is provided
+	if j.Out == nil {
+		j.Out = os.Stdout
 	}
-	fmt.Println(string(output))
+	encoder := json.NewEncoder(j.Out)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(j.Data); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (y *YAMLOutputFormatter[T]) Display() error {
+	// Default to stdout if no output is provided
+	if y.Out == nil {
+		y.Out = os.Stdout
+	}
+
+	encoder := yaml.NewEncoder(y.Out)
+	if err := encoder.Encode(y.Data); err != nil {
+		return err
+	}
+	return nil
 }

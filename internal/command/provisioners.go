@@ -68,15 +68,11 @@ func listProvisioners(cmd *cobra.Command, args []string) error {
 	}
 
 	outputFormat := cmd.Flag("format").Value.String()
-
-	displayProvisioners(provisioners, outputFormat)
-
-	return nil
+	return displayProvisioners(provisioners, outputFormat)
 }
 
-func displayProvisioners(loadedProvisioners []provisioners.Provisioner, outputFormat string) {
+func displayProvisioners(loadedProvisioners []provisioners.Provisioner, outputFormat string) error {
 	var outputFormatter util.OutputFormatter
-
 	sortedProvisioners := sortProvisionersByType(loadedProvisioners)
 
 	switch outputFormat {
@@ -103,15 +99,13 @@ func displayProvisioners(loadedProvisioners []provisioners.Provisioner, outputFo
 		for _, provisioner := range sortedProvisioners {
 			rows = append(rows, []string{provisioner.Type(), provisioner.Class(), strings.Join(provisioner.Params(), ", "), strings.Join(provisioner.Outputs(), ", ")})
 		}
-
 		headers := []string{"Type", "Class", "Params", "Outputs"}
-
 		outputFormatter = &util.TableOutputFormatter{
 			Headers: headers,
 			Rows:    rows,
 		}
 	}
-	outputFormatter.Display()
+	return outputFormatter.Display()
 }
 
 func sortProvisionersByType(provisioners []provisioners.Provisioner) []provisioners.Provisioner {
