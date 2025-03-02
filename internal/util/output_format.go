@@ -56,5 +56,7 @@ func (j *JSONOutputFormatter[T]) Display() {
 	if j.Out == nil {
 		j.Out = os.Stdout
 	}
-	json.NewEncoder(j.Out).Encode(j.Data)
+	encoder := json.NewEncoder(j.Out)
+	encoder.SetIndent("", "  ")
+	encoder.Encode(j.Data)
 }

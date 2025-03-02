@@ -92,7 +92,14 @@ resources:
 	t.Run("list json", func(t *testing.T) {
 		stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"resources", "list", "-f", "json"})
 		assert.NoError(t, err)
-		assert.Equal(t, `[{"UID":"dns.default#example.dns"},{"UID":"volume.default#example.vol"}]
+		assert.Equal(t, `[
+  {
+    "UID": "dns.default#example.dns"
+  },
+  {
+    "UID": "volume.default#example.vol"
+  }
+]
 `, stdout)
 	})
 
