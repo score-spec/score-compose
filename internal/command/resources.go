@@ -61,7 +61,7 @@ after 'init' or 'generate' has been run. The list of uids will be empty if no re
 			if err != nil {
 				return fmt.Errorf("failed to sort resources: %w", err)
 			}
-			displayResourcesUid(resIds, cmd.Flag("format").Value.String())
+			displayResourcesUid(resIds, cmd.Flag("format").Value.String(), cmd)
 			return nil
 		},
 	}
@@ -113,7 +113,7 @@ be returned as json.
 	}
 )
 
-func displayResourcesUid(resources []framework.ResourceUid, outputFormat string) {
+func displayResourcesUid(resources []framework.ResourceUid, outputFormat string, cmd *cobra.Command) {
 	var outputFormatter util.OutputFormatter
 
 	switch outputFormat {
@@ -127,7 +127,7 @@ func displayResourcesUid(resources []framework.ResourceUid, outputFormat string)
 				UID: string(resource),
 			})
 		}
-		outputFormatter = &util.JSONOutputFormatter[[]jsonData]{Data: outputs}
+		outputFormatter = &util.JSONOutputFormatter[[]jsonData]{Data: outputs, Out: cmd.OutOrStdout()}
 	case "table":
 		var rows [][]string
 		for _, resource := range resources {
@@ -136,6 +136,7 @@ func displayResourcesUid(resources []framework.ResourceUid, outputFormat string)
 		outputFormatter = &util.TableOutputFormatter{
 			Headers: []string{"UID"},
 			Rows:    rows,
+			Out:     cmd.OutOrStdout(),
 		}
 	default:
 		slog.Error(fmt.Sprintf("Unsupported output format '%s'", outputFormat))

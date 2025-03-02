@@ -16,8 +16,7 @@ package util
 
 import (
 	"encoding/json"
-	"fmt"
-	"log/slog"
+	"io"
 	"os"
 
 	"github.com/olekukonko/tablewriter"
@@ -29,15 +28,20 @@ type OutputFormatter interface {
 
 type JSONOutputFormatter[T any] struct {
 	Data T
+	Out  io.Writer
 }
 
 type TableOutputFormatter struct {
 	Headers []string
 	Rows    [][]string
+	Out     io.Writer
 }
 
 func (t *TableOutputFormatter) Display() {
-	table := tablewriter.NewWriter(os.Stdout)
+	if t.Out == nil {
+		t.Out = os.Stdout
+	}
+	table := tablewriter.NewWriter(t.Out)
 	table.SetHeader(t.Headers)
 	table.AppendBulk(t.Rows)
 	table.SetAutoWrapText(false)
@@ -49,10 +53,8 @@ func (t *TableOutputFormatter) Display() {
 }
 
 func (j *JSONOutputFormatter[T]) Display() {
-	output, err := json.MarshalIndent(j.Data, "", "  ")
-	if err != nil {
-		slog.Error(fmt.Sprintf("Failed to marshal data: %v", err))
-		return
+	if j.Out == nil {
+		j.Out = os.Stdout
 	}
-	fmt.Println(string(output))
+	json.NewEncoder(j.Out).Encode(j.Data)
 }

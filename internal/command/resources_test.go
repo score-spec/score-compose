@@ -76,11 +76,23 @@ resources:
 	_, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
 	assert.NoError(t, err)
 
-	t.Run("list", func(t *testing.T) {
+	t.Run("list table", func(t *testing.T) {
 		stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"resources", "list"})
 		assert.NoError(t, err)
-		assert.Equal(t, `dns.default#example.dns
-volume.default#example.vol
+		assert.Equal(t, `+----------------------------+
+|            UID             |
++----------------------------+
+| dns.default#example.dns    |
++----------------------------+
+| volume.default#example.vol |
++----------------------------+
+`, stdout)
+	})
+
+	t.Run("list json", func(t *testing.T) {
+		stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"resources", "list", "-f", "json"})
+		assert.NoError(t, err)
+		assert.Equal(t, `[{"UID":"dns.default#example.dns"},{"UID":"volume.default#example.vol"}]
 `, stdout)
 	})
 
