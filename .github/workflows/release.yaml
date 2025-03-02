@@ -52,6 +52,8 @@ jobs:
           tags: |
             ghcr.io/score-spec/score-compose:${{ github.ref_name }}
             ghcr.io/score-spec/score-compose:latest
+          build-args: |
+            "VERSION=${{ github.ref_name }}"
       - name: Sign container image
         run: |
           cosign sign --yes ghcr.io/score-spec/score-compose@${{ steps.build-push-container.outputs.digest }}
