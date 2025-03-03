@@ -42,6 +42,8 @@ jobs:
           push: false
           load: true
           tags: score-compose:test
+          build-args: |
+            "VERSION=test"
       - name: Test docker image
         run: |
           docker run --rm score-compose:test --version
