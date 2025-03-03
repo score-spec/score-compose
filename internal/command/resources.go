@@ -85,13 +85,13 @@ be returned as json.
 				if outputs == nil {
 					outputs = make(map[string]interface{})
 				}
-				return listResourcesOutputs(outputs, cmd)
+				return displayResourcesOutputs(outputs, cmd)
 			}
 			resourceOuptuts, err := getResourceOutputsByUid(framework.ResourceUid(args[0]), &sd.State)
 			if err != nil {
 				return fmt.Errorf("no such resource '%s'", args[0])
 			}
-			return listResourcesOutputs(resourceOuptuts, cmd)
+			return displayResourcesOutputs(resourceOuptuts, cmd)
 		},
 	}
 )
@@ -120,7 +120,7 @@ func getResourceOutputsKeys(uid framework.ResourceUid, state *project.State) ([]
 	return keys, nil
 }
 
-func listResourcesOutputs(outputs map[string]interface{}, cmd *cobra.Command) error {
+func displayResourcesOutputs(outputs map[string]interface{}, cmd *cobra.Command) error {
 	outputFormat := cmd.Flags().Lookup(getOutputsCmdFormatFlag).Value.String()
 	var outputFormatter util.OutputFormatter
 	switch outputFormat {
