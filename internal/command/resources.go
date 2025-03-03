@@ -17,6 +17,7 @@ package command
 import (
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -59,7 +60,7 @@ after 'init' or 'generate' has been run. The list of uids will be empty if no re
 			if err != nil {
 				return fmt.Errorf("failed to sort resources: %w", err)
 			}
-			return displayResourcesUid(resIds, cmd)
+			return displayResourcesList(resIds, *currentState, cmd)
 		},
 	}
 	getResourceOutputs = &cobra.Command{
@@ -84,14 +85,42 @@ be returned as json.
 				if outputs == nil {
 					outputs = make(map[string]interface{})
 				}
-				return displayResourcesOutput(outputs, cmd)
+				return listResourcesOutputs(outputs, cmd)
 			}
-			return fmt.Errorf("no such resource '%s'", args[0])
+			resourceOuptuts, err := getResourceOutputsByUid(framework.ResourceUid(args[0]), &sd.State)
+			if err != nil {
+				return fmt.Errorf("no such resource '%s'", args[0])
+			}
+			return listResourcesOutputs(resourceOuptuts, cmd)
 		},
 	}
 )
 
-func displayResourcesOutput(outputs map[string]interface{}, cmd *cobra.Command) error {
+func getResourceOutputsByUid(uid framework.ResourceUid, state *project.State) (map[string]interface{}, error) {
+	if res, ok := state.Resources[uid]; ok {
+		outputs := res.Outputs
+		if outputs == nil {
+			outputs = make(map[string]interface{})
+		}
+		return outputs, nil
+	}
+	return nil, fmt.Errorf("no such resource '%s'", uid)
+}
+
+func getResourceOutputsKeys(uid framework.ResourceUid, state *project.State) ([]string, error) {
+	outputs, err := getResourceOutputsByUid(uid, state)
+	if err != nil {
+		return nil, err
+	}
+	keys := make([]string, 0, len(outputs))
+	for key, _ := range outputs {
+		keys = append(keys, key)
+	}
+	slices.Sort(keys)
+	return keys, nil
+}
+
+func listResourcesOutputs(outputs map[string]interface{}, cmd *cobra.Command) error {
 	outputFormat := cmd.Flags().Lookup(getOutputsCmdFormatFlag).Value.String()
 	var outputFormatter util.OutputFormatter
 	switch outputFormat {
@@ -117,29 +146,41 @@ func displayResourcesOutput(outputs map[string]interface{}, cmd *cobra.Command) 
 	return outputFormatter.Display()
 }
 
-func displayResourcesUid(resources []framework.ResourceUid, cmd *cobra.Command) error {
+func displayResourcesList(resources []framework.ResourceUid, state project.State, cmd *cobra.Command) error {
 	outputFormat := cmd.Flag("format").Value.String()
 	var outputFormatter util.OutputFormatter
 
 	switch outputFormat {
 	case "json":
 		type jsonData struct {
-			UID string
+			UID     string
+			Outputs []string
 		}
 		var outputs []jsonData
 		for _, resource := range resources {
+
+			keys, err := getResourceOutputsKeys(resource, &state)
+			if err != nil {
+				return fmt.Errorf("failed to get outputs for resource '%s': %w", resource, err)
+			}
 			outputs = append(outputs, jsonData{
-				UID: string(resource),
+				UID:     string(resource),
+				Outputs: keys,
 			})
 		}
 		outputFormatter = &util.JSONOutputFormatter[[]jsonData]{Data: outputs, Out: cmd.OutOrStdout()}
 	default:
 		var rows [][]string
 		for _, resource := range resources {
-			rows = append(rows, []string{string(resource)})
+			keys, err := getResourceOutputsKeys(resource, &state)
+			if err != nil {
+				return fmt.Errorf("failed to get outputs for resource '%s': %w", resource, err)
+			}
+			row := []string{string(resource), strings.Join(keys, ", ")}
+			rows = append(rows, row)
 		}
 		outputFormatter = &util.TableOutputFormatter{
-			Headers: []string{"UID"},
+			Headers: []string{"UID", "Outputs"},
 			Rows:    rows,
 			Out:     cmd.OutOrStdout(),
 		}

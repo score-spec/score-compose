@@ -79,13 +79,13 @@ resources:
 	t.Run("list table", func(t *testing.T) {
 		stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"resources", "list"})
 		assert.NoError(t, err)
-		assert.Equal(t, `+----------------------------+
-|            UID             |
-+----------------------------+
-| dns.default#example.dns    |
-+----------------------------+
-| volume.default#example.vol |
-+----------------------------+
+		assert.Equal(t, `+----------------------------+--------------+
+|            UID             |   OUTPUTS    |
++----------------------------+--------------+
+| dns.default#example.dns    | host         |
++----------------------------+--------------+
+| volume.default#example.vol | source, type |
++----------------------------+--------------+
 `, stdout)
 	})
 
@@ -94,10 +94,17 @@ resources:
 		assert.NoError(t, err)
 		assert.Equal(t, `[
   {
-    "UID": "dns.default#example.dns"
+    "UID": "dns.default#example.dns",
+    "Outputs": [
+      "host"
+    ]
   },
   {
-    "UID": "volume.default#example.vol"
+    "UID": "volume.default#example.vol",
+    "Outputs": [
+      "source",
+      "type"
+    ]
   }
 ]
 `, stdout)
