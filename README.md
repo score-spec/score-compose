@@ -1,4 +1,11 @@
-[![ci](https://github.com/score-spec/score-compose/actions/workflows/ci.yaml/badge.svg)](https://github.com/score-spec/score-compose/actions/workflows/ci.yaml) [![release](https://github.com/score-spec/score-compose/actions/workflows/release.yaml/badge.svg)](https://github.com/score-spec/score-compose/actions/workflows/release.yaml)
+[![ci](https://github.com/score-spec/score-compose/actions/workflows/ci.yaml/badge.svg)](https://github.com/score-spec/score-compose/actions/workflows/ci.yaml)
+[![release](https://github.com/score-spec/score-compose/actions/workflows/release.yaml/badge.svg)](https://github.com/score-spec/score-compose/actions/workflows/release.yaml)
+[![good first issues](https://img.shields.io/github/issues-search/score-spec/score-compose?query=type%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22&label=good%20first%20issues&style=flat&logo=github)](https://github.com/score-spec/score-compose/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fscore-spec%2Fscore-compose.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fscore-spec%2Fscore-compose?ref=badge_shield)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/score-spec/score-compose/badge)](https://scorecard.dev/viewer/?uri=github.com/score-spec/score-compose)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/9900/badge)](https://www.bestpractices.dev/projects/9900)
 
 <img src="docs/images/banner.png"/>
 
@@ -10,10 +17,10 @@
 
 `score-compose` supports as many Score features as possible, however there are certain parts that don't fit well in a local Docker case and are not supported:
 
-| Feature                                                             | Support | Impact                                                                                                                                                                                                                                                                                                                                              |
-|---------------------------------------------------------------------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `containers.*.resources.limits` / `containers.*.resources.requests` | none    | **Limits will be validated but ignored.** While the compose specification has some support for this, it is requires particular Docker versions that cannot be relied on. *This should have no impact on Workload execution*.                                                                                                                        |
-| `containers.*.livenessProbe` / `containers.*.readinessProbe`        | none    | **Probes will be validated but ignored.** The Score specification only details K8s-like HTTP probes, but the compose specification only supports direct command execution. We cannot convert between the two reliably. *This should have no impact on Workload execution*. Tracked in [#86](https://github.com/score-spec/score-compose/issues/86). |
+| Feature                                                                      | Support | Impact                                                                                                                                                                                                                                                                                                                                              |
+|------------------------------------------------------------------------------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `containers.*.resources.limits` / `containers.*.resources.requests`          | none    | **Limits will be validated but ignored.** While the compose specification has some support for this, it is requires particular Docker versions that cannot be relied on. *This should have no impact on Workload execution*.                                                                                                                        |
+| `containers.*.livenessProbe.httpGet` / `containers.*.readinessProbe.httpGet` | none    | **Probes will be validated but ignored.** The Score specification details both command execution and HTTP probes, but the compose specification only supports direct command execution. We cannot convert between the two reliably, so the `exec` mode is ignored *This should have no impact on Workload execution*. Tracked in [#86](https://github.com/score-spec/score-compose/issues/86). |
 
 ## Resource support
 
@@ -34,6 +41,7 @@
 | mongodb       | default | (none)                 | `host`, `port`, `username`, `password`, `connection`                                                                                                            |
 | kafka-topic   | default | (none)                 | `host`, `port`, `name`, `num_partitions`                                                                                                                        |
 | elasticsearch | default | (none)                 | `host`, `port`, `username`, `password`                                                                                                                          |
+| mssql         | default | (none)                 | `server`, `port`, `connection`, `database`, `username`, `password`                                                                                              |
 
 These can be found in the default provisioners file. You are encouraged to write your own provisioners and add them to the `.score-compose` directory (with the `.provisioners.yaml` extension) or contribute them upstream to the [default.provisioners.yaml](internal/command/default.provisioners.yaml) file.
 
@@ -61,6 +69,7 @@ See the [examples](./examples) for more examples of using Score and provisioning
 - [12-mysql-database](examples/12-mysql-database) - an example of the default `mysql` resource provisioner
 - [13-kafka-topic](examples/13-kafka-topic) - an example of the default `kafka-topic` resource provisioner
 - [14-elasticsearch](examples/14-elasticsearch) - an example of the default `elasticsearch` resource provisioner
+- [15-mssql-database](examples/15-mssql-database) - an example of the default `mssql` resource provisioner
 
 If you're getting started, you can use `score-compose init` to create a basic `score.yaml` file in the current directory along with a `.score-compose/` working directory.
 
@@ -185,13 +194,3 @@ You can find our documentation at [docs.score.dev](https://docs.score.dev/docs).
 ### Roadmap
 
 See [Roadmap](https://github.com/score-spec/spec/blob/main/roadmap.md). You can [submit an idea](https://github.com/score-spec/spec/blob/main/roadmap.md#get-involved) anytime.
-
-### License
-
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fscore-spec%2Fscore-compose.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fscore-spec%2Fscore-compose?ref=badge_shield)
-
-### Code of conduct
-
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)

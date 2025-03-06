@@ -25,9 +25,6 @@ var (
 func BuildVersionString() string {
 	versionNumber, buildTime, gitSha, isDirtySuffix := Version, "local", "unknown", ""
 	if info, ok := debug.ReadBuildInfo(); ok {
-		if info.Main.Version != "" && info.Main.Version != "(devel)" {
-			versionNumber = info.Main.Version
-		}
 		for _, setting := range info.Settings {
 			switch setting.Key {
 			case "vcs.time":

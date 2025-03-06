@@ -31,8 +31,10 @@ func TestProvision(t *testing.T) {
 	td := t.TempDir()
 	resUid := framework.NewResourceUid("w", "r", "thing", nil, nil)
 	p, err := Parse(map[string]interface{}{
-		"uri":  "template://example",
-		"type": resUid.Type(),
+		"uri":              "template://example",
+		"type":             resUid.Type(),
+		"expected_outputs": []string{"b", "c"},
+		"supported_params": []string{"ptest"},
 		"init": `
 a: {{ .Uid }}
 b: {{ .Type }}
@@ -95,4 +97,8 @@ some-svc:
 	assert.Equal(t, map[string]compose.NetworkConfig{"default": {Driver: "default"}}, out.ComposeNetworks)
 	assert.Equal(t, map[string]compose.VolumeConfig{"some-vol": {Driver: "default"}}, out.ComposeVolumes)
 	assert.Equal(t, map[string]compose.ServiceConfig{"some-svc": {Name: "foo"}}, out.ComposeServices)
+	assert.Equal(t, []string{"b", "c"}, p.Outputs())
+	assert.Equal(t, []string{"ptest"}, p.Params())
+	assert.Equal(t, "(any)", p.Class())
+	assert.Equal(t, resUid.Type(), p.Type())
 }

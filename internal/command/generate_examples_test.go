@@ -68,6 +68,7 @@ services:
         entrypoint:
             - /bin/sh
         environment:
+            ESCAPED: $$_$${fizzbuzz}
             GREETING: Hello
             NAME: ${NAME}
             WORKLOAD_NAME: hello-world
@@ -85,7 +86,7 @@ services:
             compose.score.dev/workload-name: hello-world
         command:
             - -c
-            - while true; do cat /fileA.txt; cat /fileB.txt; sleep 5; done
+            - while true; do cat /fileA.txt; cat /fileB.txt; cat /fileC.bin; sleep 5; done
         entrypoint:
             - /bin/sh
         hostname: hello-world
@@ -97,6 +98,9 @@ services:
             - type: bind
               source: .score-compose/mounts/files/hello-world-files-1-fileB.txt
               target: /fileB.txt
+            - type: bind
+              source: .score-compose/mounts/files/hello-world-files-2-fileC.bin
+              target: /fileC.bin
 `,
 		},
 		{
@@ -184,6 +188,16 @@ services:
         annotations:
             compose.score.dev/workload-name: workload-a
         hostname: workload-a
+        healthcheck:
+            test:
+                - CMD
+                - /usr/bin/curl
+                - -f
+                - -m
+                - "5"
+                - http://localhost
+            timeout: 5s
+            interval: 5s
         image: nginx
         ports:
             - target: 80
@@ -238,7 +252,7 @@ services:
 			require.NoError(t, os.RemoveAll(".score-compose"))
 			require.NoError(t, os.RemoveAll("compose.yaml"))
 
-			stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+			stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--no-sample"})
 			require.NoError(t, err)
 			assert.Equal(t, "", stdout)
 

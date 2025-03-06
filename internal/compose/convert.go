@@ -16,6 +16,7 @@ package compose
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,6 +26,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
+	"unicode/utf8"
 
 	compose "github.com/compose-spec/compose-go/v2/types"
 	"github.com/score-spec/score-go/framework"
@@ -68,13 +71,20 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 	}
 	sort.Strings(containerNames)
 
+	variablesSubstitutor := framework.Substituter{
+		Replacer: deferredSubstitutionFunction,
+		UnEscaper: func(s string) (string, error) {
+			return s, nil
+		},
+	}
+
 	var firstService string
 	for _, containerName := range containerNames {
 		cSpec := spec.Containers[containerName]
 
 		var env = make(compose.MappingWithEquals, len(cSpec.Variables))
 		for key, val := range cSpec.Variables {
-			resolved, err := framework.SubstituteString(val, deferredSubstitutionFunction)
+			resolved, err := variablesSubstitutor.SubstituteString(val)
 			if err != nil {
 				return nil, fmt.Errorf("containers.%s.variables.%s: %w", containerName, key, err)
 			}
@@ -128,13 +138,6 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 			}
 		}
 
-		if cSpec.ReadinessProbe != nil {
-			slog.Warn(fmt.Sprintf("containers.%s.readinessProbe: not supported - ignoring", containerName))
-		}
-		if cSpec.LivenessProbe != nil {
-			slog.Warn(fmt.Sprintf("containers.%s.livenessProbe: not supported - ignoring", containerName))
-		}
-
 		var svc = compose.ServiceConfig{
 			Name:        workloadName + "-" + containerName,
 			Annotations: buildWorkloadAnnotations(workloadName, spec),
@@ -143,6 +146,20 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 			Command:     cSpec.Args,
 			Environment: env,
 			Volumes:     volumes,
+		}
+
+		if cSpec.ReadinessProbe != nil {
+			if hc, err := convertProbeToExec(cSpec.ReadinessProbe); err != nil {
+				return nil, fmt.Errorf("containers.%s.readinessProbe: %w", containerName, err)
+			} else if hc != nil {
+				svc.HealthCheck = hc
+			}
+		} else if cSpec.LivenessProbe != nil {
+			if hc, err := convertProbeToExec(cSpec.ReadinessProbe); err != nil {
+				return nil, fmt.Errorf("containers.%s.livenessProbe: %w", containerName, err)
+			} else if hc != nil {
+				svc.HealthCheck = hc
+			}
 		}
 
 		if bc, ok := state.Workloads[workloadName].Extras.BuildConfigs[containerName]; ok {
@@ -187,6 +204,24 @@ func buildWorkloadAnnotations(name string, spec *score.Workload) map[string]stri
 	return out
 }
 
+func convertProbeToExec(p *score.ContainerProbe) (*compose.HealthCheckConfig, error) {
+	if p.Exec != nil {
+		if len(p.Exec.Command) == 0 {
+			return nil, fmt.Errorf("exec command is empty")
+		}
+		return &compose.HealthCheckConfig{
+			Test:     append([]string{"CMD"}, p.Exec.Command...),
+			Interval: util.Ref(compose.Duration(time.Second * 5)),
+			Timeout:  util.Ref(compose.Duration(time.Second * 5)),
+			Disable:  false,
+		}, nil
+	} else if p.HttpGet != nil {
+		slog.Warn("httpGet container probe: not supported - ignoring")
+		return nil, nil
+	}
+	return nil, fmt.Errorf("exec or httpGet must be specified")
+}
+
 // convertFilesIntoVolumes converts the lists of files into a list of bind mounts in the mounts directory.
 func convertFilesIntoVolumes(state *project.State, workloadName string, containerName string, substitutionFunction func(string) (string, error)) ([]compose.ServiceVolumeConfig, error) {
 	input := state.Workloads[workloadName].Spec.Containers[containerName].Files
@@ -215,10 +250,15 @@ func convertFilesIntoVolumes(state *project.State, workloadName string, containe
 			if err != nil {
 				return nil, fmt.Errorf("containers.%s.files[%d].source: failed to read: %w", containerName, idx, err)
 			}
+		} else if file.BinaryContent != nil {
+			content, err = base64.StdEncoding.DecodeString(*file.BinaryContent)
+			if err != nil {
+				return nil, fmt.Errorf("containers.%s.files[%d].binaryContent: failed to decode base64: %w", containerName, idx, err)
+			}
 		} else {
-			return nil, fmt.Errorf("containers.%s.files[%d]: missing 'content' or 'source'", containerName, idx)
+			return nil, fmt.Errorf("containers.%s.files[%d]: missing 'content', 'binaryContent', or 'source'", containerName, idx)
 		}
-		if file.NoExpand == nil || !*file.NoExpand {
+		if (file.NoExpand == nil || !*file.NoExpand) && utf8.Valid(content) && file.BinaryContent == nil {
 			stringContent, err := framework.SubstituteString(string(content), substitutionFunction)
 			if err != nil {
 				return nil, fmt.Errorf("containers.%s.files[%d]: failed to substitute in content: %w", containerName, idx, err)

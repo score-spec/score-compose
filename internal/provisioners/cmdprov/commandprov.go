@@ -39,10 +39,31 @@ type Provisioner struct {
 	ResClass       *string  `yaml:"class,omitempty"`
 	ResId          *string  `yaml:"id,omitempty"`
 	Args           []string `yaml:"args"`
+	ResourceParams []string `yaml:"params,omitempty"`
+	ResOutputs     []string `yaml:"outputs,omitempty"`
 }
 
 func (p *Provisioner) Uri() string {
 	return p.ProvisionerUri
+}
+
+func (p *Provisioner) Class() string {
+	if p.ResClass == nil {
+		return ""
+	}
+	return *p.ResClass
+}
+
+func (p *Provisioner) Type() string {
+	return p.ResType
+}
+
+func (p *Provisioner) Params() []string {
+	return p.ResourceParams
+}
+
+func (p *Provisioner) Outputs() []string {
+	return p.ResOutputs
 }
 
 func (p *Provisioner) Match(resUid framework.ResourceUid) bool {

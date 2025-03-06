@@ -173,8 +173,6 @@ resources:
 		"WARN: resources.resource-two2: 'Resource-Two.default' is not directly supported in score-compose, references will be converted to environment variables\n",
 		"WARN: containers.container-one1.resources.requests: not supported - ignoring\n",
 		"WARN: containers.container-one1.resources.limits: not supported - ignoring\n",
-		"WARN: containers.container-one1.readinessProbe: not supported - ignoring\n",
-		"WARN: containers.container-one1.livenessProbe: not supported - ignoring\n",
 	} {
 		assert.Contains(t, stderr, l)
 	}

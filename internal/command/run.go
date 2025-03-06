@@ -24,8 +24,8 @@ import (
 	"sort"
 	"strings"
 
+	"dario.cat/mergo"
 	"github.com/compose-spec/compose-go/v2/types"
-	"github.com/imdario/mergo"
 	"github.com/score-spec/score-go/framework"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/sjson"
@@ -74,11 +74,11 @@ func init() {
 }
 
 var runCmd = &cobra.Command{
-	Use:   "run [--file=score.yaml] [--output=compose.yaml]",
-	Args:  cobra.NoArgs,
-	Short: "(Deprecated) Translate the SCORE file to docker-compose configuration",
+	Use:    "run [--file=score.yaml] [--output=compose.yaml]",
+	Args:   cobra.NoArgs,
+	Short:  "(Deprecated) Translate the SCORE file to docker-compose configuration",
 	Hidden: true,
-	RunE:  run,
+	RunE:   run,
 	// don't print the errors - we print these ourselves in main()
 	SilenceErrors: true,
 }
@@ -331,6 +331,14 @@ type legacyVolumeProvisioner struct {
 	MatchResourceUid framework.ResourceUid
 }
 
+func (l *legacyVolumeProvisioner) Params() []string {
+	return []string{}
+}
+
+func (l *legacyVolumeProvisioner) Outputs() []string {
+	return []string{}
+}
+
 func (l *legacyVolumeProvisioner) Uri() string {
 	return "builtin://legacy-volume"
 }
@@ -341,4 +349,12 @@ func (l *legacyVolumeProvisioner) Match(resUid framework.ResourceUid) bool {
 
 func (l *legacyVolumeProvisioner) Provision(ctx context.Context, input *provisioners.Input) (*provisioners.ProvisionOutput, error) {
 	return &provisioners.ProvisionOutput{ResourceOutputs: map[string]interface{}{}}, nil
+}
+
+func (l *legacyVolumeProvisioner) Class() string {
+	return l.MatchResourceUid.Class()
+}
+
+func (l *legacyVolumeProvisioner) Type() string {
+	return l.MatchResourceUid.Type()
 }

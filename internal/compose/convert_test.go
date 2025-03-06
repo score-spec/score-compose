@@ -156,7 +156,7 @@ func TestScoreConvert(t *testing.T) {
 						Image:    "busybox",
 						Environment: compose.MappingWithEquals{
 							"DEBUG":             stringPtr("${DEBUG}"),
-							"LOGS_LEVEL":        stringPtr("${LOGS_LEVEL}"),
+							"LOGS_LEVEL":        stringPtr("$${LOGS_LEVEL}"),
 							"DOMAIN_NAME":       stringPtr("${SOME_DNS_DOMAIN_NAME?required}"),
 							"CONNECTION_STRING": stringPtr("postgresql://${APP_DB_HOST?required}:${APP_DB_PORT?required}/${APP_DB_NAME?required}"),
 						},
@@ -229,7 +229,7 @@ func TestScoreConvert(t *testing.T) {
 						Image:    "busybox",
 						Environment: compose.MappingWithEquals{
 							"DEBUG":             stringPtr("${DEBUG}"),
-							"LOGS_LEVEL":        stringPtr("${LOGS_LEVEL}"),
+							"LOGS_LEVEL":        stringPtr("$${LOGS_LEVEL}"),
 							"DOMAIN_NAME":       stringPtr("${SOME_DNS_DOMAIN_NAME?required}"),
 							"CONNECTION_STRING": stringPtr("mysql://${APP_DB_HOST?required}:${APP_DB_PORT?required}/${APP_DB_NAME?required}"),
 						},
@@ -491,6 +491,7 @@ func TestConvertFilesIntoVolumes_nominal(t *testing.T) {
 							{Target: "/dog.txt", Content: util.Ref("third ${metadata.name} fourth")},
 							{Target: "/eel.txt", Content: util.Ref("third ${metadata.name} fourth"), NoExpand: util.Ref(true)},
 							{Target: "/fox.txt", Content: util.Ref("third ${metadata.name} fourth"), NoExpand: util.Ref(false)},
+							{Target: "/goat.txt", BinaryContent: util.Ref("ZmlmdGggJHttZXRhZGF0YS5uYW1lfSBzaXh0aA==")},
 						},
 					},
 				},
@@ -520,6 +521,7 @@ func TestConvertFilesIntoVolumes_nominal(t *testing.T) {
 		{Type: "bind", Target: "/dog.txt", Source: filepath.Join(td, "files", "my-workload-files-3-dog.txt")},
 		{Type: "bind", Target: "/eel.txt", Source: filepath.Join(td, "files", "my-workload-files-4-eel.txt")},
 		{Type: "bind", Target: "/fox.txt", Source: filepath.Join(td, "files", "my-workload-files-5-fox.txt")},
+		{Type: "bind", Target: "/goat.txt", Source: filepath.Join(td, "files", "my-workload-files-6-goat.txt")},
 	}, out)
 	for k, v := range map[string]string{
 		"my-workload-files-0-ant.txt": "first blah second",
@@ -528,6 +530,8 @@ func TestConvertFilesIntoVolumes_nominal(t *testing.T) {
 		"my-workload-files-3-dog.txt": "third blah fourth",
 		"my-workload-files-4-eel.txt": "third ${metadata.name} fourth",
 		"my-workload-files-5-fox.txt": "third blah fourth",
+		// NOTE: binaryContent doesn't support placeholders
+		"my-workload-files-6-goat.txt": "fifth ${metadata.name} sixth",
 	} {
 		t.Run(k, func(t *testing.T) {
 			raw, err := os.ReadFile(filepath.Join(td, "files", k))
@@ -591,7 +595,7 @@ func TestConvertFilesIntoVolumes_source_missing(t *testing.T) {
 			return "", fmt.Errorf("unknown key")
 		},
 	)
-	assert.EqualError(t, err, "containers.my-container.files[0]: missing 'content' or 'source'")
+	assert.EqualError(t, err, "containers.my-container.files[0]: missing 'content', 'binaryContent', or 'source'")
 }
 
 func TestConvertFilesIntoVolumes_expand_bad(t *testing.T) {
