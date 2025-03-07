@@ -33,6 +33,7 @@ func TestProvision(t *testing.T) {
 	p, err := Parse(map[string]interface{}{
 		"uri":              "template://example",
 		"type":             resUid.Type(),
+		"description":      "desc",
 		"expected_outputs": []string{"b", "c"},
 		"supported_params": []string{"ptest"},
 		"init": `
@@ -101,4 +102,5 @@ some-svc:
 	assert.Equal(t, []string{"ptest"}, p.Params())
 	assert.Equal(t, "(any)", p.Class())
 	assert.Equal(t, resUid.Type(), p.Type())
+	assert.Equal(t, "desc", p.Description())
 }

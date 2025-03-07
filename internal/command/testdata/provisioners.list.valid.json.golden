@@ -9,7 +9,8 @@
     "Outputs": [
       "o1",
       "o2"
-    ]
+    ],
+    "Description": ""
   },
   {
     "Type": "with-class-with-params-in-shared",
@@ -21,7 +22,8 @@
     "Outputs": [
       "o1",
       "o2"
-    ]
+    ],
+    "Description": ""
   },
   {
     "Type": "with-class-with-params-in-shared-outputs",
@@ -34,7 +36,8 @@
     "Outputs": [
       "o1",
       "o2"
-    ]
+    ],
+    "Description": ""
   },
   {
     "Type": "with-class-with-params-in-state",
@@ -46,7 +49,8 @@
     "Outputs": [
       "o1",
       "o2"
-    ]
+    ],
+    "Description": ""
   },
   {
     "Type": "with-class-with-params-in-state-outputs",
@@ -59,7 +63,8 @@
     "Outputs": [
       "o1",
       "o2"
-    ]
+    ],
+    "Description": ""
   },
   {
     "Type": "with-class-with-params-in-state-outputs-shared",
@@ -73,7 +78,8 @@
     "Outputs": [
       "o1",
       "o2"
-    ]
+    ],
+    "Description": ""
   },
   {
     "Type": "with-class-without-params",
@@ -82,7 +88,8 @@
     "Outputs": [
       "o1",
       "o2"
-    ]
+    ],
+    "Description": ""
   },
   {
     "Type": "without-class-with-params-in-outputs",
@@ -94,7 +101,8 @@
     "Outputs": [
       "o1",
       "o2"
-    ]
+    ],
+    "Description": ""
   },
   {
     "Type": "without-class-with-params-in-shared",
@@ -106,7 +114,8 @@
     "Outputs": [
       "o1",
       "o2"
-    ]
+    ],
+    "Description": ""
   },
   {
     "Type": "without-class-with-params-in-shared-outputs",
@@ -119,7 +128,8 @@
     "Outputs": [
       "o1",
       "o2"
-    ]
+    ],
+    "Description": ""
   },
   {
     "Type": "without-class-with-params-in-state",
@@ -131,7 +141,8 @@
     "Outputs": [
       "o1",
       "o2"
-    ]
+    ],
+    "Description": ""
   },
   {
     "Type": "without-class-with-params-in-state-outputs",
@@ -144,7 +155,8 @@
     "Outputs": [
       "o1",
       "o2"
-    ]
+    ],
+    "Description": ""
   },
   {
     "Type": "without-class-with-params-in-state-outputs-shared",
@@ -158,7 +170,8 @@
     "Outputs": [
       "o1",
       "o2"
-    ]
+    ],
+    "Description": ""
   },
   {
     "Type": "without-class-without-params",
@@ -167,6 +180,17 @@
     "Outputs": [
       "o1",
       "o2"
-    ]
+    ],
+    "Description": ""
+  },
+  {
+    "Type": "without-class-without-params",
+    "Class": "(any)",
+    "Params": [],
+    "Outputs": [
+      "o1",
+      "o2"
+    ],
+    "Description": "without-class-without-params-with-description"
   }
 ]
