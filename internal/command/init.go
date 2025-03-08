@@ -199,15 +199,6 @@ the new provisioners will take precedence.
 
 		if v, _ := cmd.Flags().GetStringArray(initCmdProvisionerFlag); len(v) > 0 {
 			for i, vi := range v {
-				var data []byte
-
-				if vi == "-" {
-					data, err = uriget.GetFile(cmd.Context(), "-")
-				} else {
-					// Existing URI loading logic
-					data, err = uriget.GetFile(cmd.Context(), vi)
-				}
-
 				data, err := uriget.GetFile(cmd.Context(), vi)
 				if err != nil {
 					return fmt.Errorf("failed to load provisioner %d: %w", i+1, err)
