@@ -42,6 +42,7 @@ type Provisioner struct {
 	ResType        string  `yaml:"type"`
 	ResClass       *string `yaml:"class,omitempty"`
 	ResId          *string `yaml:"id,omitempty"`
+	ResDescription string  `yaml:"description,omitempty"`
 
 	// The InitTemplate is always evaluated first, it is used as temporary or working set data that may be needed in the
 	// later templates. It has access to the resource inputs and previous state.
@@ -99,6 +100,10 @@ func Parse(raw map[string]interface{}) (*Provisioner, error) {
 
 func (p *Provisioner) Uri() string {
 	return p.ProvisionerUri
+}
+
+func (p *Provisioner) Description() string {
+	return p.ResDescription
 }
 
 func (p *Provisioner) Class() string {

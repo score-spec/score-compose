@@ -78,18 +78,20 @@ func displayProvisioners(loadedProvisioners []provisioners.Provisioner, outputFo
 	switch outputFormat {
 	case "json":
 		type jsonData struct {
-			Type    string
-			Class   string
-			Params  []string
-			Outputs []string
+			Type        string
+			Class       string
+			Params      []string
+			Outputs     []string
+			Description string
 		}
 		var outputs []jsonData
 		for _, provisioner := range sortedProvisioners {
 			outputs = append(outputs, jsonData{
-				Type:    provisioner.Type(),
-				Class:   provisioner.Class(),
-				Params:  provisioner.Params(),
-				Outputs: provisioner.Outputs(),
+				Type:        provisioner.Type(),
+				Class:       provisioner.Class(),
+				Params:      provisioner.Params(),
+				Outputs:     provisioner.Outputs(),
+				Description: provisioner.Description(),
 			})
 		}
 		outputFormatter = &util.JSONOutputFormatter[[]jsonData]{Data: outputs}
@@ -97,9 +99,9 @@ func displayProvisioners(loadedProvisioners []provisioners.Provisioner, outputFo
 		rows := [][]string{}
 
 		for _, provisioner := range sortedProvisioners {
-			rows = append(rows, []string{provisioner.Type(), provisioner.Class(), strings.Join(provisioner.Params(), ", "), strings.Join(provisioner.Outputs(), ", ")})
+			rows = append(rows, []string{provisioner.Type(), provisioner.Class(), strings.Join(provisioner.Params(), ", "), strings.Join(provisioner.Outputs(), ", "), provisioner.Description()})
 		}
-		headers := []string{"Type", "Class", "Params", "Outputs"}
+		headers := []string{"Type", "Class", "Params", "Outputs", "Description"}
 		outputFormatter = &util.TableOutputFormatter{
 			Headers: headers,
 			Rows:    rows,

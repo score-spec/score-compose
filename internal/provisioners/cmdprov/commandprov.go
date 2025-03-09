@@ -41,6 +41,11 @@ type Provisioner struct {
 	Args           []string `yaml:"args"`
 	ResourceParams []string `yaml:"params,omitempty"`
 	ResOutputs     []string `yaml:"outputs,omitempty"`
+	ResDescription string   `yaml:"description,omitempty"`
+}
+
+func (p *Provisioner) Description() string {
+	return p.ResDescription
 }
 
 func (p *Provisioner) Uri() string {
