@@ -852,7 +852,7 @@
         interval: 10s
         timeout: 10s
         retries: 120
-    info_logs: |
+  info_logs: |
     - "{{.Uid}}: To connect to elasticsearch:\n
         download certificate from container per command like: \n
         \tdocker cp [CONTAINER-NAME]:/usr/share/elasticsearch/config/certs/ca/ca.crt /tmp/ \n
