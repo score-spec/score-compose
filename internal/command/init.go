@@ -203,7 +203,15 @@ the new provisioners will take precedence.
 				if err != nil {
 					return fmt.Errorf("failed to load provisioner %d: %w", i+1, err)
 				}
-				if err := loader.SaveProvisionerToDirectory(sd.Path, vi, data); err != nil {
+
+				var saveFilename string
+				if vi == "-" {
+					saveFilename = "from-stdin.provisioners.yaml"
+				} else {
+					saveFilename = vi
+				}
+
+				if err := loader.SaveProvisionerToDirectory(sd.Path, saveFilename, data); err != nil {
 					return fmt.Errorf("failed to save provisioner %d: %w", i+1, err)
 				}
 			}
@@ -230,7 +238,9 @@ func init() {
 		"- HTTPS       : https://host/file\n"+
 		"- Git (SSH)   : git-ssh://git@host/repo.git/file\n"+
 		"- Git (HTTPS) : git-https://host/repo.git/file\n"+
-		"- OCI         : oci://[registry/][namespace/]repository[:tag|@digest][#file]")
+		"- OCI         : oci://[registry/][namespace/]repository[:tag|@digest][#file]\n"+
+		"- Local File  : /path/to/local/file\n"+
+		"- Stdin       : - (read from standard input)")
 
 	rootCmd.AddCommand(initCmd)
 }

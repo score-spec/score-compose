@@ -886,7 +886,6 @@
   volumes: |
     {{ .Init.sk }}-data:
       driver: local
-  # Create an services with the database itself
   services: |
     {{ .Init.sk }}:
       image: mcr.microsoft.com/mssql/server:latest
