@@ -3,7 +3,7 @@
 A common requirement is for users to slightly modify or adjust the output of the conversion process. This can be done
 by providing one or more patching templates at `init` time. These patching templates generate JSON patches which are
 applied on top of the output compose file, just before being written. Patching templates have access to the current
-compose spec as `.Compose` and can use any functions from [Masterminds/sprig](https://github.com/Masterminds/sprig).
+compose spec as `.Compose`, the map of workload name to Score Spec as `.Workloads`, and can use any functions from [Masterminds/sprig](https://github.com/Masterminds/sprig).
 
 Each patch produced by a template looks like a yaml/json blob with keys `op` (set or delete), `path` 
 (the .-separated json path. use backslash to escape), a `value` to set, and an optional `description`.

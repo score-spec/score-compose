@@ -1422,11 +1422,26 @@ func TestGenerateWithPatching(t *testing.T) {
 apiVersion: score.dev/v1b1
 metadata:
   name: example
+  custom:
+    privileged: true
 containers:
   hello:
     image: foo
 `), 0644))
 	assert.NoError(t, os.WriteFile(filepath.Join(td, "patch1.template"), []byte(`
+{{ range $name, $spec := .Workloads }}
+    {{ if (dig "metadata" "custom" "privileged" false $spec) }}
+        {{ range $cname, $_ := $spec.containers }}
+- op: set
+  path: services.{{ $name }}-{{ $cname }}.privileged
+  value: true
+  description: Enable privileged mode on service containers
+        {{ end }}
+    {{ end }}
+{{ end }}
+---
+`), 0644))
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "patch2.template"), []byte(`
 {{ range $name, $cfg := .Compose.services }}
 - op: set
   path: services.{{ $name }}-future
@@ -1438,7 +1453,7 @@ containers:
 {{ end }}
 ---
 `), 0644))
-	assert.NoError(t, os.WriteFile(filepath.Join(td, "patch2.template"), []byte(`
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "patch3.template"), []byte(`
 {{ range $name, $cfg := .Compose.services }}
 - op: set
   path: services.{{ $name }}.read_only
@@ -1447,7 +1462,7 @@ containers:
 {{ end }}
 ---
 `), 0644))
-	_, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--patch-template", "patch1.template", "--patch-template", "patch2.template"})
+	_, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--patch-template", "patch1.template", "--patch-template", "patch2.template", "--patch-template", "patch3.template"})
 	assert.NoError(t, err)
 	t.Log(stderr)
 
@@ -1464,6 +1479,7 @@ services:
             compose.score.dev/workload-name: example
         hostname: example
         image: foo
+        privileged: true
         read_only: true
 `)
 }

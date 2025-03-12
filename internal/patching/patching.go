@@ -25,8 +25,12 @@ import (
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/compose-spec/compose-go/v2/types"
+	"github.com/score-spec/score-go/framework"
+	score "github.com/score-spec/score-go/types"
 	"github.com/tidwall/sjson"
 	"gopkg.in/yaml.v3"
+
+	"github.com/score-spec/score-compose/internal/project"
 )
 
 type PatchOperation struct {
@@ -50,7 +54,7 @@ func yamlRoundTrip[k any, v any](input *k) (*v, error) {
 
 type patchTemplateInput struct {
 	Compose   map[string]interface{}
-	Resources map[string]interface{}
+	Workloads map[string]interface{}
 }
 
 func ValidatePatchTemplate(content string) error {
@@ -60,7 +64,7 @@ func ValidatePatchTemplate(content string) error {
 	return nil
 }
 
-func PatchServices(composeProject *types.Project, rawTemplate string) (*types.Project, error) {
+func PatchServices(state *framework.State[project.StateExtras, project.WorkloadExtras, framework.NoExtras], composeProject *types.Project, rawTemplate string) (*types.Project, error) {
 	tmpl, err := template.New("").Funcs(sprig.FuncMap()).Parse(rawTemplate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template: %w", err)
@@ -70,8 +74,17 @@ func PatchServices(composeProject *types.Project, rawTemplate string) (*types.Pr
 	if err != nil {
 		return nil, err
 	}
+	workloadSpecs := make(map[string]score.Workload, len(state.Workloads))
+	for n, w := range state.Workloads {
+		workloadSpecs[n] = w.Spec
+	}
+	workloadInputs, err := yamlRoundTrip[map[string]score.Workload, map[string]interface{}](&workloadSpecs)
+	if err != nil {
+		return nil, err
+	}
 	if err := tmpl.Execute(buff, patchTemplateInput{
-		Compose: *composeInputs,
+		Workloads: *workloadInputs,
+		Compose:   *composeInputs,
 	}); err != nil {
 		return nil, fmt.Errorf("failed to execute template: %w", err)
 	}

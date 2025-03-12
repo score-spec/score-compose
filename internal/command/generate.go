@@ -282,7 +282,7 @@ arguments.
 
 		for i, content := range currentState.Extras.PatchingTemplates {
 			slog.Info(fmt.Sprintf("Applying patching template %d", i+1))
-			superProject, err = patching.PatchServices(superProject, content)
+			superProject, err = patching.PatchServices(currentState, superProject, content)
 			if err != nil {
 				return fmt.Errorf("failed to patch template %d: %w", i+1, err)
 			}
