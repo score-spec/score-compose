@@ -1,4 +1,4 @@
-# 12 - MSSQL Server database
+# 15 - MSSQL Server database
 
 There is also a `mssql` resource provisioner as an example
 of a mssql database. This uses the official image from <https://hub.docker.com/r/microsoft/mssql-serverl>.

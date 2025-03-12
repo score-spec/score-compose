@@ -1415,3 +1415,71 @@ containers:
 	assert.EqualError(t, err, "--build cannot be used when multiple score files are provided")
 	assert.Equal(t, "", stdout)
 }
+
+func TestGenerateWithPatching(t *testing.T) {
+	td := changeToTempDir(t)
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+  custom:
+    privileged: true
+containers:
+  hello:
+    image: foo
+`), 0644))
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "patch1.template"), []byte(`
+{{ range $name, $spec := .Workloads }}
+    {{ if (dig "metadata" "custom" "privileged" false $spec) }}
+        {{ range $cname, $_ := $spec.containers }}
+- op: set
+  path: services.{{ $name }}-{{ $cname }}.privileged
+  value: true
+  description: Enable privileged mode on service containers
+        {{ end }}
+    {{ end }}
+{{ end }}
+---
+`), 0644))
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "patch2.template"), []byte(`
+{{ range $name, $cfg := .Compose.services }}
+- op: set
+  path: services.{{ $name }}-future
+  value: {{ toRawJson $cfg }}
+  description: Rename service {{ $name }}
+- op: delete
+  path: services.{{ $name }}
+  description: Delete service {{ $name }}
+{{ end }}
+---
+`), 0644))
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "patch3.template"), []byte(`
+{{ range $name, $cfg := .Compose.services }}
+- op: set
+  path: services.{{ $name }}.read_only
+  value: true
+  description: Set services to read only root fs
+{{ end }}
+---
+`), 0644))
+	_, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--patch-templates", "patch1.template", "--patch-templates", "patch2.template", "--patch-templates", "patch3.template"})
+	assert.NoError(t, err)
+	t.Log(stderr)
+
+	_, stderr, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.NoError(t, err)
+	t.Log(stderr)
+
+	raw, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+	assert.NoError(t, err)
+	assert.Equal(t, string(raw), `name: "001"
+services:
+    example-hello-future:
+        annotations:
+            compose.score.dev/workload-name: example
+        hostname: example
+        image: foo
+        privileged: true
+        read_only: true
+`)
+}

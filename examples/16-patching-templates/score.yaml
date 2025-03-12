@@ -1,0 +1,12 @@
+apiVersion: score.dev/v1b1
+
+metadata:
+  name: hello-world
+
+containers:
+  hello:
+    image: busybox
+
+resources:
+  amqp:
+    type: amqp

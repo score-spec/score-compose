@@ -48,6 +48,12 @@ Custom provisioners can be installed by uri using the --provisioners flag. The p
 precedence in the order they are defined over the default provisioners. If init has already been called with provisioners
 the new provisioners will take precedence.
 
+To adjust the way the compose project is generated, or perform post processing actions, you can use the --patch-templates
+flag to provide one or more template files by uri. Each template file is stored in the project and then evaluated as a 
+Golang text/template and should output a yaml/json encoded array of patches. Each patch is an object with required 'op' 
+(set or delete), 'patch' (a dot-separated json path), a 'value' if the 'op' == 'set', and an optional 'description' for 
+showing in the logs. The template has access to '.Compose' and '.Workloads'.
+
 Usage:
   score-compose init [flags]
 
@@ -65,19 +71,27 @@ Examples:
   # Optionally loading in provisoners from a remote url
   score-compose init --provisioners https://raw.githubusercontent.com/user/repo/main/example.yaml
 
+  # Optionally adding a couple of patching templates
+  score-compose init --patch-templates ./patching.tpl --patch-templates https://raw.githubusercontent.com/user/repo/main/example.tpl
+
+URI Retrieval:
+  The --provisioners and --patch-templates arguments support URI retrieval for pulling the contents from a URI on disk
+  or over the network. These support:
+    - HTTP        : http://host/file
+    - HTTPS       : https://host/file
+    - Git (SSH)   : git-ssh://git@host/repo.git/file
+    - Git (HTTPS) : git-https://host/repo.git/file
+    - OCI         : oci://[registry/][namespace/]repository[:tag|@digest][#file]
+    - Local File  : /path/to/local/file
+    - Stdin       : - (read from standard input)
+
 Flags:
-  -f, --file string                The score file to initialize (default "./score.yaml")
-  -h, --help                       help for init
-      --no-sample                  Disable generation of the sample score file
-  -p, --project string             Set the name of the docker compose project (defaults to the current directory name)
-      --provisioners stringArray   Provisioner files to install. May be specified multiple times. Supports:
-                                   - HTTP        : http://host/file
-                                   - HTTPS       : https://host/file
-                                   - Git (SSH)   : git-ssh://git@host/repo.git/file
-                                   - Git (HTTPS) : git-https://host/repo.git/file
-                                   - OCI         : oci://[registry/][namespace/]repository[:tag|@digest][#file]
-                                   - Local File  : /path/to/local/file
-                                   - Stdin       : - (read from standard input)
+  -f, --file string                   The score file to initialize (default "./score.yaml")
+  -h, --help                          help for init
+      --no-sample                     Disable generation of the sample score file
+      --patch-templates stringArray   Patching template files to include. May be specified multiple times. Supports URI retrieval.
+  -p, --project string                Set the name of the docker compose project (defaults to the current directory name)
+      --provisioners stringArray      Provisioner files to install. May be specified multiple times. Supports URI retrieval.
 
 Global Flags:
       --quiet           Mute any logging output
@@ -274,4 +288,43 @@ func TestInitWithProvisioners(t *testing.T) {
 			return p.Uri() == expectedUri
 		}), fmt.Sprintf("Expected provisioner '%s' not found", expectedUri))
 	}
+}
+
+func TestInitWithPatchingFiles(t *testing.T) {
+	td := t.TempDir()
+	wd, _ := os.Getwd()
+	require.NoError(t, os.Chdir(td))
+	defer func() {
+		require.NoError(t, os.Chdir(wd))
+	}()
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "patch-templates-1"), []byte(`[]`), 0644))
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "patch-templates-2"), []byte(`[]`), 0644))
+
+	t.Run("new", func(t *testing.T) {
+		_, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--patch-templates", filepath.Join(td, "patch-templates-1"), "--patch-templates", filepath.Join(td, "patch-templates-2")})
+		assert.NoError(t, err)
+		t.Log(stderr)
+		sd, ok, err := project.LoadStateDirectory(".")
+		assert.NoError(t, err)
+		if assert.True(t, ok) {
+			assert.Len(t, sd.State.Extras.PatchingTemplates, 2)
+		}
+	})
+
+	t.Run("update", func(t *testing.T) {
+		_, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--patch-templates", filepath.Join(td, "patch-templates-2")})
+		assert.NoError(t, err)
+		t.Log(stderr)
+		sd, ok, err := project.LoadStateDirectory(".")
+		assert.NoError(t, err)
+		if assert.True(t, ok) {
+			assert.Len(t, sd.State.Extras.PatchingTemplates, 1)
+		}
+	})
+
+	t.Run("bad patch", func(t *testing.T) {
+		assert.NoError(t, os.WriteFile(filepath.Join(td, "patch-templates-3"), []byte(`{{ what is this }}`), 0644))
+		_, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--patch-templates", filepath.Join(td, "patch-templates-3")})
+		assert.Error(t, err, "failed to parse template: template: :1: function \"what\" not defined")
+	})
 }

@@ -27,6 +27,7 @@ import (
 	"github.com/score-spec/score-go/uriget"
 	"github.com/spf13/cobra"
 
+	"github.com/score-spec/score-compose/internal/patching"
 	"github.com/score-spec/score-compose/internal/project"
 	"github.com/score-spec/score-compose/internal/provisioners/loader"
 )
@@ -68,10 +69,11 @@ service:
 
 resources: {}
 `
-	initCmdFileFlag         = "file"
-	initCmdFileProjectFlag  = "project"
-	initCmdFileNoSampleFlag = "no-sample"
-	initCmdProvisionerFlag  = "provisioners"
+	initCmdFileFlag          = "file"
+	initCmdFileProjectFlag   = "project"
+	initCmdFileNoSampleFlag  = "no-sample"
+	initCmdProvisionerFlag   = "provisioners"
+	initCmdPatchTemplateFlag = "patch-templates"
 )
 
 //go:embed default.provisioners.yaml
@@ -93,6 +95,12 @@ acts as a namespace when multiple score files and containers are used.
 Custom provisioners can be installed by uri using the --provisioners flag. The provisioners will be installed and take
 precedence in the order they are defined over the default provisioners. If init has already been called with provisioners
 the new provisioners will take precedence.
+
+To adjust the way the compose project is generated, or perform post processing actions, you can use the --patch-templates
+flag to provide one or more template files by uri. Each template file is stored in the project and then evaluated as a 
+Golang text/template and should output a yaml/json encoded array of patches. Each patch is an object with required 'op' 
+(set or delete), 'patch' (a dot-separated json path), a 'value' if the 'op' == 'set', and an optional 'description' for 
+showing in the logs. The template has access to '.Compose' and '.Workloads'.
 `,
 	Example: `
   # Define a score file to generate
@@ -105,7 +113,21 @@ the new provisioners will take precedence.
   score-compose init --no-sample
 
   # Optionally loading in provisoners from a remote url
-  score-compose init --provisioners https://raw.githubusercontent.com/user/repo/main/example.yaml`,
+  score-compose init --provisioners https://raw.githubusercontent.com/user/repo/main/example.yaml
+
+  # Optionally adding a couple of patching templates
+  score-compose init --patch-templates ./patching.tpl --patch-templates https://raw.githubusercontent.com/user/repo/main/example.tpl
+
+URI Retrieval:
+  The --provisioners and --patch-templates arguments support URI retrieval for pulling the contents from a URI on disk
+  or over the network. These support:
+    - HTTP        : http://host/file
+    - HTTPS       : https://host/file
+    - Git (SSH)   : git-ssh://git@host/repo.git/file
+    - Git (HTTPS) : git-https://host/repo.git/file
+    - OCI         : oci://[registry/][namespace/]repository[:tag|@digest][#file]
+    - Local File  : /path/to/local/file
+    - Stdin       : - (read from standard input)`,
 
 	// don't print the errors - we print these ourselves in main()
 	SilenceErrors: true,
@@ -116,6 +138,7 @@ the new provisioners will take precedence.
 		// load flag values
 		initCmdScoreFile, _ := cmd.Flags().GetString(initCmdFileFlag)
 		initCmdComposeProject, _ := cmd.Flags().GetString(initCmdFileProjectFlag)
+		initCmdPatchingFiles, _ := cmd.Flags().GetStringArray(initCmdPatchTemplateFlag)
 
 		// validate project
 		if initCmdComposeProject != "" {
@@ -125,17 +148,38 @@ the new provisioners will take precedence.
 			}
 		}
 
+		var templates []string
+		for _, u := range initCmdPatchingFiles {
+			slog.Info(fmt.Sprintf("Fetching patch template from %s", u))
+			content, err := uriget.GetFile(cmd.Context(), u)
+			if err != nil {
+				return fmt.Errorf("error fetching patch template from %s: %w", u, err)
+			} else if err = patching.ValidatePatchTemplate(string(content)); err != nil {
+				return fmt.Errorf("error parsing patch template from %s: %w", u, err)
+			}
+			templates = append(templates, string(content))
+		}
+
 		sd, ok, err := project.LoadStateDirectory(".")
 		if err != nil {
 			return fmt.Errorf("failed to load existing state directory: %w", err)
 		} else if ok {
 			slog.Info(fmt.Sprintf("Found existing state directory '%s'", sd.Path))
+			var hasChanges bool
 			if initCmdComposeProject != "" && sd.State.Extras.ComposeProjectName != initCmdComposeProject {
 				sd.State.Extras.ComposeProjectName = initCmdComposeProject
+				hasChanges = true
+			}
+			if len(templates) > 0 {
+				sd.State.Extras.PatchingTemplates = templates
+				hasChanges = true
+			}
+			if hasChanges {
 				if err := sd.Persist(); err != nil {
-					return fmt.Errorf("failed to persist new compose project name: %w", err)
+					return fmt.Errorf("failed to persist new state file: %w", err)
 				}
 			}
+
 		} else {
 
 			slog.Info(fmt.Sprintf("Writing new state directory '%s'", project.DefaultRelativeStateDirectory))
@@ -154,6 +198,9 @@ the new provisioners will take precedence.
 			}
 			if initCmdComposeProject != "" {
 				sd.State.Extras.ComposeProjectName = initCmdComposeProject
+			}
+			if len(templates) > 0 {
+				sd.State.Extras.PatchingTemplates = templates
 			}
 			slog.Info(fmt.Sprintf("Writing new state directory '%s' with project name '%s'", sd.Path, sd.State.Extras.ComposeProjectName))
 			if err := sd.Persist(); err != nil {
@@ -233,14 +280,8 @@ func init() {
 	initCmd.Flags().StringP(initCmdFileFlag, "f", scoreFileDefault, "The score file to initialize")
 	initCmd.Flags().StringP(initCmdFileProjectFlag, "p", "", "Set the name of the docker compose project (defaults to the current directory name)")
 	initCmd.Flags().Bool(initCmdFileNoSampleFlag, false, "Disable generation of the sample score file")
-	initCmd.Flags().StringArray(initCmdProvisionerFlag, nil, "Provisioner files to install. May be specified multiple times. Supports:\n"+
-		"- HTTP        : http://host/file\n"+
-		"- HTTPS       : https://host/file\n"+
-		"- Git (SSH)   : git-ssh://git@host/repo.git/file\n"+
-		"- Git (HTTPS) : git-https://host/repo.git/file\n"+
-		"- OCI         : oci://[registry/][namespace/]repository[:tag|@digest][#file]\n"+
-		"- Local File  : /path/to/local/file\n"+
-		"- Stdin       : - (read from standard input)")
+	initCmd.Flags().StringArray(initCmdProvisionerFlag, nil, "Provisioner files to install. May be specified multiple times. Supports URI retrieval.")
+	initCmd.Flags().StringArray(initCmdPatchTemplateFlag, nil, "Patching template files to include. May be specified multiple times. Supports URI retrieval.")
 
 	rootCmd.AddCommand(initCmd)
 }

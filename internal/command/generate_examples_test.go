@@ -30,6 +30,7 @@ import (
 type exampleTestCase struct {
 	subDir           string
 	adds             []string
+	patchFiles       []string
 	expected         string
 	expectedContains string
 }
@@ -240,6 +241,15 @@ services:
 			subDir: "14-elasticsearch",
 			adds:   []string{"score.yaml"},
 		},
+		{
+			subDir: "15-mssql-database",
+			adds:   []string{"score.yaml"},
+		},
+		{
+			subDir:     "16-patching-templates",
+			adds:       []string{"score.yaml"},
+			patchFiles: []string{"patch-1.tpl", "patch-2.tpl", "patch-3.tpl"},
+		},
 	} {
 		t.Run(tc.subDir, func(t *testing.T) {
 			oldReader := rand.Reader
@@ -252,7 +262,12 @@ services:
 			require.NoError(t, os.RemoveAll(".score-compose"))
 			require.NoError(t, os.RemoveAll("compose.yaml"))
 
-			stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--no-sample"})
+			args := []string{"init", "--no-sample"}
+			for _, f := range tc.patchFiles {
+				args = append(args, "--patch-templates", f)
+			}
+
+			stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, args)
 			require.NoError(t, err)
 			assert.Equal(t, "", stdout)
 

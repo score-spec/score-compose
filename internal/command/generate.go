@@ -34,6 +34,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/score-spec/score-compose/internal/compose"
+	"github.com/score-spec/score-compose/internal/patching"
 	"github.com/score-spec/score-compose/internal/project"
 	"github.com/score-spec/score-compose/internal/provisioners"
 	"github.com/score-spec/score-compose/internal/provisioners/envprov"
@@ -276,6 +277,14 @@ arguments.
 					return fmt.Errorf("failed to add converted workload '%s': duplicated network name '%s'", workloadName, networkName)
 				}
 				superProject.Networks[networkName] = network
+			}
+		}
+
+		for i, content := range currentState.Extras.PatchingTemplates {
+			slog.Info(fmt.Sprintf("Applying patching template %d", i+1))
+			superProject, err = patching.PatchServices(currentState, superProject, content)
+			if err != nil {
+				return fmt.Errorf("failed to patch template %d: %w", i+1, err)
 			}
 		}
 

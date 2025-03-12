@@ -37,8 +37,9 @@ const (
 type State = framework.State[StateExtras, WorkloadExtras, framework.NoExtras]
 
 type StateExtras struct {
-	ComposeProjectName string `yaml:"compose_project"`
-	MountsDirectory    string `yaml:"mounts_directory"`
+	ComposeProjectName string   `yaml:"compose_project"`
+	MountsDirectory    string   `yaml:"mounts_directory"`
+	PatchingTemplates  []string `yaml:"patching_templates"`
 }
 
 type WorkloadExtras struct {
@@ -57,6 +58,7 @@ type StateDirectory struct {
 }
 
 // Persist ensures that the directory is created and that the current config file has been written with the latest settings.
+// It may also provide some validation of state before writing it.
 func (sd *StateDirectory) Persist() error {
 	if sd.Path == "" {
 		return fmt.Errorf("path not set")
