@@ -105,16 +105,22 @@ type Provisioner interface {
 	Type() string
 	Params() []string
 	Outputs() []string
+	Description() string
 }
 
 type ephemeralProvisioner struct {
-	uri       string
-	matchUid  framework.ResourceUid
-	provision func(ctx context.Context, input *Input) (*ProvisionOutput, error)
-	class     string
-	eType     string
-	params    []string
-	outputs   []string
+	uri         string
+	matchUid    framework.ResourceUid
+	provision   func(ctx context.Context, input *Input) (*ProvisionOutput, error)
+	class       string
+	eType       string
+	params      []string
+	outputs     []string
+	description string
+}
+
+func (e *ephemeralProvisioner) Description() string {
+	return e.description
 }
 
 func (e *ephemeralProvisioner) Uri() string {

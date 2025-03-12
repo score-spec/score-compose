@@ -358,3 +358,7 @@ func (l *legacyVolumeProvisioner) Class() string {
 func (l *legacyVolumeProvisioner) Type() string {
 	return l.MatchResourceUid.Type()
 }
+
+func (l *legacyVolumeProvisioner) Description() string {
+	return ""
+}

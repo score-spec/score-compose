@@ -9,6 +9,7 @@
   # By default, match all classes and ids of volume. If you want to override this, create another provisioner definition
   # with a higher priority.
   type: volume
+  description: Creates a persistent volume that can be mounted on a workload
   init: |
     randomVolumeName: {{ .Id | replace "." "-" }}-{{ randAlphaNum 6 }}
   # Store the random volume name if we haven't chosen one yet, otherwise use the one that exists already
@@ -30,11 +31,13 @@
     - source
     - type
 
+
 # The default provisioner for service resources, this expects a workload and port name and will return the hostname and
 # port required to contact it. This will validate that the workload and port exist, but won't enforce a dependency
 # relationship yet.
 - uri: template://default-provisioners/service-port
   type: service-port
+  description: Outputs a hostname and port for connecting to another workload
   outputs: |
     {{ if not .Params.workload }}{{ fail "expected 'workload' param for the target workload name" }}{{ end }}
     {{ if not .Params.port }}{{ fail "expected 'port' param for the name of the target workload service port" }}{{ end }}
@@ -56,6 +59,7 @@
   # By default, match all redis types regardless of class and id. If you want to override this, create another
   # provisioner definition with a higher priority.
   type: redis
+  description: Provisions a dedicated redis instance
   # Init template has the default port and a random service name and password if needed later
   init: |
     port: 6379
@@ -118,6 +122,7 @@
   # By default, match all redis types regardless of class and id. If you want to override this, create another
   # provisioner definition with a higher priority.
   type: postgres
+  description: Provisions a dedicated database on a shared postgres instance
   # Init template has the random service name and password if needed later
   init: |
     randomServiceName: pg-{{ randAlphaNum 6 }}
@@ -217,6 +222,7 @@
 # connectivity.
 - uri: template://default-provisioners/s3
   type: s3
+  description: Provisions a dedicated S3 bucket with AWS-style credentials on a shared minio instance
   # The init template contains some initial seed data that can be used it needed.
   init: |
     randomServiceName: minio-{{ randAlphaNum 6 }}
@@ -318,6 +324,7 @@
 # The default AMQP provisioner provides a simple rabbitmq instance with default configuration and plugins.
 - uri: template://default-provisioners/rabbitmq
   type: amqp
+  description: Provisions a dedicated rabbitmq vhost on a shared instance
   init: |
     randomServiceName: rabbitmq-{{ randAlphaNum 6 }}
     randomVHost: vhost-{{ randAlpha 8 }}
@@ -410,6 +417,7 @@
 # can be replaced by a new provisioner in the future.
 - uri: template://default-provisioners/dns
   type: dns
+  description: Outputs a *.localhost domain as the hostname
   init: |
     randomHostname: dns{{ randAlphaNum 6 | lower }}.localhost
   state: |
@@ -423,6 +431,7 @@
 # It assumes the hostnames and routes provided have no overlaps. Weird behavior may happen if there are overlaps.
 - uri: template://default-provisioners/route
   type: route
+  description: Provisions a ingress route on a shared nginx instance
   init: |
     randomServiceName: routing-{{ randAlphaNum 6 }}
     sk: default-provisioners-routing-instance
@@ -528,6 +537,7 @@
 # The default mongodb provisioner adds a mongodb service to the project which returns a host, port, username, and password, and connection string.
 - uri: template://default-provisioners/mongodb
   type: mongodb
+  description: Provisions a dedicated mongodb database
   init: |
     port: 27017
     randomServiceName: mongo-{{ randAlphaNum 6 }}
@@ -585,6 +595,7 @@
   # By default, match all mysql types regardless of class and id. If you want to override this, create another
   # provisioner definition with a higher priority.
   type: mysql
+  description: Provisions a dedicated mysql database on a shared instance
   # Init template has the random service name and password if needed later
   init: |
     randomServiceName: mysql-{{ randAlphaNum 6 }}
@@ -668,6 +679,7 @@
 
 - uri: template://default-provisioners/kafka-topic
   type: kafka-topic
+  description: Provisions a dedicated kafka topic on a shared kafka broker
   init: |
     brokerPort: 9092
     ctrlPort: 9093
@@ -732,6 +744,7 @@
   # By default, match all elasticsearch types regardless of class and id.
   # If you want to override this, create another provisioner definition with a higher priority.
   type: elasticsearch
+  description: Provisions a dedicated elastic search instance
   # Init template has the random service name and password if needed later
   init: |
     serviceName: elasticsearch
@@ -866,6 +879,7 @@
 
 - uri: template://default-provisioners/mssql
   type: mssql
+  description: Provisions a dedicated database on a shared SQL server instance
   init: |
     randomPassword: {{ randAlphaNum 16 | quote }}
     sk: default-provisioners-mssql

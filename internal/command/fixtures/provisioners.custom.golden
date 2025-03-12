@@ -138,3 +138,10 @@
     - po1
     - pst1
     - psh1
+
+- uri: template://test-provisioners/without-class-without-params-with-description
+  type: without-class-without-params
+  expected_outputs:
+    - o1
+    - o2
+  description: without-class-without-params-with-description
