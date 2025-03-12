@@ -70,6 +70,7 @@ See the [examples](./examples) for more examples of using Score and provisioning
 - [13-kafka-topic](examples/13-kafka-topic) - an example of the default `kafka-topic` resource provisioner
 - [14-elasticsearch](examples/14-elasticsearch) - an example of the default `elasticsearch` resource provisioner
 - [15-mssql-database](examples/15-mssql-database) - an example of the default `mssql` resource provisioner
+- [16-patching-templates](examples/16-patching-templates) - a guide to patch templates
 
 If you're getting started, you can use `score-compose init` to create a basic `score.yaml` file in the current directory along with a `.score-compose/` working directory.
 
@@ -83,6 +84,16 @@ not be checked into source control. Add it to your .gitignore file if you use Gi
 
 The project name will be used as a Docker compose project name when the final compose files are written. This name
 acts as a namespace when multiple score files and containers are used.
+
+Custom provisioners can be installed by uri using the --provisioners flag. The provisioners will be installed and take
+precedence in the order they are defined over the default provisioners. If init has already been called with provisioners
+the new provisioners will take precedence.
+
+To adjust the way the compose project is generated, or perform post processing actions, you can use the --patch-template
+flag to provide one or more template files by uri. Each template file is stored in the project and then evaluated as a 
+Golang text/template and should output a yaml/json encoded array of patches. Each patch is an object with required 'op' 
+(set or delete), 'patch' (a dot-separated json path), a 'value' if the 'op' == 'set', and an optional 'description' for 
+showing in the logs.
 
 Usage:
   score-compose init [flags]
@@ -101,12 +112,26 @@ Examples:
   # Optionally loading in provisoners from a remote url
   score-compose init --provisioners https://raw.githubusercontent.com/user/repo/main/example.yaml
 
+  # Optionally adding a couple of patching templates
+  score-compose init --patch-template ./patching.tmpl --patch-template https://raw.githubusercontent.com/user/repo/main/example.tmpl
+
+URI Retrieval:
+  The --provisioners and --patch-template arguments support URI retrieval for pulling the contents from a URI on disk
+  or over the network. These support:
+    - Files       : file:///local/file or ./local/file
+    - HTTP        : http://host/file
+    - HTTPS       : https://host/file
+    - Git (SSH)   : git-ssh://git@host/repo.git/file
+    - Git (HTTPS) : git-https://host/repo.git/file
+    - OCI         : oci://[registry/][namespace/]repository[:tag|@digest][#file]
+
 Flags:
-  -f, --file string                The score file to initialize (default "./score.yaml")
-  -h, --help                       help for init
-      --no-sample                  Disable generation of the sample score file
-  -p, --project string             Set the name of the docker compose project (defaults to the current directory name)
-      --provisioner stringArray    A provisioners file to install. May be specified multiple times. Supports http://host/file, https://host/file, git-ssh://git@host/repo.git/file, git-https://host/repo.git/file and oci://[registry/][namespace/]repository[:tag|@digest][#file] formats.
+  -f, --file string                  The score file to initialize (default "./score.yaml")
+  -h, --help                         help for init
+      --no-sample                    Disable generation of the sample score file
+      --patch-template stringArray   Patching template files to include. May be specified multiple times. Supports URI retrieval.
+  -p, --project string               Set the name of the docker compose project (defaults to the current directory name)
+      --provisioners stringArray     Provisioner files to install. May be specified multiple times. Supports URI retrieval.
 
 Global Flags:
       --quiet           Mute any logging output
