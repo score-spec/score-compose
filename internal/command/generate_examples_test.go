@@ -248,7 +248,7 @@ services:
 		{
 			subDir:     "16-patching-templates",
 			adds:       []string{"score.yaml"},
-			patchFiles: []string{"patch-1.tmpl", "patch-2.tmpl", "patch-3.tmpl"},
+			patchFiles: []string{"patch-1.tpl", "patch-2.tpl", "patch-3.tpl"},
 		},
 	} {
 		t.Run(tc.subDir, func(t *testing.T) {

@@ -116,7 +116,7 @@ showing in the logs.
   score-compose init --provisioners https://raw.githubusercontent.com/user/repo/main/example.yaml
 
   # Optionally adding a couple of patching templates
-  score-compose init --patch-template ./patching.tmpl --patch-template https://raw.githubusercontent.com/user/repo/main/example.tmpl
+  score-compose init --patch-template ./patching.tpl --patch-template https://raw.githubusercontent.com/user/repo/main/example.tpl
 
 URI Retrieval:
   The --provisioners and --patch-template arguments support URI retrieval for pulling the contents from a URI on disk

@@ -19,7 +19,7 @@ something.:0000.xyz      # patches the xyz item in the "0000" item of something 
 
 This example shows how you might use these.
 
-In [patch-1.tmpl](./patch-1.tmpl), we describe a patch which updates all Score workload services to have a read only
+In [patch-1.tpl](./patch-1.tpl), we describe a patch which updates all Score workload services to have a read only
 root file system. This may more accurate represent the default production security configuration and reduce local
 testing drift.
 
@@ -34,7 +34,7 @@ testing drift.
 {{ end }}
 ```
 
-In [patch-2.tmpl](./patch-2.tmpl), we slightly modify the output of the `amqp` resource provisioning so that the
+In [patch-2.tpl](./patch-2.tpl), we slightly modify the output of the `amqp` resource provisioning so that the
 management port is exposed on the Rabbitmq container. This means we didn't need to write our own provisioner just to
 adjust that value.
 
@@ -51,7 +51,7 @@ adjust that value.
 {{ end }}
 ```
 
-And finally, in [patch-3.tmpl](./patch-3.tmpl), we exposed a debugging port from the score workload.
+And finally, in [patch-3.tpl](./patch-3.tpl), we exposed a debugging port from the score workload.
 
 ```
 - op: set
