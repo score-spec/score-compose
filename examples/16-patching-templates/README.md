@@ -60,3 +60,34 @@ And finally, in [patch-3.tpl](./patch-3.tpl), we exposed a debugging port from t
   - target: 9999
     published: 9999
 ```
+
+Because patch templates have access to the set of workload specifications in `.Workloads`, they can be used to implement
+additional conversions or Score features which are not provided by the Score spec yet or are too specialized. For example,
+there is no way currently in the Score spec to specify that the workload should run as privileged. But we can do this
+by first adding an annotation or custom metadata to a workload:
+
+```
+...
+metadata
+  name: my-workload
+  extensions:
+    privileged: true
+...
+```
+
+And then adding a patch template that will look for this and update all service containers with `privileged: true`:
+
+```
+{{ range $name, $spec := .Workloads }}
+    {{ if (dig "metadata" "extensions" "privileged" false $spec) }}
+        {{ range $cname, $_ := $spec.containers }}
+- op: set
+  path: services.{{ $name }}-{{ $cname }}.privileged
+  value: true
+  description: Enable privileged mode on service containers
+        {{ end }}
+    {{ end }}
+{{ end }}
+```
+
+In this way, you can extend the behavior of `score-compose`.

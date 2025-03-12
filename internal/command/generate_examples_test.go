@@ -264,7 +264,7 @@ services:
 
 			args := []string{"init", "--no-sample"}
 			for _, f := range tc.patchFiles {
-				args = append(args, "--patch-template", f)
+				args = append(args, "--patch-templates", f)
 			}
 
 			stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, args)

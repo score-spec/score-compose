@@ -73,7 +73,7 @@ resources: {}
 	initCmdFileProjectFlag   = "project"
 	initCmdFileNoSampleFlag  = "no-sample"
 	initCmdProvisionerFlag   = "provisioners"
-	initCmdPatchTemplateFlag = "patch-template"
+	initCmdPatchTemplateFlag = "patch-templates"
 )
 
 //go:embed default.provisioners.yaml
@@ -96,11 +96,11 @@ Custom provisioners can be installed by uri using the --provisioners flag. The p
 precedence in the order they are defined over the default provisioners. If init has already been called with provisioners
 the new provisioners will take precedence.
 
-To adjust the way the compose project is generated, or perform post processing actions, you can use the --patch-template
+To adjust the way the compose project is generated, or perform post processing actions, you can use the --patch-templates
 flag to provide one or more template files by uri. Each template file is stored in the project and then evaluated as a 
 Golang text/template and should output a yaml/json encoded array of patches. Each patch is an object with required 'op' 
 (set or delete), 'patch' (a dot-separated json path), a 'value' if the 'op' == 'set', and an optional 'description' for 
-showing in the logs.
+showing in the logs. The template has access to '.Compose' and '.Workloads'.
 `,
 	Example: `
   # Define a score file to generate
@@ -116,10 +116,10 @@ showing in the logs.
   score-compose init --provisioners https://raw.githubusercontent.com/user/repo/main/example.yaml
 
   # Optionally adding a couple of patching templates
-  score-compose init --patch-template ./patching.tpl --patch-template https://raw.githubusercontent.com/user/repo/main/example.tpl
+  score-compose init --patch-templates ./patching.tpl --patch-templates https://raw.githubusercontent.com/user/repo/main/example.tpl
 
 URI Retrieval:
-  The --provisioners and --patch-template arguments support URI retrieval for pulling the contents from a URI on disk
+  The --provisioners and --patch-templates arguments support URI retrieval for pulling the contents from a URI on disk
   or over the network. These support:
     - HTTP        : http://host/file
     - HTTPS       : https://host/file
@@ -176,7 +176,7 @@ URI Retrieval:
 			}
 			if hasChanges {
 				if err := sd.Persist(); err != nil {
-					return fmt.Errorf("failed to persist new compose project name: %w", err)
+					return fmt.Errorf("failed to persist new state file: %w", err)
 				}
 			}
 

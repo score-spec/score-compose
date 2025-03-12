@@ -89,7 +89,7 @@ Custom provisioners can be installed by uri using the --provisioners flag. The p
 precedence in the order they are defined over the default provisioners. If init has already been called with provisioners
 the new provisioners will take precedence.
 
-To adjust the way the compose project is generated, or perform post processing actions, you can use the --patch-template
+To adjust the way the compose project is generated, or perform post processing actions, you can use the --patch-templates
 flag to provide one or more template files by uri. Each template file is stored in the project and then evaluated as a 
 Golang text/template and should output a yaml/json encoded array of patches. Each patch is an object with required 'op' 
 (set or delete), 'patch' (a dot-separated json path), a 'value' if the 'op' == 'set', and an optional 'description' for 
@@ -113,10 +113,10 @@ Examples:
   score-compose init --provisioners https://raw.githubusercontent.com/user/repo/main/example.yaml
 
   # Optionally adding a couple of patching templates
-  score-compose init --patch-template ./patching.tpl --patch-template https://raw.githubusercontent.com/user/repo/main/example.tpl
+  score-compose init --patch-templates ./patching.tpl --patch-templates https://raw.githubusercontent.com/user/repo/main/example.tpl
 
 URI Retrieval:
-  The --provisioners and --patch-template arguments support URI retrieval for pulling the contents from a URI on disk
+  The --provisioners and --patch-templates arguments support URI retrieval for pulling the contents from a URI on disk
   or over the network. These support:
     - Files       : file:///local/file or ./local/file
     - HTTP        : http://host/file
@@ -129,7 +129,7 @@ Flags:
   -f, --file string                  The score file to initialize (default "./score.yaml")
   -h, --help                         help for init
       --no-sample                    Disable generation of the sample score file
-      --patch-template stringArray   Patching template files to include. May be specified multiple times. Supports URI retrieval.
+      --patch-templates stringArray   Patching template files to include. May be specified multiple times. Supports URI retrieval.
   -p, --project string               Set the name of the docker compose project (defaults to the current directory name)
       --provisioners stringArray     Provisioner files to install. May be specified multiple times. Supports URI retrieval.
 

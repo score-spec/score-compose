@@ -1462,7 +1462,7 @@ containers:
 {{ end }}
 ---
 `), 0644))
-	_, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--patch-template", "patch1.template", "--patch-template", "patch2.template", "--patch-template", "patch3.template"})
+	_, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--patch-templates", "patch1.template", "--patch-templates", "patch2.template", "--patch-templates", "patch3.template"})
 	assert.NoError(t, err)
 	t.Log(stderr)
 
