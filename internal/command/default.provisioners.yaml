@@ -94,7 +94,7 @@
     {{ .State.serviceName }}:
       labels:
         dev.score.compose.res.uid: {{ .Uid }}
-      image: redis:7-alpine
+      image: mirror.gcr.io/redis:7-alpine
       restart: always
       entrypoint: ["redis-server"]
       command: ["/usr/local/etc/redis/redis.conf"]
@@ -164,7 +164,7 @@
   # Create 2 services, the first is the database itself, the second is the init container which runs the scripts
   services: |
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
-      image: postgres:17-alpine
+      image: mirror.gcr.io/postgres:17-alpine
       restart: always
       environment:
         POSTGRES_USER: postgres
@@ -184,7 +184,7 @@
         timeout: 2s
         retries: 15
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}-init:
-      image: postgres:17-alpine
+      image: mirror.gcr.io/postgres:17-alpine
       entrypoint: ["/bin/sh"]
       environment:
         POSTGRES_PASSWORD: {{ dig .Init.sk "instancePassword" "" .Shared | quote }}
@@ -364,7 +364,7 @@
       rabbitmqctl set_topic_permissions -p {{ .State.vhost }} {{ .State.username }} ".*" ".*" ".*"
   services: |
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
-      image: rabbitmq:3-management-alpine
+      image: mirror.gcr.io/rabbitmq:3-management-alpine
       restart: always
       environment:
         RABBITMQ_ERLANG_COOKIE: {{ dig .Init.sk "instanceErlangCookie" "" .Shared }}
@@ -381,7 +381,7 @@
         timeout: 5s
         retries: 15
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}-init:
-      image: rabbitmq:3-management-alpine
+      image: mirror.gcr.io/rabbitmq:3-management-alpine
       entrypoint: ["/bin/sh"]
       environment:
         RABBITMQ_ERLANG_COOKIE: {{ dig .Init.sk "instanceErlangCookie" "" .Shared }}
@@ -516,7 +516,7 @@
   services: |
     {{ $p := (dig .Init.sk "instancePort" 0 .Shared) }}
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
-      image: "nginx:1-alpine"
+      image: mirror.gcr.io/nginx:1-alpine
       restart: always
       ports:
         - published: {{ $p }}
@@ -563,7 +563,7 @@
     {{ .State.serviceName }}:
       labels:
         dev.score.compose.res.uid: {{ .Uid }}
-      image: mongo:8
+      image: mirror.gcr.io/mongo:8
       restart: always
       environment:
         MONGO_INITDB_ROOT_USERNAME: {{ .State.username | quote }}
@@ -639,7 +639,7 @@
   # Create an services with the database itself
   services: |
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
-      image: mysql:8
+      image: mirror.gcr.io/mysql:8
       restart: always
       environment:
         MYSQL_DATABASE: {{ .State.database }}
