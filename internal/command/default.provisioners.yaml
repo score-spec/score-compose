@@ -235,11 +235,6 @@
     database: {{ dig "database" .Init.randomDatabase .State | quote }}
     username: {{ dig "username" .Init.randomUsername .State | quote }}
     password: {{ dig "password" .Init.randomPassword .State | quote }}
-  # All instances agree on the shared state since there is no concurrency here
-  shared: |
-    {{ .Init.sk }}:
-      instanceServiceName: {{ dig .Init.sk "instanceServiceName" .Init.randomServiceName .Shared | quote }}
-      instancePassword: {{ dig .Init.sk "instancePassword" .Init.randomPassword .Shared | quote }}
   # The outputs are the core database outputs. We output both name and database for broader compatibility.
   outputs: |
     host: {{ dig .Init.sk "instanceServiceName" "" .Shared }}
