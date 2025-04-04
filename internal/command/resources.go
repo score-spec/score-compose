@@ -22,11 +22,11 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
+	"github.com/score-spec/score-go/formatter"
 	"github.com/score-spec/score-go/framework"
 	"github.com/spf13/cobra"
 
 	"github.com/score-spec/score-compose/internal/project"
-	"github.com/score-spec/score-compose/internal/util"
 )
 
 const (
@@ -122,12 +122,12 @@ func getResourceOutputsKeys(uid framework.ResourceUid, state *project.State) ([]
 
 func displayResourcesOutputs(outputs map[string]interface{}, cmd *cobra.Command) error {
 	outputFormat := cmd.Flags().Lookup(getOutputsCmdFormatFlag).Value.String()
-	var outputFormatter util.OutputFormatter
+	var outputFormatter formatter.OutputFormatter
 	switch outputFormat {
 	case "json":
-		outputFormatter = &util.JSONOutputFormatter[map[string]interface{}]{Data: outputs, Out: cmd.OutOrStdout()}
+		outputFormatter = &formatter.JSONOutputFormatter[map[string]interface{}]{Data: outputs, Out: cmd.OutOrStdout()}
 	case "yaml":
-		outputFormatter = &util.YAMLOutputFormatter[map[string]interface{}]{Data: outputs, Out: cmd.OutOrStdout()}
+		outputFormatter = &formatter.YAMLOutputFormatter[map[string]interface{}]{Data: outputs, Out: cmd.OutOrStdout()}
 	default:
 		// ensure there is a new line at the end if one is not already present
 		if !strings.HasSuffix(outputFormat, "\n") {
@@ -148,7 +148,7 @@ func displayResourcesOutputs(outputs map[string]interface{}, cmd *cobra.Command)
 
 func displayResourcesList(resources []framework.ResourceUid, state project.State, cmd *cobra.Command) error {
 	outputFormat := cmd.Flag("format").Value.String()
-	var outputFormatter util.OutputFormatter
+	var outputFormatter formatter.OutputFormatter
 
 	switch outputFormat {
 	case "json":
@@ -168,7 +168,7 @@ func displayResourcesList(resources []framework.ResourceUid, state project.State
 				Outputs: keys,
 			})
 		}
-		outputFormatter = &util.JSONOutputFormatter[[]jsonData]{Data: outputs, Out: cmd.OutOrStdout()}
+		outputFormatter = &formatter.JSONOutputFormatter[[]jsonData]{Data: outputs, Out: cmd.OutOrStdout()}
 	default:
 		var rows [][]string
 		for _, resource := range resources {
@@ -179,7 +179,7 @@ func displayResourcesList(resources []framework.ResourceUid, state project.State
 			row := []string{string(resource), strings.Join(keys, ", ")}
 			rows = append(rows, row)
 		}
-		outputFormatter = &util.TableOutputFormatter{
+		outputFormatter = &formatter.TableOutputFormatter{
 			Headers: []string{"UID", "Outputs"},
 			Rows:    rows,
 			Out:     cmd.OutOrStdout(),

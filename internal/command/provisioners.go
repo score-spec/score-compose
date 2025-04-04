@@ -26,7 +26,7 @@ import (
 	"github.com/score-spec/score-compose/internal/project"
 	"github.com/score-spec/score-compose/internal/provisioners"
 	"github.com/score-spec/score-compose/internal/provisioners/loader"
-	"github.com/score-spec/score-compose/internal/util"
+	"github.com/score-spec/score-go/formatter"
 )
 
 var (
@@ -72,7 +72,7 @@ func listProvisioners(cmd *cobra.Command, args []string) error {
 }
 
 func displayProvisioners(loadedProvisioners []provisioners.Provisioner, outputFormat string) error {
-	var outputFormatter util.OutputFormatter
+	var outputFormatter formatter.OutputFormatter
 	sortedProvisioners := sortProvisionersByType(loadedProvisioners)
 
 	switch outputFormat {
@@ -94,7 +94,7 @@ func displayProvisioners(loadedProvisioners []provisioners.Provisioner, outputFo
 				Description: provisioner.Description(),
 			})
 		}
-		outputFormatter = &util.JSONOutputFormatter[[]jsonData]{Data: outputs}
+		outputFormatter = &formatter.JSONOutputFormatter[[]jsonData]{Data: outputs}
 	default:
 		rows := [][]string{}
 
@@ -102,7 +102,7 @@ func displayProvisioners(loadedProvisioners []provisioners.Provisioner, outputFo
 			rows = append(rows, []string{provisioner.Type(), provisioner.Class(), strings.Join(provisioner.Params(), ", "), strings.Join(provisioner.Outputs(), ", "), provisioner.Description()})
 		}
 		headers := []string{"Type", "Class", "Params", "Outputs", "Description"}
-		outputFormatter = &util.TableOutputFormatter{
+		outputFormatter = &formatter.TableOutputFormatter{
 			Headers: headers,
 			Rows:    rows,
 		}
