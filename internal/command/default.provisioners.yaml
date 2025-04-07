@@ -217,11 +217,10 @@
     - password
 
 
-- uri: template://default-provisioners/postgres
-  # By default, match all redis types regardless of class and id. If you want to override this, create another
-  # provisioner definition with a higher priority.
+- uri: template://default-provisioners/postgres-instance
+ 
   type: postgres-instance
-  description: Provisions a dedicated database on a shared postgres instance
+  description: Provisions a dedicated Postgres instance
   # Init template has the random service name and password if needed later
   init: |
     randomServiceName: pg-{{ randAlphaNum 6 }}
@@ -232,23 +231,15 @@
     publishPort: {{ dig "annotations" "compose.score.dev/publish-port" "0" .Metadata | quote }}
   # The state for each database resource is a unique db name and credentials
   state: |
-    database: {{ dig "database" .Init.randomDatabase .State | quote }}
-    username: {{ dig "username" .Init.randomUsername .State | quote }}
+    database: "postgres"
+    username: "postgres"
     password: {{ dig "password" .Init.randomPassword .State | quote }}
   # The outputs are the core database outputs. We output both name and database for broader compatibility.
   outputs: |
     host: {{ dig .Init.sk "instanceServiceName" "" .Shared }}
     port: 5432
-    username: {{ .State.username }}
-    password: {{ .State.password }}
-  # Write out an idempotent create script per database
-  files: |
-    {{ dig .Init.sk "instanceServiceName" "" .Shared }}-db-scripts/{{ .State.database }}.sql: |
-      SELECT 'CREATE DATABASE "{{ .State.database }}"' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '{{ .State.database }}')\gexec
-      SELECT $$CREATE USER "{{ .State.username }}" WITH PASSWORD '{{ .State.password }}'$$ WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .State.username }}')\gexec
-      GRANT ALL PRIVILEGES ON DATABASE "{{ .State.database }}" TO "{{ .State.username }}";
-      \connect "{{ .State.database }}";
-      GRANT ALL ON SCHEMA public TO "{{ .State.username }}";
+    username: postgres
+    password: {{ dig .Init.sk "instancePassword" "" .Shared }}
   # Ensure the data volume exists
   volumes: |
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}-data:
@@ -272,29 +263,7 @@
         target: /var/lib/postgresql/data
       healthcheck:
         test: ["CMD", "pg_isready", "-U", "postgres"]
-        interval: 2s
-        timeout: 2s
-        retries: 15
-    {{ dig .Init.sk "instanceServiceName" "" .Shared }}-init:
-      image: mirror.gcr.io/postgres:17-alpine
-      entrypoint: ["/bin/sh"]
-      environment:
-        POSTGRES_PASSWORD: {{ dig .Init.sk "instancePassword" "" .Shared | quote }}
-      command:
-      - "-c"
-      - |
-        cd /db-scripts
-        ls db-*.sql | xargs cat | psql "postgresql://postgres:$${POSTGRES_PASSWORD}@{{ dig .Init.sk "instanceServiceName" "" .Shared }}:5432/postgres"
-      labels:
-        dev.score.compose.labels.is-init-container: "true"
-      depends_on:
-        {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
-          condition: service_healthy
-          restart: true
-      volumes:
-      - type: bind
-        source: {{ .MountsDirectory }}/{{ dig .Init.sk "instanceServiceName" "" .Shared }}-db-scripts
-        target: /db-scripts
+      
   info_logs: |
     - "{{.Uid}}: To connect to postgres, enter password {{ .State.password | squote }} at: \"docker run -it --network {{ .ComposeProjectName }}_default --rm postgres:17-alpine psql -h {{ dig .Init.sk "instanceServiceName" "" .Shared }} -U {{ .State.username }} --dbname {{ .State.database }}\""
     {{ if ne .Init.publishPort "0" }}
