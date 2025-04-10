@@ -36,6 +36,7 @@ Usage:
   score-compose resources [command]
 
 Available Commands:
+  deprovision Deprovision a resource by id
   get-outputs Return the resource outputs
   list        List the resource uids
 
