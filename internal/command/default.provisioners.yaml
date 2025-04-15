@@ -231,27 +231,28 @@
     publishPort: {{ dig "annotations" "compose.score.dev/publish-port" "0" .Metadata | quote }}
   # The state for each database resource is a unique db name and credentials
   state: |
+    serviceName: {{ .Init.randomServiceName }}
     database: "postgres"
     username: "postgres"
     password: {{ dig "password" .Init.randomPassword .State | quote }}
   # The outputs are the core database outputs. We output both name and database for broader compatibility.
   outputs: |
-    host: {{ dig .Init.sk "instanceServiceName" "" .Shared }}
+    host: {{ .State.serviceName }}
     port: 5432
     username: postgres
-    password: {{ dig .Init.sk "instancePassword" "" .Shared }}
+    password: {{ .State.password }}
   # Ensure the data volume exists
   volumes: |
-    {{ dig .Init.sk "instanceServiceName" "" .Shared }}-data:
+    {{ .State.serviceName }}-data:
       driver: local
   # Create 2 services, the first is the database itself, the second is the init container which runs the scripts
   services: |
-    {{ dig .Init.sk "instanceServiceName" "" .Shared }}:
+    {{ .State.serviceName }}:
       image: mirror.gcr.io/postgres:17-alpine
       restart: always
       environment:
         POSTGRES_USER: postgres
-        POSTGRES_PASSWORD: {{ dig .Init.sk "instancePassword" "" .Shared | quote }}
+        POSTGRES_PASSWORD: {{ .State.password | quote }}
       {{ if ne .Init.publishPort "0" }}
       ports:
       - target: 5432
@@ -259,13 +260,13 @@
       {{ end }}
       volumes:
       - type: volume
-        source: {{ dig .Init.sk "instanceServiceName" "" .Shared }}-data
+        source: {{ .State.serviceName }}-data
         target: /var/lib/postgresql/data
       healthcheck:
         test: ["CMD", "pg_isready", "-U", "postgres"]
       
   info_logs: |
-    - "{{.Uid}}: To connect to postgres, enter password {{ .State.password | squote }} at: \"docker run -it --network {{ .ComposeProjectName }}_default --rm postgres:17-alpine psql -h {{ dig .Init.sk "instanceServiceName" "" .Shared }} -U {{ .State.username }} --dbname {{ .State.database }}\""
+    - "{{.Uid}}: To connect to postgres, enter password {{ .State.password | squote }} at: \"docker run -it --network {{ .ComposeProjectName }}_default --rm postgres:17-alpine psql -h {{ .State.serviceName }} -U {{ .State.username }} --dbname {{ .State.database }}\""
     {{ if ne .Init.publishPort "0" }}
     - "{{.Uid}}: Or connect your postgres client to \"postgres://{{ .State.username }}:{{ .State.password }}@localhost:{{ .Init.publishPort }}/{{ .State.database }}\""
     {{ end }}
