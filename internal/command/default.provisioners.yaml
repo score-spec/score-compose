@@ -231,7 +231,7 @@
     publishPort: {{ dig "annotations" "compose.score.dev/publish-port" "0" .Metadata | quote }}
   # The state for each database resource is a unique db name and credentials
   state: |
-    serviceName: {{ .Init.randomServiceName }}
+    serviceName: {{ dig "serviceName" .Init.randomServiceName .State | quote }}
     database: "postgres"
     username: "postgres"
     password: {{ dig "password" .Init.randomPassword .State | quote }}
