@@ -88,6 +88,7 @@ URI Retrieval:
 Flags:
   -f, --file string                   The score file to initialize (default "./score.yaml")
   -h, --help                          help for init
+      --no-default-provisioners       Disable generation of the default provisioners file
       --no-sample                     Disable generation of the sample score file
       --patch-templates stringArray   Patching template files to include. May be specified multiple times. Supports URI retrieval.
   -p, --project string                Set the name of the docker compose project (defaults to the current directory name)
