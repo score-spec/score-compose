@@ -22,7 +22,9 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Run Go Vet
-        run: go vet ./...    
+        run: go vet ./...
+      - name: Run Go Static Check
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest && staticcheck ./...
       - name: Run Go Tests
         run: go test ./... -cover -race
       - name: Build binary
