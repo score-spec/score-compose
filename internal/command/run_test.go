@@ -53,7 +53,7 @@ func executeAndResetCommand(ctx context.Context, cmd *cobra.Command, args []stri
 	if subCmd != nil {
 		subCmd.SetOut(nil)
 		subCmd.SetErr(nil)
-		subCmd.SetContext(nil)
+		subCmd.SetContext(context.TODO())
 		subCmd.SilenceUsage = false
 		subCmd.Flags().VisitAll(func(f *pflag.Flag) {
 			if f.Value.Type() == "stringArray" {
