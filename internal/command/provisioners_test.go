@@ -94,6 +94,9 @@ func goldenValue(t *testing.T, path string, goldenFile string, actual string, up
 	goldenPath := filepath.Join(path, goldenFile)
 
 	f, err := os.OpenFile(goldenPath, os.O_RDWR, 0644)
+	if err != nil {
+		return "", fmt.Errorf("failed to open file: %w", err)
+	}
 	defer f.Close()
 
 	if update {

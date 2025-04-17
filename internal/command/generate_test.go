@@ -960,7 +960,7 @@ resources:
   env:
     type: environment
 `), 0644))
-	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	_, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
 	assert.NoError(t, err)
 	raw, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
 	assert.NoError(t, err)
@@ -995,7 +995,7 @@ resources:
   env:
     type: environment
 `), 0644))
-	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	_, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
 	assert.EqualError(t, err, "failed to convert workload 'example' to Docker compose: containers.example.files[0]: "+
 		"failed to substitute in content: invalid ref 'resources.env.UNKNOWN_SCORE_VARIABLE': "+
 		"environment variable 'UNKNOWN_SCORE_VARIABLE' must be resolved",
@@ -1022,7 +1022,7 @@ resources:
     params:
       x: ${resources.env.UNKNOWN_SCORE_VARIABLE}
 `), 0644))
-	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	_, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
 	assert.EqualError(t, err, "failed to provision: failed to substitute params for resource 'volume.default#example.data': "+
 		"x: invalid ref 'resources.env.UNKNOWN_SCORE_VARIABLE': "+
 		"environment variable 'UNKNOWN_SCORE_VARIABLE' must be resolved",

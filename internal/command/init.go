@@ -69,11 +69,12 @@ service:
 
 resources: {}
 `
-	initCmdFileFlag          = "file"
-	initCmdFileProjectFlag   = "project"
-	initCmdFileNoSampleFlag  = "no-sample"
-	initCmdProvisionerFlag   = "provisioners"
-	initCmdPatchTemplateFlag = "patch-templates"
+	initCmdFileFlag                  = "file"
+	initCmdFileProjectFlag           = "project"
+	initCmdFileNoSampleFlag          = "no-sample"
+	initCmdProvisionerFlag           = "provisioners"
+	initCmdPatchTemplateFlag         = "patch-templates"
+	initCmdNoDefaultProvisionersFlag = "no-default-provisioners"
 )
 
 //go:embed default.provisioners.yaml
@@ -208,21 +209,34 @@ URI Retrieval:
 			}
 
 			// create and write the default provisioners file if it doesn't already exist
-			dst := "zz-default" + loader.DefaultSuffix
-			if f, err := os.Stat(filepath.Join(sd.Path, "99-default"+loader.DefaultSuffix)); err == nil {
-				slog.Info(fmt.Sprintf("Default provisioners yaml file '%s' already exists, not overwriting it", f.Name()))
-			} else if f, err := os.OpenFile(filepath.Join(sd.Path, dst), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644); err != nil {
-				if !errors.Is(err, os.ErrExist) {
-					return fmt.Errorf("failed to open default provisioners for writing: %w", err)
+			disableDefaultProvisioners, err := cmd.Flags().GetBool(initCmdNoDefaultProvisionersFlag)
+			if err != nil {
+				return fmt.Errorf("failed to parse --%s flag: %w", initCmdNoDefaultProvisionersFlag, err)
+			}
+
+			if !disableDefaultProvisioners {
+				defaultProvisioners := filepath.Join(sd.Path, "zz-default.provisioners.yaml")
+
+				if _, err := os.Stat(defaultProvisioners); err != nil {
+					if !errors.Is(err, os.ErrNotExist) {
+						return fmt.Errorf("failed to check for existing default provisioners file: %w", err)
+					}
+
+					f, err := os.OpenFile(defaultProvisioners, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+					if err != nil {
+						return fmt.Errorf("failed to create default provisioners file: %w", err)
+					}
+					defer f.Close()
+
+					slog.Info("Writing default provisioners file", "path", defaultProvisioners)
+					if _, err := f.WriteString(defaultProvisionersContent); err != nil {
+						return fmt.Errorf("failed to write default provisioners content: %w", err)
+					}
+				} else {
+					slog.Info("Default provisioners file already exists, skipping", "path", defaultProvisioners)
 				}
-				slog.Info(fmt.Sprintf("Default provisioners yaml file '%s' already exists, not overwriting it", dst))
 			} else {
-				defer f.Close()
-				slog.Info(fmt.Sprintf("Writing default provisioners yaml file '%s'", dst))
-				if _, err = f.WriteString(defaultProvisionersContent); err != nil {
-					return fmt.Errorf("failed to write provisioners: %w", err)
-				}
-				_ = f.Close()
+				slog.Info("Skipping default provisioners due to --no-default-provisioners flag")
 			}
 		}
 
@@ -270,7 +284,7 @@ URI Retrieval:
 			slog.Debug(fmt.Sprintf("Successfully loaded %d resource provisioners", len(provs)))
 		}
 
-		slog.Info(fmt.Sprintf("Read more about the Score specification at https://docs.score.dev/docs/"))
+		slog.Info("Read more about the Score specification at https://docs.score.dev/docs/")
 
 		return nil
 	},
@@ -282,6 +296,7 @@ func init() {
 	initCmd.Flags().Bool(initCmdFileNoSampleFlag, false, "Disable generation of the sample score file")
 	initCmd.Flags().StringArray(initCmdProvisionerFlag, nil, "Provisioner files to install. May be specified multiple times. Supports URI retrieval.")
 	initCmd.Flags().StringArray(initCmdPatchTemplateFlag, nil, "Patching template files to include. May be specified multiple times. Supports URI retrieval.")
+	initCmd.Flags().Bool(initCmdNoDefaultProvisionersFlag, false, "Disable generation of the default provisioners file")
 
 	rootCmd.AddCommand(initCmd)
 }
