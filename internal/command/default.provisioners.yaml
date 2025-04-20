@@ -42,7 +42,7 @@
     {{ if not .Params.workload }}{{ fail "expected 'workload' param for the target workload name" }}{{ end }}
     {{ if not .Params.port }}{{ fail "expected 'port' param for the name of the target workload service port" }}{{ end }}
     {{ $w := (index .WorkloadServices .Params.workload) }}
-    {{ if not $w }}{{ fail "unknown workload" }}{{ end }}
+    {{ if or (not $w) (not $w.ServiceName) }}{{ fail "unknown workload" }}{{ end }}
     {{ $p := (index $w.Ports .Params.port) }}
     {{ if not $p }}{{ fail "unknown service port" }}{{ end }}
     hostname: {{ $w.ServiceName | quote }}
