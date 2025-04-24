@@ -121,10 +121,9 @@ func TestScoreConvert(t *testing.T) {
 							"DOMAIN_NAME":       "${resources.some-dns.domain_name}",
 							"CONNECTION_STRING": "postgresql://${resources.app-db.host}:${resources.app-db.port}/${resources.app-db.name}",
 						},
-						Volumes: []score.ContainerVolumesElem{
-							{
+						Volumes: map[string]score.ContainerVolume{
+							"/mnt/data": {
 								Source:   "${resources.data}",
-								Target:   "/mnt/data",
 								ReadOnly: util.Ref(true),
 							},
 						},
@@ -194,10 +193,9 @@ func TestScoreConvert(t *testing.T) {
 							"DOMAIN_NAME":       "${resources.some-dns.domain_name}",
 							"CONNECTION_STRING": "mysql://${resources.app-db.host}:${resources.app-db.port}/${resources.app-db.name}",
 						},
-						Volumes: []score.ContainerVolumesElem{
-							{
+						Volumes: map[string]score.ContainerVolume{
+							"/mnt/data": {
 								Source:   "${resources.data}",
-								Target:   "/mnt/data",
 								ReadOnly: util.Ref(true),
 							},
 						},
@@ -363,10 +361,9 @@ func TestScoreConvert(t *testing.T) {
 				Containers: score.WorkloadContainers{
 					"backend": score.Container{
 						Image: "busybox",
-						Volumes: []score.ContainerVolumesElem{
-							{
+						Volumes: map[string]score.ContainerVolume{
+							"/mnt/data": {
 								Source:   "${resources.data}",
-								Target:   "/mnt/data",
 								Path:     util.Ref("sub/path"),
 								ReadOnly: util.Ref(true),
 							},
@@ -414,11 +411,11 @@ func TestScoreConvert(t *testing.T) {
 				Containers: score.WorkloadContainers{
 					"test": score.Container{
 						Image:   "busybox",
-						Volumes: []score.ContainerVolumesElem{{Source: "${resources.data}", Target: "/mnt/data"}},
+						Volumes: map[string]score.ContainerVolume{"/mnt/data": {Source: "${resources.data}"}},
 					},
 				},
 			},
-			Error: errors.New("containers.test.volumes[0]: resource 'data' does not exist"),
+			Error: errors.New("containers.test.volumes[/mnt/data]: resource 'data' does not exist"),
 		},
 
 		{
@@ -428,12 +425,12 @@ func TestScoreConvert(t *testing.T) {
 				Containers: score.WorkloadContainers{
 					"test": score.Container{
 						Image:   "busybox",
-						Volumes: []score.ContainerVolumesElem{{Source: "${resources.data}", Target: "/mnt/data"}},
+						Volumes: map[string]score.ContainerVolume{"/mnt/data": {Source: "${resources.data}"}},
 					},
 				},
 				Resources: map[string]score.Resource{"data": {Type: "thing"}},
 			},
-			Error: errors.New("containers.test.volumes[0]: resource 'thing.default#test.data' has no 'type' output"),
+			Error: errors.New("containers.test.volumes[/mnt/data]: resource 'thing.default#test.data' has no 'type' output"),
 		},
 	}
 
@@ -484,14 +481,14 @@ func TestConvertFilesIntoVolumes_nominal(t *testing.T) {
 			Spec: score.Workload{
 				Containers: map[string]score.Container{
 					"my-container": {
-						Files: []score.ContainerFilesElem{
-							{Target: "/ant.txt", Source: util.Ref("original.txt")},
-							{Target: "/bat.txt", Source: util.Ref("original.txt"), NoExpand: util.Ref(true)},
-							{Target: "/cat.txt", Source: util.Ref("original.txt"), NoExpand: util.Ref(false)},
-							{Target: "/dog.txt", Content: util.Ref("third ${metadata.name} fourth")},
-							{Target: "/eel.txt", Content: util.Ref("third ${metadata.name} fourth"), NoExpand: util.Ref(true)},
-							{Target: "/fox.txt", Content: util.Ref("third ${metadata.name} fourth"), NoExpand: util.Ref(false)},
-							{Target: "/goat.txt", BinaryContent: util.Ref("ZmlmdGggJHttZXRhZGF0YS5uYW1lfSBzaXh0aA==")},
+						Files: map[string]score.ContainerFile{
+							"/ant.txt": {Source: util.Ref("original.txt")},
+							"/bat.txt": {Source: util.Ref("original.txt"), NoExpand: util.Ref(true)},
+							"/cat.txt": {Source: util.Ref("original.txt"), NoExpand: util.Ref(false)},
+							"/dog.txt": {Content: util.Ref("third ${metadata.name} fourth")},
+							"/eel.txt": {Content: util.Ref("third ${metadata.name} fourth"), NoExpand: util.Ref(true)},
+							"/fox.txt": {Content: util.Ref("third ${metadata.name} fourth"), NoExpand: util.Ref(false)},
+							"/goat.txt": {BinaryContent: util.Ref("ZmlmdGggJHttZXRhZGF0YS5uYW1lfSBzaXh0aA==")},
 						},
 					},
 				},
@@ -515,23 +512,23 @@ func TestConvertFilesIntoVolumes_nominal(t *testing.T) {
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, []compose.ServiceVolumeConfig{
-		{Type: "bind", Target: "/ant.txt", Source: filepath.Join(td, "files", "my-workload-files-0-ant.txt")},
-		{Type: "bind", Target: "/bat.txt", Source: filepath.Join(td, "files", "my-workload-files-1-bat.txt")},
-		{Type: "bind", Target: "/cat.txt", Source: filepath.Join(td, "files", "my-workload-files-2-cat.txt")},
-		{Type: "bind", Target: "/dog.txt", Source: filepath.Join(td, "files", "my-workload-files-3-dog.txt")},
-		{Type: "bind", Target: "/eel.txt", Source: filepath.Join(td, "files", "my-workload-files-4-eel.txt")},
-		{Type: "bind", Target: "/fox.txt", Source: filepath.Join(td, "files", "my-workload-files-5-fox.txt")},
-		{Type: "bind", Target: "/goat.txt", Source: filepath.Join(td, "files", "my-workload-files-6-goat.txt")},
+		{Type: "bind", Target: "/ant.txt", Source: filepath.Join(td, "files", "my-workload-files-ant.txt")},
+		{Type: "bind", Target: "/bat.txt", Source: filepath.Join(td, "files", "my-workload-files-bat.txt")},
+		{Type: "bind", Target: "/cat.txt", Source: filepath.Join(td, "files", "my-workload-files-cat.txt")},
+		{Type: "bind", Target: "/dog.txt", Source: filepath.Join(td, "files", "my-workload-files-dog.txt")},
+		{Type: "bind", Target: "/eel.txt", Source: filepath.Join(td, "files", "my-workload-files-eel.txt")},
+		{Type: "bind", Target: "/fox.txt", Source: filepath.Join(td, "files", "my-workload-files-fox.txt")},
+		{Type: "bind", Target: "/goat.txt", Source: filepath.Join(td, "files", "my-workload-files-goat.txt")},
 	}, out)
 	for k, v := range map[string]string{
-		"my-workload-files-0-ant.txt": "first blah second",
-		"my-workload-files-1-bat.txt": "first ${metadata.name} second",
-		"my-workload-files-2-cat.txt": "first blah second",
-		"my-workload-files-3-dog.txt": "third blah fourth",
-		"my-workload-files-4-eel.txt": "third ${metadata.name} fourth",
-		"my-workload-files-5-fox.txt": "third blah fourth",
+		"my-workload-files-ant.txt": "first blah second",
+		"my-workload-files-bat.txt": "first ${metadata.name} second",
+		"my-workload-files-cat.txt": "first blah second",
+		"my-workload-files-dog.txt": "third blah fourth",
+		"my-workload-files-eel.txt": "third ${metadata.name} fourth",
+		"my-workload-files-fox.txt": "third blah fourth",
 		// NOTE: binaryContent doesn't support placeholders
-		"my-workload-files-6-goat.txt": "fifth ${metadata.name} sixth",
+		"my-workload-files-goat.txt": "fifth ${metadata.name} sixth",
 	} {
 		t.Run(k, func(t *testing.T) {
 			raw, err := os.ReadFile(filepath.Join(td, "files", k))
@@ -549,8 +546,8 @@ func TestConvertFilesIntoVolumes_file_missing(t *testing.T) {
 			Spec: score.Workload{
 				Containers: map[string]score.Container{
 					"my-container": {
-						Files: []score.ContainerFilesElem{
-							{Target: "/ant.txt", Source: util.Ref(filepath.Join(td, "original.txt"))},
+						Files: map[string]score.ContainerFile{
+							"/ant.txt": {Source: util.Ref(filepath.Join(td, "original.txt"))},
 						},
 					},
 				},
@@ -567,7 +564,7 @@ func TestConvertFilesIntoVolumes_file_missing(t *testing.T) {
 			return "", fmt.Errorf("unknown key")
 		},
 	)
-	assert.EqualError(t, err, fmt.Sprintf("containers.my-container.files[0].source: failed to read: open %s/original.txt: no such file or directory", td))
+	assert.EqualError(t, err, fmt.Sprintf("containers.my-container.files[/ant.txt].source: failed to read: open %s/original.txt: no such file or directory", td))
 }
 
 func TestConvertFilesIntoVolumes_source_missing(t *testing.T) {
@@ -577,8 +574,8 @@ func TestConvertFilesIntoVolumes_source_missing(t *testing.T) {
 			Spec: score.Workload{
 				Containers: map[string]score.Container{
 					"my-container": {
-						Files: []score.ContainerFilesElem{
-							{Target: "/ant.txt"},
+						Files: map[string]score.ContainerFile{
+							"/ant.txt": {},
 						},
 					},
 				},
@@ -595,7 +592,7 @@ func TestConvertFilesIntoVolumes_source_missing(t *testing.T) {
 			return "", fmt.Errorf("unknown key")
 		},
 	)
-	assert.EqualError(t, err, "containers.my-container.files[0]: missing 'content', 'binaryContent', or 'source'")
+	assert.EqualError(t, err, "containers.my-container.files[/ant.txt]: missing 'content', 'binaryContent', or 'source'")
 }
 
 func TestConvertFilesIntoVolumes_expand_bad(t *testing.T) {
@@ -605,8 +602,8 @@ func TestConvertFilesIntoVolumes_expand_bad(t *testing.T) {
 			Spec: score.Workload{
 				Containers: map[string]score.Container{
 					"my-container": {
-						Files: []score.ContainerFilesElem{
-							{Target: "/ant.txt", Content: util.Ref("${metadata.blah}")},
+						Files: map[string]score.ContainerFile{
+							"/ant.txt": {Content: util.Ref("${metadata.blah}")},
 						},
 					},
 				},
@@ -623,7 +620,7 @@ func TestConvertFilesIntoVolumes_expand_bad(t *testing.T) {
 			return "", fmt.Errorf("unknown key")
 		},
 	)
-	assert.EqualError(t, err, "containers.my-container.files[0]: failed to substitute in content: unknown key")
+	assert.EqualError(t, err, "containers.my-container.files[/ant.txt]: failed to substitute in content: unknown key")
 }
 
 func TestConvertFiles_with_mode(t *testing.T) {
@@ -633,11 +630,11 @@ func TestConvertFiles_with_mode(t *testing.T) {
 			Spec: score.Workload{
 				Containers: map[string]score.Container{
 					"my-container": {
-						Files: []score.ContainerFilesElem{
-							{Target: "/ant.txt", Content: util.Ref("stuff")},
-							{Target: "/bat.txt", Content: util.Ref("stuff"), Mode: util.Ref("0600")},
-							{Target: "/cat.txt", Content: util.Ref("stuff"), Mode: util.Ref("0755")},
-							{Target: "/dog.txt", Content: util.Ref("stuff"), Mode: util.Ref("0444")},
+						Files: map[string]score.ContainerFile{
+							"/ant.txt": {Content: util.Ref("stuff")},
+							"/bat.txt": {Content: util.Ref("stuff"), Mode: util.Ref("0600")},
+							"/cat.txt": {Content: util.Ref("stuff"), Mode: util.Ref("0755")},
+							"/dog.txt": {Content: util.Ref("stuff"), Mode: util.Ref("0444")},
 						},
 					},
 				},
@@ -655,19 +652,19 @@ func TestConvertFiles_with_mode(t *testing.T) {
 		},
 	)
 	assert.NoError(t, err)
-	st, err := os.Stat(filepath.Join(td, "files/my-workload-files-0-ant.txt"))
+	st, err := os.Stat(filepath.Join(td, "files/my-workload-files-ant.txt"))
 	assert.NoError(t, err)
 	assert.Equal(t, 0644, int(st.Mode()))
 	assert.False(t, out[0].ReadOnly)
-	st, err = os.Stat(filepath.Join(td, "files/my-workload-files-1-bat.txt"))
+	st, err = os.Stat(filepath.Join(td, "files/my-workload-files-bat.txt"))
 	assert.NoError(t, err)
 	assert.Equal(t, 0600, int(st.Mode()))
 	assert.False(t, out[1].ReadOnly)
-	st, err = os.Stat(filepath.Join(td, "files/my-workload-files-2-cat.txt"))
+	st, err = os.Stat(filepath.Join(td, "files/my-workload-files-cat.txt"))
 	assert.NoError(t, err)
 	assert.Equal(t, 0755, int(st.Mode()))
 	assert.False(t, out[2].ReadOnly)
-	st, err = os.Stat(filepath.Join(td, "files/my-workload-files-3-dog.txt"))
+	st, err = os.Stat(filepath.Join(td, "files/my-workload-files-dog.txt"))
 	assert.NoError(t, err)
 	assert.Equal(t, 0644, int(st.Mode()))
 	assert.True(t, out[3].ReadOnly)

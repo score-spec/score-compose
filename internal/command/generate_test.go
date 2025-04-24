@@ -360,7 +360,7 @@ services:
         image: foo
         volumes:
             - type: bind
-              source: .score-compose/mounts/files/example-files-0-blah.txt
+              source: .score-compose/mounts/files/example-files-blah.txt
               target: /blah.txt
 `, string(raw))
 }
@@ -996,7 +996,7 @@ resources:
     type: environment
 `), 0644))
 	_, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
-	assert.EqualError(t, err, "failed to convert workload 'example' to Docker compose: containers.example.files[0]: "+
+	assert.EqualError(t, err, "failed to convert workload 'example' to Docker compose: containers.example.files[/some/file]: "+
 		"failed to substitute in content: invalid ref 'resources.env.UNKNOWN_SCORE_VARIABLE': "+
 		"environment variable 'UNKNOWN_SCORE_VARIABLE' must be resolved",
 	)

@@ -104,12 +104,14 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 		var volumes []compose.ServiceVolumeConfig
 		if len(cSpec.Volumes) > 0 {
 			volumes = make([]compose.ServiceVolumeConfig, len(cSpec.Volumes))
-			for idx, vol := range cSpec.Volumes {
-				cfg, err := convertVolumeSourceIntoVolume(state, deferredSubstitutionFunction, workloadName, vol)
+			idx := 0
+			for target, vol := range cSpec.Volumes {
+				cfg, err := convertVolumeSourceIntoVolume(state, deferredSubstitutionFunction, workloadName, target, vol)
 				if err != nil {
-					return nil, fmt.Errorf("containers.%s.volumes[%d]: %w", containerName, idx, err)
+					return nil, fmt.Errorf("containers.%s.volumes[%s]: %w", containerName, target, err)
 				}
 				volumes[idx] = *cfg
+				idx++
 			}
 		}
 
@@ -237,7 +239,7 @@ func convertFilesIntoVolumes(state *project.State, workloadName string, containe
 	if err = os.MkdirAll(filesDir, 0755); err != nil && !errors.Is(err, os.ErrExist) {
 		return nil, fmt.Errorf("failed to ensure the files directory exists")
 	}
-	for idx, file := range input {
+	for target, file := range input {
 		var content []byte
 		if file.Content != nil {
 			content = []byte(*file.Content)
@@ -248,25 +250,25 @@ func convertFilesIntoVolumes(state *project.State, workloadName string, containe
 			}
 			content, err = os.ReadFile(sourcePath)
 			if err != nil {
-				return nil, fmt.Errorf("containers.%s.files[%d].source: failed to read: %w", containerName, idx, err)
+				return nil, fmt.Errorf("containers.%s.files[%s].source: failed to read: %w", containerName, target, err)
 			}
 		} else if file.BinaryContent != nil {
 			content, err = base64.StdEncoding.DecodeString(*file.BinaryContent)
 			if err != nil {
-				return nil, fmt.Errorf("containers.%s.files[%d].binaryContent: failed to decode base64: %w", containerName, idx, err)
+				return nil, fmt.Errorf("containers.%s.files[%s].binaryContent: failed to decode base64: %w", containerName, target, err)
 			}
 		} else {
-			return nil, fmt.Errorf("containers.%s.files[%d]: missing 'content', 'binaryContent', or 'source'", containerName, idx)
+			return nil, fmt.Errorf("containers.%s.files[%s]: missing 'content', 'binaryContent', or 'source'", containerName, target)
 		}
 		if (file.NoExpand == nil || !*file.NoExpand) && utf8.Valid(content) && file.BinaryContent == nil {
 			stringContent, err := framework.SubstituteString(string(content), substitutionFunction)
 			if err != nil {
-				return nil, fmt.Errorf("containers.%s.files[%d]: failed to substitute in content: %w", containerName, idx, err)
+				return nil, fmt.Errorf("containers.%s.files[%s]: failed to substitute in content: %w", containerName, target, err)
 			}
 			content = []byte(stringContent)
 		}
-		newName := fmt.Sprintf("%s-files-%d-%s", workloadName, idx, strings.Trim(filepath.Base(file.Target), string(filepath.Separator)))
-		slog.Debug(fmt.Sprintf("Writing %d bytes of content for %s containers.%s.files[%d] to %s", len(content), workloadName, containerName, idx, filepath.Join(filesDir, newName)))
+		newName := fmt.Sprintf("%s-files-%s", workloadName, strings.Trim(filepath.Base(target), string(filepath.Separator)))
+		slog.Debug(fmt.Sprintf("Writing %d bytes of content for %s containers.%s.files[%s] to %s", len(content), workloadName, containerName, target, filepath.Join(filesDir, newName)))
 
 		// Parse and correct the file mode of the mount. If the user permissions do not allow write, then we enable the read only flag
 		// on the bind mount so that we can still remove the file from disk on the outside without sudo.
@@ -275,11 +277,11 @@ func convertFilesIntoVolumes(state *project.State, workloadName string, containe
 		if file.Mode != nil {
 			newMode, err := strconv.ParseInt(*file.Mode, 8, 32)
 			if err != nil {
-				return nil, fmt.Errorf("containers.%s.files[%d]: failed to parse '%s' as octal", containerName, idx, *file.Mode)
+				return nil, fmt.Errorf("containers.%s.files[%s]: failed to parse '%s' as octal", containerName, target, *file.Mode)
 			} else if newMode > 0777 {
-				return nil, fmt.Errorf("containers.%s.files[%d]: mode must be <= 0777", containerName, idx)
+				return nil, fmt.Errorf("containers.%s.files[%s]: mode must be <= 0777", containerName, target)
 			} else if newMode&0400 != 0400 {
-				return nil, fmt.Errorf("containers.%s.files[%d]: mode must be at least 0400", containerName, idx)
+				return nil, fmt.Errorf("containers.%s.files[%s]: mode must be at least 0400", containerName, target)
 			} else if newMode&0600 != 0600 {
 				newMode = newMode | 0600
 				readOnly = true
@@ -288,13 +290,13 @@ func convertFilesIntoVolumes(state *project.State, workloadName string, containe
 		}
 
 		if err := os.WriteFile(filepath.Join(filesDir, newName), content, fileMode); err != nil {
-			return nil, fmt.Errorf("containers.%s.files[%d]: failed to write to disk: %w", containerName, idx, err)
+			return nil, fmt.Errorf("containers.%s.files[%s]: failed to write to disk: %w", containerName, target, err)
 		}
 
 		output = append(output, compose.ServiceVolumeConfig{
 			Type:     "bind",
 			Source:   filepath.Join(filesDir, newName),
-			Target:   file.Target,
+			Target:   target,
 			ReadOnly: readOnly,
 		})
 	}
@@ -302,7 +304,7 @@ func convertFilesIntoVolumes(state *project.State, workloadName string, containe
 	return output, nil
 }
 
-func convertVolumeSourceIntoVolume(state *project.State, substitutionFunction func(string) (string, error), workloadName string, vol score.ContainerVolumesElem) (*compose.ServiceVolumeConfig, error) {
+func convertVolumeSourceIntoVolume(state *project.State, substitutionFunction func(string) (string, error), workloadName string, target string, vol score.ContainerVolume) (*compose.ServiceVolumeConfig, error) {
 	spec := state.Workloads[workloadName].Spec
 
 	// The way volumes are linked to a resource is a bit of a special case. The goal is to confirm that the
@@ -324,7 +326,7 @@ func convertVolumeSourceIntoVolume(state *project.State, substitutionFunction fu
 	outputVolume := &compose.ServiceVolumeConfig{
 		Type:     "volume",
 		Source:   resolvedVolumeSource,
-		Target:   vol.Target,
+		Target:   target,
 		ReadOnly: util.DerefOr(vol.ReadOnly, false),
 	}
 
