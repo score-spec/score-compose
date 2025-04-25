@@ -329,7 +329,7 @@ services:
 
 }
 
-func TestInitAndGenerate_with_files(t *testing.T) {
+func TestInitAndGenerate_with_files_old_files_spec(t *testing.T) {
 	td := changeToTempDir(t)
 	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
 	assert.NoError(t, err)
@@ -344,6 +344,42 @@ containers:
     files:
     - target: /blah.txt
       source: ./original.txt
+`), 0644))
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "original.txt"), []byte(`first ${metadata.name} second`), 0644))
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	raw, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+	assert.NoError(t, err)
+	assert.Equal(t, `name: "001"
+services:
+    example-example:
+        annotations:
+            compose.score.dev/workload-name: example
+        hostname: example
+        image: foo
+        volumes:
+            - type: bind
+              source: .score-compose/mounts/files/example-files-blah.txt
+              target: /blah.txt
+`, string(raw))
+}
+
+func TestInitAndGenerate_with_files_new_files_spec(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: foo
+    files:
+      "/blah.txt":
+        source: ./original.txt
 `), 0644))
 	assert.NoError(t, os.WriteFile(filepath.Join(td, "original.txt"), []byte(`first ${metadata.name} second`), 0644))
 	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
@@ -976,7 +1012,7 @@ services:
 `, string(raw))
 }
 
-func TestEnvVarsMustResolveInsideFiles(t *testing.T) {
+func TestEnvVarsMustResolveInsideFiles_old_files_spec(t *testing.T) {
 	td := changeToTempDir(t)
 	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
 	assert.NoError(t, err)
@@ -991,6 +1027,32 @@ containers:
     files:
     - target: /some/file
       content: ${resources.env.UNKNOWN_SCORE_VARIABLE}
+resources:
+  env:
+    type: environment
+`), 0644))
+	_, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.EqualError(t, err, "failed to convert workload 'example' to Docker compose: containers.example.files[/some/file]: "+
+		"failed to substitute in content: invalid ref 'resources.env.UNKNOWN_SCORE_VARIABLE': "+
+		"environment variable 'UNKNOWN_SCORE_VARIABLE' must be resolved",
+	)
+}
+
+func TestEnvVarsMustResolveInsideFiles_new_files_spec(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: foo
+    files:
+      "/some/file":
+        content: ${resources.env.UNKNOWN_SCORE_VARIABLE}
 resources:
   env:
     type: environment
@@ -1029,7 +1091,7 @@ resources:
 	)
 }
 
-func TestInitAndGenerate_with_volume_types(t *testing.T) {
+func TestInitAndGenerate_with_volume_types_with_old_volumes_spec(t *testing.T) {
 	td := changeToTempDir(t)
 	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
 	assert.NoError(t, err)
@@ -1074,6 +1136,92 @@ containers:
     - target: /mnt/v3
       source: ${resources.v3}
       path: other/thing
+resources:
+  v1:
+    type: tmp-volume
+  v2:
+    type: bind-volume
+  v3:
+    type: volume
+`), 0644))
+
+	// generate
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	raw, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+	assert.NoError(t, err)
+	assert.Equal(t, `name: "001"
+services:
+    example-example:
+        annotations:
+            compose.score.dev/workload-name: example
+        hostname: example
+        image: busybox
+        volumes:
+            - type: bind
+              source: /dev/something/thing
+              target: /mnt/v2
+              bind:
+                create_host_path: true
+            - type: volume
+              source: named-volume
+              target: /mnt/v3
+              volume:
+                subpath: other/thing
+            - type: tmpfs
+              source: tmp-volume.default#example.v1
+              target: /mnt/v1
+              tmpfs:
+                size: "10000000"
+`, string(raw))
+}
+
+func TestInitAndGenerate_with_volume_types_with_new_volumes_spec(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	// write custom providers
+	assert.NoError(t, os.WriteFile(filepath.Join(td, ".score-compose", "00-custom.provisioners.yaml"), []byte(`
+- uri: template://docker-volume
+  type: volume
+  outputs: |
+    type: volume
+    source: named-volume
+- uri: template://tmpfs-volume
+  type: tmp-volume
+  outputs: |
+    type: tmpfs
+    tmpfs:
+      size: 10000000
+- uri: template://bind-volume
+  type: bind-volume
+  outputs: |
+    type: bind
+    source: /dev/something
+    bind:
+      create_host_path: true
+`), 0644))
+
+	// write custom score file
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  example:
+    image: busybox
+    volumes:
+      "/mnt/v1":
+        source: ${resources.v1}
+      "/mnt/v2":
+        source: ${resources.v2}
+        path: thing
+      "/mnt/v3":
+        source: ${resources.v3}
+        path: other/thing
 resources:
   v1:
     type: tmp-volume
