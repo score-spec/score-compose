@@ -106,7 +106,7 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 		var volumes []compose.ServiceVolumeConfig
 		if len(cSpec.Volumes) > 0 {
 			volumes = make([]compose.ServiceVolumeConfig, 0, len(cSpec.Volumes))
-			for target := range slices.Sorted(maps.Keys(cSpec.Volumes)) {
+			for _, target := range slices.Sorted(maps.Keys(cSpec.Volumes)) {
 			    vol := cSpec.Volumes[target]
 				cfg, err := convertVolumeSourceIntoVolume(state, deferredSubstitutionFunction, workloadName, target, vol)
 				if err != nil {
@@ -240,7 +240,7 @@ func convertFilesIntoVolumes(state *project.State, workloadName string, containe
 	if err = os.MkdirAll(filesDir, 0755); err != nil && !errors.Is(err, os.ErrExist) {
 		return nil, fmt.Errorf("failed to ensure the files directory exists")
 	}
-	for target := range slices.Sorted(maps.Keys(input)) {
+	for _, target := range slices.Sorted(maps.Keys(input)) {
 	    file := input[target]
 		var content []byte
 		if file.Content != nil {
