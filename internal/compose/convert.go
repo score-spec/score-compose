@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"slices"
+	"maps"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -104,15 +106,13 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 		var volumes []compose.ServiceVolumeConfig
 		if len(cSpec.Volumes) > 0 {
 			volumes = make([]compose.ServiceVolumeConfig, 0, len(cSpec.Volumes))
-			idx := 0
 			for target := range slices.Sorted(maps.Keys(cSpec.Volumes)) {
-			 vol := cSpec.Volumes[target]
+			    vol := cSpec.Volumes[target]
 				cfg, err := convertVolumeSourceIntoVolume(state, deferredSubstitutionFunction, workloadName, target, vol)
 				if err != nil {
 					return nil, fmt.Errorf("containers.%s.volumes[%s]: %w", containerName, target, err)
 				}
 				volumes = append(volumes, *cfg)
-				idx++
 			}
 		}
 
@@ -241,7 +241,7 @@ func convertFilesIntoVolumes(state *project.State, workloadName string, containe
 		return nil, fmt.Errorf("failed to ensure the files directory exists")
 	}
 	for target := range slices.Sorted(maps.Keys(input)) {
-	  file := input[target]
+	    file := input[target]
 		var content []byte
 		if file.Content != nil {
 			content = []byte(*file.Content)
