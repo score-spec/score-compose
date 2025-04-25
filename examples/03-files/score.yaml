@@ -9,10 +9,10 @@ containers:
     command: ["/bin/sh"]
     args: ["-c", "while true; do cat /fileA.txt; cat /fileB.txt; cat /fileC.bin; sleep 5; done"]
     files:
-      - target: /fileA.txt
+      "/fileA.txt":
         source: fileA.txt
-      - target: /fileB.txt
+      "/fileB.txt":
         content: |
           I am ${metadata.name}
-      - target: /fileC.bin
+      "/fileC.bin":
         binaryContent: aGVsbG8gd29ybGQ=
