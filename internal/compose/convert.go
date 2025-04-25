@@ -103,7 +103,7 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 
 		var volumes []compose.ServiceVolumeConfig
 		if len(cSpec.Volumes) > 0 {
-			volumes = make([]compose.ServiceVolumeConfig, len(cSpec.Volumes))
+			volumes = make([]compose.ServiceVolumeConfig, 0, len(cSpec.Volumes))
 			idx := 0
 			for target, vol := range cSpec.Volumes {
 				cfg, err := convertVolumeSourceIntoVolume(state, deferredSubstitutionFunction, workloadName, target, vol)
