@@ -111,7 +111,7 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 				if err != nil {
 					return nil, fmt.Errorf("containers.%s.volumes[%s]: %w", containerName, target, err)
 				}
-				volumes[idx] = *cfg
+				volumes = append(volumes, *cfg)
 				idx++
 			}
 		}
