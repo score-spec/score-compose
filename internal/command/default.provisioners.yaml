@@ -17,6 +17,7 @@
     name: {{ dig "name" .Init.randomVolumeName .State }}
   # Return a source value with the volume name. This can be used in volume resource references now.
   outputs: |
+    type: volume
     source: {{ .State.name }}
   # Add a volume to the docker compose file. We assume our name is unique here. We also apply a label to help ensure
   # that we can track the volume back to the workload and resource that created it.
@@ -26,8 +27,6 @@
       driver: local
       labels:
         dev.score.compose.res.uid: {{ .Uid }}
-  expected_outputs:
-    - source
 
 
 # The default provisioner for service resources, this expects a workload and port name and will return the hostname and
@@ -489,7 +488,7 @@
 # It assumes the hostnames and routes provided have no overlaps. Weird behavior may happen if there are overlaps.
 - uri: template://default-provisioners/route
   type: route
-  description: Provisions a ingress route on a shared Nginx instance
+  description: Provisions a ingress route on a shared Nginx instance.
   init: |
     randomServiceName: routing-{{ randAlphaNum 6 }}
     sk: default-provisioners-routing-instance
