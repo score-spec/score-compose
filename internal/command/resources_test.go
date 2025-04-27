@@ -84,7 +84,7 @@ resources:
 +----------------------------+---------+
 | dns.default#example.dns    | host    |
 +----------------------------+---------+
-| volume.default#example.vol | source  |
+| volume.default#example.vol |         |
 +----------------------------+---------+
 `, stdout)
 	})
@@ -101,9 +101,7 @@ resources:
   },
   {
     "UID": "volume.default#example.vol",
-    "Outputs": [
-      "source"
-    ]
+    "Outputs": []
   }
 ]
 `, stdout)
@@ -151,12 +149,12 @@ resources:
 	t.Run("format template", func(t *testing.T) {
 		stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"resources", "get-outputs", "volume.default#example.vol", "--format", `{{ . | len }}`})
 		assert.NoError(t, err)
-		assert.Equal(t, "1\n", stdout)
+		assert.Equal(t, "0\n", stdout)
 	})
 
 	t.Run("format template with newline", func(t *testing.T) {
 		stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"resources", "get-outputs", "volume.default#example.vol", "--format", "{{ . | len }}\n"})
 		assert.NoError(t, err)
-		assert.Equal(t, "1\n", stdout)
+		assert.Equal(t, "0\n", stdout)
 	})
 }
