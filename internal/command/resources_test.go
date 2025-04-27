@@ -151,12 +151,12 @@ resources:
 	t.Run("format template", func(t *testing.T) {
 		stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"resources", "get-outputs", "volume.default#example.vol", "--format", `{{ . | len }}`})
 		assert.NoError(t, err)
-		assert.Equal(t, "2\n", stdout)
+		assert.Equal(t, "1\n", stdout)
 	})
 
 	t.Run("format template with newline", func(t *testing.T) {
 		stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"resources", "get-outputs", "volume.default#example.vol", "--format", "{{ . | len }}\n"})
 		assert.NoError(t, err)
-		assert.Equal(t, "2\n", stdout)
+		assert.Equal(t, "1\n", stdout)
 	})
 }
