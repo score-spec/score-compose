@@ -84,7 +84,7 @@ resources:
 +----------------------------+--------------+
 | dns.default#example.dns    | host         |
 +----------------------------+--------------+
-| volume.default#example.vol | source, type |
+| volume.default#example.vol | source       |
 +----------------------------+--------------+
 `, stdout)
 	})
@@ -102,8 +102,7 @@ resources:
   {
     "UID": "volume.default#example.vol",
     "Outputs": [
-      "source",
-      "type"
+      "source"
     ]
   }
 ]
