@@ -94,13 +94,13 @@ services:
         image: busybox
         volumes:
             - type: bind
-              source: .score-compose/mounts/files/hello-world-files-0-fileA.txt
+              source: .score-compose/mounts/files/hello-world-files-fileA.txt
               target: /fileA.txt
             - type: bind
-              source: .score-compose/mounts/files/hello-world-files-1-fileB.txt
+              source: .score-compose/mounts/files/hello-world-files-fileB.txt
               target: /fileB.txt
             - type: bind
-              source: .score-compose/mounts/files/hello-world-files-2-fileC.bin
+              source: .score-compose/mounts/files/hello-world-files-fileC.bin
               target: /fileC.bin
 `,
 		},

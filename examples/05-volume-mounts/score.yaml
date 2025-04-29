@@ -7,7 +7,7 @@ containers:
   first:
     image: "nginx:latest"
     volumes:
-      - target: /data
+      "/data":
         source: ${resources.data}
 
 resources:
