@@ -210,8 +210,21 @@ arguments.
 			}
 		}
 
+		const scoreFilename = "score.yaml"
+		_, issue := os.Stat(scoreFilename)
 		if len(currentState.Workloads) == 0 {
-			return fmt.Errorf("the project is empty, please provide a score file to generate from")
+			if os.IsNotExist(issue) {
+				return fmt.Errorf("score file not found in the current directory, please provide a Score file to continue")
+			} else {
+				fmt.Print("Score file already exists in the current directory. Do you want to use this Score file? (y/n)")
+				var userInput string
+				fmt.Scan(&userInput)
+				if userInput == "y" || userInput == "Y" {
+					inputFiles = []string{scoreFilename}
+				} else {
+					return fmt.Errorf("Provide a score file to continue")
+				}
+			}
 		}
 
 		loadedProvisioners, err := provloader.LoadProvisionersFromDirectory(sd.Path, provloader.DefaultSuffix)
