@@ -3,9 +3,9 @@ module github.com/score-spec/score-compose
 go 1.24.2
 
 require (
-	dario.cat/mergo v1.0.1
+	dario.cat/mergo v1.0.2
 	github.com/Masterminds/sprig/v3 v3.3.0
-	github.com/compose-spec/compose-go/v2 v2.6.1
+	github.com/compose-spec/compose-go/v2 v2.6.2
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/score-spec/score-go v1.10.0
 	github.com/spf13/cobra v1.9.1
