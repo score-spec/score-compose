@@ -20,11 +20,11 @@ jobs:
       - name: Fetch all tags
         run: git fetch --force --tags
       - name: Set up Go
-        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: 'go.mod'
       - name: Install Cosign
-        uses: sigstore/cosign-installer@d7d6bc7722e3daa8354c50bcb52f4837da5e9b6a # v3.8.1
+        uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb # v3.8.2
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552 # v6.3.0
         with:
@@ -44,7 +44,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push docker image
         id: build-push-container
-        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4 # v6.15.0
+        uses: docker/build-push-action@1dc73863535b631f98b2378be8619f83b136f4a0 # v6.17.0
         with:
           context: .
           platforms: linux/amd64,linux/arm64
