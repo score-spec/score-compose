@@ -21,10 +21,10 @@ jobs:
         uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
         with:
           go-version-file: 'go.mod'
-      - name: Run Go Vet
-        run: go vet ./...
-      - name: Run Go Static Check
-        run: go install honnef.co/go/tools/cmd/staticcheck@latest && staticcheck ./...
+      - name: Install golangci-lint
+        run: 
+      - name: Run golangci-lint
+        run: golangci-lint run
       - name: Run Go Tests
         run: go test ./... -cover -race
       - name: Build binary

@@ -322,7 +322,7 @@ func ProvisionResources(ctx context.Context, state *project.State, provisioners 
 		}
 
 		var params map[string]interface{}
-		if resState.Params != nil && len(resState.Params) > 0 {
+		if len(resState.Params) > 0 {
 			resOutputs, err := out.GetResourceOutputForWorkload(resState.SourceWorkload)
 			if err != nil {
 				return nil, fmt.Errorf("failed to find resource params for resource '%s': %w", resUid, err)
