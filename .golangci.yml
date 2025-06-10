@@ -1,32 +1,35 @@
 version: "2"
-
+modules-download-mode: readonly
 run:
-  tests: true
-
+  tests: false
 linters:
-  default: standard
   enable:
-    - bodyclose
+    - govet
+    - staticcheck
+    - unused
     - contextcheck
     - goconst
     - gosec
-    - mnd
     - testifylint
-    - govet
-    - staticcheck
+    - errcheck
+    - revive
+    - mnd
+    - bodyclose
 
-issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gosec
-  max-issues-per-linter: 0
-  max-same-issues: 0
-
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  revive:
+    severity: warning
+    confidence: 0.8
+    rules:
+      - name: indent-error-flow
+      - name: var-naming
+      - name: import-shadowing
 output:
-  formats:
-    text:
-      path: stdout
-      print-linter-name: true
-      print-issued-lines: true
-  show-stats: false
+  formats: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  uniq-by-line: false
+  sort-results: true
