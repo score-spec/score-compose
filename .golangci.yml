@@ -28,7 +28,8 @@ linters-settings:
       - name: var-naming
       - name: import-shadowing
 output:
-  formats: colored-line-number
+  formats:
+    colored-line-number: true
   print-issued-lines: true
   print-linter-name: true
   uniq-by-line: false
