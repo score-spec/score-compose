@@ -36,7 +36,7 @@ func (h *SimpleHandler) Enabled(ctx context.Context, level slog.Level) bool {
 func (h *SimpleHandler) Handle(ctx context.Context, record slog.Record) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	_, err := h.Writer.Write([]byte(fmt.Sprintf("%s: %s\n", record.Level.String(), record.Message)))
+	_, err := fmt.Fprintf(h.Writer, "%s: %s\n", record.Level.String(), record.Message)
 	return err
 }
 

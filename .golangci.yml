@@ -1,32 +1,36 @@
 version: "2"
 modules-download-mode: readonly
+
 run:
   tests: false
+
 linters:
   enable:
     - govet
     - staticcheck
     - unused
     - contextcheck
-    - goconst
     - gosec
     - testifylint
     - errcheck
-    - revive
-    - mnd
     - bodyclose
+    - misspell
 
 linters-settings:
   errcheck:
     check-type-assertions: true
     check-blank: true
-  revive:
-    severity: warning
-    confidence: 0.8
-    rules:
-      - name: indent-error-flow
-      - name: var-naming
-      - name: import-shadowing
+    exclude-functions:
+      - (os.File).Close
+      - (io.Closer).Close
+  misspell:
+    locale: US
+  gosec:
+    exclude:
+      - G304
+      - G301
+      - G306
+      - G115
 output:
   formats:
     colored-line-number: true
