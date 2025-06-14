@@ -113,7 +113,7 @@ func getResourceOutputsKeys(uid framework.ResourceUid, state *project.State) ([]
 		return nil, err
 	}
 	keys := make([]string, 0, len(outputs))
-	for key, _ := range outputs {
+	for key := range outputs {
 		keys = append(keys, key)
 	}
 	slices.Sort(keys)
