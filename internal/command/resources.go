@@ -87,11 +87,24 @@ be returned as json.
 				}
 				return displayResourcesOutputs(outputs, cmd)
 			}
-			resourceOuptuts, err := getResourceOutputsByUid(framework.ResourceUid(args[0]), &sd.State)
+			resourceOutputs, err := getResourceOutputsByUid(framework.ResourceUid(args[0]), &sd.State)
 			if err != nil {
 				return fmt.Errorf("no such resource '%s'", args[0])
 			}
-			return displayResourcesOutputs(resourceOuptuts, cmd)
+			return displayResourcesOutputs(resourceOutputs, cmd)
+		},
+	}
+
+	deprovisionResources = &cobra.Command{
+		Use:   "deprovision TYPE.CLASS#ID",
+		Short: "Deprovision a resource by id",
+		Long: `Deprovision a resource from the state directory that has been provisioned within the past. This is only necessary
+for cmd:// provisioners that may have generated external state.`,
+		Args:          cobra.ExactArgs(1),
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cmd.SilenceUsage = true
+			return fmt.Errorf("deprovision not yet implemented")
 		},
 	}
 )
@@ -113,7 +126,7 @@ func getResourceOutputsKeys(uid framework.ResourceUid, state *project.State) ([]
 		return nil, err
 	}
 	keys := make([]string, 0, len(outputs))
-	for key, _ := range outputs {
+	for key := range outputs {
 		keys = append(keys, key)
 	}
 	slices.Sort(keys)
@@ -153,8 +166,8 @@ func displayResourcesList(resources []framework.ResourceUid, state project.State
 	switch outputFormat {
 	case "json":
 		type jsonData struct {
-			UID     string
-			Outputs []string
+			UID     string   `json:"uid"`
+			Outputs []string `json:"outputs"`
 		}
 		var outputs []jsonData
 		for _, resource := range resources {
@@ -191,8 +204,10 @@ func displayResourcesList(resources []framework.ResourceUid, state project.State
 
 func init() {
 	getResourceOutputs.Flags().StringP(getOutputsCmdFormatFlag, "f", "json", "Format of the output: json, yaml, or a Go template with sprig functions")
-	resourcesGroup.AddCommand(listResources)
 	listResources.Flags().StringP("format", "f", "table", "Format of the output: table (default), json")
+
+	resourcesGroup.AddCommand(listResources)
 	resourcesGroup.AddCommand(getResourceOutputs)
+	resourcesGroup.AddCommand(deprovisionResources)
 	rootCmd.AddCommand(resourcesGroup)
 }
