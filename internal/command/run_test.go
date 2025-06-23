@@ -231,7 +231,7 @@ volumes:
 
 `), 0644))
 
-		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "-f", "volume.yaml", "convert", "--quiet", "--dry-run")
+		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "-f", "volume.yaml", "config", "--quiet", "--dry-run")
 		cmd.Dir = td
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -318,7 +318,7 @@ func TestRunExample01(t *testing.T) {
 		dockerCmd, err := exec.LookPath("docker")
 		require.NoError(t, err)
 
-		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "convert", "--quiet", "--dry-run")
+		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "config", "--quiet", "--dry-run")
 		cmd.Dir = td
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
