@@ -633,7 +633,7 @@ func TestConvertFiles_with_mode(t *testing.T) {
 						Files: map[string]score.ContainerFile{
 							"/ant.txt": {Content: util.Ref("stuff")},
 							"/bat.txt": {Content: util.Ref("stuff"), Mode: util.Ref("0600")},
-							"/cat.txt": {Content: util.Ref("stuff"), Mode: util.Ref("0755")},
+							"/cat.txt": {Content: util.Ref("stuff"), Mode: util.Ref("0754")},
 							"/dog.txt": {Content: util.Ref("stuff"), Mode: util.Ref("0444")},
 						},
 					},
@@ -662,7 +662,7 @@ func TestConvertFiles_with_mode(t *testing.T) {
 	assert.False(t, out[1].ReadOnly)
 	st, err = os.Stat(filepath.Join(td, "files/my-workload-files-cat.txt"))
 	assert.NoError(t, err)
-	assert.Equal(t, 0755, int(st.Mode()))
+	assert.Equal(t, 0754, int(st.Mode()))
 	assert.False(t, out[2].ReadOnly)
 	st, err = os.Stat(filepath.Join(td, "files/my-workload-files-dog.txt"))
 	assert.NoError(t, err)
