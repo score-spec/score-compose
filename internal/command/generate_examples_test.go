@@ -289,7 +289,7 @@ services:
 			if os.Getenv("NO_DOCKER") == "" {
 				dockerCmd, err := exec.LookPath("docker")
 				require.NoError(t, err)
-				cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "convert", "--quiet", "--dry-run")
+				cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "config", "--quiet", "--dry-run")
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 				assert.NoError(t, cmd.Run())
