@@ -130,7 +130,7 @@ func (p *Provisioner) Provision(ctx context.Context, input *provisioners.Input) 
 		return nil, fmt.Errorf("failed to encode json input: %w", err)
 	}
 	outputBuffer := new(bytes.Buffer)
-
+	// #nosec G204 - bin and args are from trusted internal config
 	cmd := exec.CommandContext(ctx, bin, p.Args...)
 	slog.Debug(fmt.Sprintf("Executing '%s %v' for command provisioner", bin, p.Args))
 	cmd.Stdin = bytes.NewReader(rawInput)

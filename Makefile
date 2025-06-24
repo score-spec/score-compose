@@ -3,10 +3,14 @@ MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
 ## Display a list of the documented make targets
-.PHONY: help
+.PHONY: help lint
 help:
 	@echo Documented Make targets:
 	@perl -e 'undef $$/; while (<>) { while ($$_ =~ /## (.*?)(?:\n# .*)*\n.PHONY:\s+(\S+).*/mg) { printf "\033[36m%-30s\033[0m %s\n", $$2, $$1 } }' $(MAKEFILE_LIST) | sort
+	
+lint:
+	@echo "Running golangci-lint..."
+	golangci-lint run ./...
 
 .PHONY: .FORCE
 .FORCE:

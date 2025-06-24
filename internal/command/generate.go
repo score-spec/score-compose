@@ -374,7 +374,7 @@ arguments.
 			return fmt.Errorf("no output file specified")
 		} else if v == "-" {
 			_, _ = fmt.Fprint(cmd.OutOrStdout(), string(raw))
-		} else if err := os.WriteFile(v+".temp", raw, 0644); err != nil {
+		} else if err := os.WriteFile(v+".temp", raw, 0600); err != nil {
 			return fmt.Errorf("failed to write output file: %w", err)
 		} else if err := os.Rename(v+".temp", v); err != nil {
 			return fmt.Errorf("failed to complete writing output file: %w", err)
@@ -388,7 +388,7 @@ arguments.
 				_, _ = content.WriteRune('\n')
 			}
 			slog.Info(fmt.Sprintf("Writing env var file to '%s'", v))
-			if err := os.WriteFile(v, []byte(content.String()), 0644); err != nil {
+			if err := os.WriteFile(v, []byte(content.String()), 0600); err != nil {
 				return fmt.Errorf("failed to write env var file: %w", err)
 			}
 		}

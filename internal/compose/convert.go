@@ -21,10 +21,10 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
-	"slices"
 	"maps"
+	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -107,7 +107,7 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 		if len(cSpec.Volumes) > 0 {
 			volumes = make([]compose.ServiceVolumeConfig, 0, len(cSpec.Volumes))
 			for _, target := range slices.Sorted(maps.Keys(cSpec.Volumes)) {
-			    vol := cSpec.Volumes[target]
+				vol := cSpec.Volumes[target]
 				cfg, err := convertVolumeSourceIntoVolume(state, deferredSubstitutionFunction, workloadName, target, vol)
 				if err != nil {
 					return nil, fmt.Errorf("containers.%s.volumes[%s]: %w", containerName, target, err)
@@ -237,11 +237,11 @@ func convertFilesIntoVolumes(state *project.State, workloadName string, containe
 	var err error
 
 	filesDir := filepath.Join(mountsDirectory, "files")
-	if err = os.MkdirAll(filesDir, 0755); err != nil && !errors.Is(err, os.ErrExist) {
+	if err = os.MkdirAll(filesDir, 0750); err != nil && !errors.Is(err, os.ErrExist) {
 		return nil, fmt.Errorf("failed to ensure the files directory exists")
 	}
 	for _, target := range slices.Sorted(maps.Keys(input)) {
-	    file := input[target]
+		file := input[target]
 		var content []byte
 		if file.Content != nil {
 			content = []byte(*file.Content)
@@ -249,6 +249,9 @@ func convertFilesIntoVolumes(state *project.State, workloadName string, containe
 			sourcePath := *file.Source
 			if !filepath.IsAbs(sourcePath) && state.Workloads[workloadName].File != nil {
 				sourcePath = filepath.Join(filepath.Dir(*state.Workloads[workloadName].File), sourcePath)
+			}
+			if !filepath.IsAbs(sourcePath) {
+				return nil, fmt.Errorf("invalid source path: must be absolute")
 			}
 			content, err = os.ReadFile(sourcePath)
 			if err != nil {
