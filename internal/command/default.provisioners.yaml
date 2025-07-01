@@ -417,6 +417,9 @@
       driver: local
   files: |
     {{ dig .Init.sk "instanceServiceName" "" .Shared }}-db-scripts/{{ .State.vhost }}.sh: |
+      while ! rabbitmqctl list_vhosts > /dev/null 2>&1; do
+        sleep 1
+      done
       rabbitmqctl list_vhosts | grep {{ .State.vhost }} || rabbitmqctl add_vhost {{ .State.vhost }}
       rabbitmqctl list_users | grep {{ .State.username }} || rabbitmqctl add_user {{ .State.username }} {{ .State.password }}
       rabbitmqctl set_user_tags {{ .State.username }} administrator
