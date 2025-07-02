@@ -1,37 +1,68 @@
-# Contributor guidelines
+# Contributing to Score
 
-We'd love to accept your patches and contributions to this project. There are just a few small guidelines you need to follow.
+Thanks for your interest in contributing to Score and helping to improve the project 🎵 
 
-When contributing to this project, you must agree that you have authored the content, that you have the necessary rights to the content and that the content you contribute may be provided under the [APACHE LICENSE, VERSION 2.0](LICENSE).
+Before you get started, please note that by contributing to this project, you confirm that you are the author of your work, have the necessary rights to contribute it, and that your contribution may be provided under the terms of the [Apache License, Version 2.0](LICENSE).
 
-### **What do I need to know to help?**
+### Where to Begin!
 
-If you are looking to help to with a code contribution, our project uses Go Lang. If you don't feel ready to make a code contribution yet, no problem! You can also check out the documentation issues https://github.com/score-dev/demo-repository.
+If you have questions, ideas, or requests about Score, feel free to [open an issue](https://github.com/score-dev/score/issues) or join the conversation in our Slack community — drop your questions in the CNCF Slack`#score` channel.
 
-If you are interested in making a code contribution and would like to learn more about the technologies that we use, check out the list below.
+We welcome contributions of all kinds:
 
-- [https://humanitec.com](https://humanitec.com/)
-- [https://docs.docker.com/compose/](https://docs.docker.com/compose/)
-- [https://helm.sh/docs/](https://helm.sh/docs/)
+- Bug fixes and feature development
+- Documentation improvements
+- Bug and feature reports
 
-### **How do I make a contribution?**
+### Steps to Contribute
+Fixes and improvements can be directly addressed by sending a Pull Request on GitHub. Pull requests will be reviewed by one or more maintainers and merged when acceptable.
 
-Never made an open-source contribution before? Wondering how contributions work in our project? Here's a quick rundown!
+We ask that before contributing, please make the effort to coordinate with the maintainers of the project before submitting large or high impact PRs. This will prevent you from doing extra work that may or may not be merged.
+### **Sign your work with Developer Certificate of Origin**
 
-1. Find an issue that you are interested in addressing or a feature that you would like to add.
-2. Fork the repository associated with the issue to your local GitHub organization. This means that you will have a copy of the repository under **your-GitHub-username/repository-name**.
-3. Clone the repository to your local machine using **git clone**.
-4. Create a new branch for your fix using **git checkout -b your-branch-name**.
-5. Make the appropriate changes for the issue you are trying to address or the feature that you want to add.
-6. Use **git add insert-paths-of-changed-files-here** to add the file contents of the changed files to the "snapshot" git uses to manage the state of the project, also known as the index.
-7. Use **git commit -s -m "Insert a brief message of the changes made here"** to store the contents of the index with a descriptive message.
-8. Push the changes to the remote repository using **git push origin your-branch-name**.
-9. Submit a pull request to the upstream repository.
-10. Title the pull request with a brief description of the changes made and the issue or bug number associated with your change. For example, you can title an issue like so, "Added more log outputting to resolve #4352".
-11. In the description of the pull request, explain the changes that you made, any issues you think exist with the pull request you made, and any questions you have for the maintainer. It's OK if your pull request is not perfect (no pull request is), the reviewer will be able to help you resolve any problems and improve it!
-12. Wait for the pull request to be reviewed by a maintainer.
-13. Introduce changes to the pull request if the reviewing maintainer recommends them.
-14. Celebrate your success after your pull request is merged!
+To contribute to this project, you must agree to the Developer Certificate of Origin (DCO) for each commit you make. The DCO is a simple statement that you, as a contributor, have the legal right to make the contribution.
+
+See the [DCO](https://developercertificate.org/) file for the full text of what you must agree to.
+
+To successfully sign off your contribution you just add a line to every git commit message:
+
+```git
+Signed-off-by: Joe Smith <joe.smith@email.com>
+```
+
+Use your real name (sorry, no pseudonyms or anonymous contributions.)
+
+If you set your `user.name` and `user.email` git configs, you can sign your commit automatically with `git commit -s`. You can also use git [aliases](https://git-scm.com/book/tr/v2/Git-Basics-Git-Aliases) like `git config --global alias.ci 'commit -s'`. Now you can commit with git ci and the commit will be signed.
+
+<br />
+### **Submitting a Pull Request**
+
+To submit any kinds of improvements, please consider the following:
+
+- Submit an [issue](https://github.com/score-spec/score-compose) describing your proposed change.
+- Want to get started? Pick an open issue from our [Good First Issues](https://github.com/score-spec/score-compose/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22).
+- Fork this repository, develop and test your changes.
+- Create a `feature` branch and submit a pull request against the `main` branch.
+
+### How to Test Code
+
+- Please run `make test` unit tests.
+- Your branch can be merged after:
+  - CI checks pass
+  - Your PR is reviewed and approved by a maintainer (see [MAINTAINERS.md](MAINTAINERS.md))
+
+- If you are new to Score , consider reading our [Documentation](https://github.com/score-dev/docs) and [Examples](https://docs.score.dev/examples/)
+
+## Pull Request Checklist :
+
+- Rebase to the current master branch before submitting your pull request.
+- Commits should be as small as possible. Each commit should follow the checklist below:
+  - For code changes, add tests relevant to the fixed bug or new feature
+  - Pass the compile and tests in CI
+  - Commit header (first line) should convey what changed
+  - Commit body should include details such as why the changes are required and how the proposed changes (we recommened sharing output)
+  - DCO Signed
+- If your PR is not getting reviewed or you need a specific person to review it, please reach out to the Score contributors at the [Score slack channel](https://cloud-native.slack.com/archives/C07DN0D1UCW)
 
 ### Ensuring all source files contain a license header
 
@@ -46,44 +77,11 @@ $ addlicense -l apache -v -ignore '**/*.yaml' -c Humanitec ./cmd ./internal/
 ```
 
 ## Feature requests
-
-## Code reviews
-
-All submissions, including submissions by project members, require review.
-
-Score uses GitHub pull requests for this purpose. Consult [GitHub Help](https://help.github.com/articles/about1.pull1.requests/) for more information on using pull requests.
-
-The general workflow for code contributions:
-
-1. Submit/find an issue in this repository.
-1. Clone the relevant repo.
-1. Make your code change.
-1. Write tests and update docs.
-1. Build and test locally.
-1. Submit a pull request.
-1. Iterate as needed.
-1. Your PR will be approved and merged.
+If you have ideas for improving Score, please open an [issue](https://github.com/score-dev/score/issues) and share the use case.
 
 ### **Where can I go for help?**
 
-If you need help, you can create an issue.
-
-### Reporting bugs
-
-#### Before submitting an issue
-
-A good bug report shouldn't leave others needing to chase you up for more information. Therefore, we ask you to investigate carefully, collect information and describe the issue in detail in your report. Please complete the following steps in advance to help us fix any potential bug as fast as possible.
-
-- Make sure that you are using the latest version.
-- Determine if your bug is really a bug and not an error on your side for example using incompatible environment components/versions (Make sure that you have read the [documentation](https://github.com/score-dev/docs). If you are looking for support.
-- To see if other users have experienced (and potentially already solved) the same issue you are having, check if there is not already a bug report existing for your bug or error in the [bug tracker](https://github.com/score-dev/demo-repositoryissues?q=label%3Abug).
-- Also make sure to search the internet (including Stack Overflow) to see if users outside the GitHub community have discussed the issue.
-- Collect information about the bug:
-  - Stack trace (Traceback).
-  - OS, Platform and Version (Windows, Linux, macOS, x86, ARM).
-  - Version of the interpreter, compiler, SDK, runtime environment, package manager, depending on what seems relevant.
-  - Possibly your input and the output.
-  - Can you reliably reproduce the issue?
+If you need any help, Please tag us on issue or reach out to [us](https://github.com/score-spec/spec?tab=readme-ov-file#-get-in-touch).
 
 ### **What does the Code of Conduct mean for me?**
 
