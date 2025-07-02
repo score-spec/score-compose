@@ -107,7 +107,7 @@ func TestGenerateWithoutScoreFiles(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "", stdout)
 	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate"})
-	assert.EqualError(t, err, "the project is empty, please provide a score file to generate from")
+	assert.EqualError(t, err, "No workloads found, please provide a score file to generate from.")
 	assert.Equal(t, "", stdout)
 }
 
