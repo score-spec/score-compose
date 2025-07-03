@@ -222,11 +222,11 @@ URI Retrieval:
 						return fmt.Errorf("failed to check for existing default provisioners file: %w", err)
 					}
 
-					f, err := os.OpenFile(defaultProvisioners, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+					f, err := os.OpenFile(defaultProvisioners, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 					if err != nil {
 						return fmt.Errorf("failed to create default provisioners file: %w", err)
 					}
-					defer f.Close()
+					defer f.Close() //nolint:errcheck
 
 					slog.Info("Writing default provisioners file", "path", defaultProvisioners)
 					if _, err := f.WriteString(defaultProvisionersContent); err != nil {
@@ -248,7 +248,7 @@ URI Retrieval:
 					return fmt.Errorf("failed to check existing Score file: %w", err)
 				}
 				slog.Info(fmt.Sprintf("Initial Score file '%s' does not exist - creating it", initCmdScoreFile))
-				if err := os.WriteFile(initCmdScoreFile+".temp", []byte(DefaultScoreFileContent), 0755); err != nil {
+				if err := os.WriteFile(initCmdScoreFile+".temp", []byte(DefaultScoreFileContent), 0755); err != nil { //nolint:gosec
 					return fmt.Errorf("failed to write initial score file: %w", err)
 				} else if err := os.Rename(initCmdScoreFile+".temp", initCmdScoreFile); err != nil {
 					return fmt.Errorf("failed to complete writing initial Score file: %w", err)

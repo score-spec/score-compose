@@ -15,6 +15,7 @@
 package compose
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -446,9 +447,9 @@ func TestScoreConvert(t *testing.T) {
 
 			evt := new(envprov.Provisioner)
 			state.Resources["environment.default#test.env"] = framework.ScoreResourceState[framework.NoExtras]{OutputLookupFunc: evt.LookupOutput}
-			po, _ := evt.GenerateSubProvisioner("app-db", "").Provision(nil, nil)
+			po, _ := evt.GenerateSubProvisioner("app-db", "").Provision(context.TODO(), nil)
 			state.Resources["mysql.default#test.app-db"] = framework.ScoreResourceState[framework.NoExtras]{OutputLookupFunc: po.OutputLookupFunc}
-			po, _ = evt.GenerateSubProvisioner("some-dns", "").Provision(nil, nil)
+			po, _ = evt.GenerateSubProvisioner("some-dns", "").Provision(context.TODO(), nil)
 			state.Resources["dns.default#test.some-dns"] = framework.ScoreResourceState[framework.NoExtras]{OutputLookupFunc: po.OutputLookupFunc}
 			state.Resources["volume.default#test.data"] = framework.ScoreResourceState[framework.NoExtras]{Outputs: map[string]interface{}{
 				"type":   "volume",

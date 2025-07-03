@@ -98,7 +98,7 @@ func run(cmd *cobra.Command, args []string) error {
 	if src, err = os.Open(scoreFile); err != nil {
 		return err
 	}
-	defer src.Close()
+	defer src.Close() //nolint:errcheck
 
 	// Parse SCORE spec
 	//
@@ -112,7 +112,7 @@ func run(cmd *cobra.Command, args []string) error {
 	//
 	if overridesFile != "" {
 		if ovr, err := os.Open(overridesFile); err == nil {
-			defer ovr.Close()
+			defer ovr.Close() //nolint:errcheck
 
 			slog.Info(fmt.Sprintf("Loading Score overrides file '%s'", overridesFile))
 			var ovrMap map[string]interface{}
@@ -223,16 +223,20 @@ func run(cmd *cobra.Command, args []string) error {
 	// Deprecated behavior of the run command which used to publish ports
 	// Todo: remove this once score-compose run is removed
 	if spec.Service != nil && len(spec.Service.Ports) > 0 {
-		ports := make([]types.ServicePortConfig, 0)
+		ports := make([]types.ServicePortConfig, 0, len(spec.Service.Ports))
 		for _, pSpec := range spec.Service.Ports {
-			var pubPort = fmt.Sprintf("%v", pSpec.Port)
+			port := util.DerefOr(pSpec.TargetPort, pSpec.Port)
+			if port < 0 || port > 65535 {
+				return fmt.Errorf("invalid port number: %d", port)
+			}
+			pubPort := fmt.Sprintf("%v", pSpec.Port)
 			var protocol string
 			if pSpec.Protocol != nil {
 				protocol = strings.ToLower(string(*pSpec.Protocol))
 			}
 			ports = append(ports, types.ServicePortConfig{
 				Published: pubPort,
-				Target:    uint32(util.DerefOr(pSpec.TargetPort, pSpec.Port)),
+				Target:    uint32(port), // #nosec G115
 				Protocol:  protocol,
 			})
 		}
@@ -270,7 +274,7 @@ func run(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		defer destFile.Close()
+		defer destFile.Close() //nolint:errcheck
 
 		dest = io.MultiWriter(dest, destFile)
 	}
@@ -289,7 +293,7 @@ func run(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		defer dest.Close()
+		defer dest.Close() //nolint:errcheck
 
 		// Write .env file
 		//

@@ -209,7 +209,7 @@ func (po *ProvisionOutput) ApplyToStateAndProject(state *project.State, resUid f
 		dst := filepath.Join(state.Extras.MountsDirectory, relativePath)
 		if b {
 			slog.Debug(fmt.Sprintf("Ensuring mount directory '%s' exists", dst))
-			if err := os.MkdirAll(dst, 0755); err != nil && !errors.Is(err, os.ErrExist) {
+			if err := os.MkdirAll(dst, 0750); err != nil && !errors.Is(err, os.ErrExist) {
 				return nil, fmt.Errorf("failed to create volume directory '%s': %w", dst, err)
 			}
 		} else {
@@ -228,10 +228,10 @@ func (po *ProvisionOutput) ApplyToStateAndProject(state *project.State, resUid f
 		dst := filepath.Join(state.Extras.MountsDirectory, relativePath)
 		if b != nil {
 			slog.Debug(fmt.Sprintf("Ensuring mount file '%s' exists", dst))
-			if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil && !errors.Is(err, os.ErrExist) {
+			if err := os.MkdirAll(filepath.Dir(dst), 0750); err != nil && !errors.Is(err, os.ErrExist) {
 				return nil, fmt.Errorf("failed to create directories for file '%s': %w", dst, err)
 			}
-			if err := os.WriteFile(dst, []byte(*b), 0644); err != nil {
+			if err := os.WriteFile(dst, []byte(*b), 0600); err != nil {
 				return nil, fmt.Errorf("failed to write file '%s': %w", dst, err)
 			}
 		} else {
@@ -322,7 +322,7 @@ func ProvisionResources(ctx context.Context, state *project.State, provisioners 
 		}
 
 		var params map[string]interface{}
-		if resState.Params != nil && len(resState.Params) > 0 {
+		if len(resState.Params) > 0 {
 			resOutputs, err := out.GetResourceOutputForWorkload(resState.SourceWorkload)
 			if err != nil {
 				return nil, fmt.Errorf("failed to find resource params for resource '%s': %w", resUid, err)
