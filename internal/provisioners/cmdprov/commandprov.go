@@ -42,6 +42,11 @@ type Provisioner struct {
 	ResourceParams []string `yaml:"params,omitempty"`
 	ResOutputs     []string `yaml:"outputs,omitempty"`
 	ResDescription string   `yaml:"description,omitempty"`
+
+	// SupportedParams is a list of parameters that the provisioner expects to be passed in.
+	SupportedParams []string `yaml:"supported_params,omitempty"`
+	// ExpectedOutputs is a list of expected outputs that the provisioner should return.
+	ExpectedOutputs []string `yaml:"expected_outputs,omitempty"`
 }
 
 func (p *Provisioner) Description() string {
@@ -54,7 +59,7 @@ func (p *Provisioner) Uri() string {
 
 func (p *Provisioner) Class() string {
 	if p.ResClass == nil {
-		return ""
+		return "(any)"
 	}
 	return *p.ResClass
 }
@@ -64,11 +69,23 @@ func (p *Provisioner) Type() string {
 }
 
 func (p *Provisioner) Params() []string {
-	return p.ResourceParams
+	if p.SupportedParams == nil {
+		return []string{}
+	}
+	params := make([]string, len(p.SupportedParams))
+	copy(params, p.SupportedParams)
+	slices.Sort(params)
+	return params
 }
 
 func (p *Provisioner) Outputs() []string {
-	return p.ResOutputs
+	if p.ExpectedOutputs == nil {
+		return []string{}
+	}
+	outputs := make([]string, len(p.ExpectedOutputs))
+	copy(outputs, p.ExpectedOutputs)
+	slices.Sort(outputs)
+	return outputs
 }
 
 func (p *Provisioner) Match(resUid framework.ResourceUid) bool {
