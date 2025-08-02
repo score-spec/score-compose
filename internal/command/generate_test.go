@@ -103,11 +103,31 @@ func TestGenerateWithoutInit(t *testing.T) {
 
 func TestGenerateWithoutScoreFiles(t *testing.T) {
 	_ = changeToTempDir(t)
-	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--no-sample"})
 	assert.NoError(t, err)
 	assert.Equal(t, "", stdout)
 	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate"})
-	assert.EqualError(t, err, "the project is empty, please provide a score file to generate from")
+	assert.EqualError(t, err, "no workloads to generate from. Please specify a score file, e.g., score-compose generate score.yaml")
+	assert.Equal(t, "", stdout)
+}
+
+func TestGenerateWithScoreYamlPresent(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	// Create a score.yaml file in the directory
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`apiVersion: score.dev/v1b1
+metadata:
+  name: hello-world
+containers:
+  hello:
+    image: busybox
+`), 0644))
+
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate"})
+	assert.EqualError(t, err, "no workloads to generate from. Did you mean to run: score-compose generate score.yaml")
 	assert.Equal(t, "", stdout)
 }
 
