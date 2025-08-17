@@ -1,6 +1,6 @@
 [
   {
-    "Type": "with-class-with-params-in-outputs",
+    "Type": "cmd-with-class-with-params-in-outputs",
     "Class": "c1",
     "Params": [
       "p1",
@@ -13,7 +13,7 @@
     "Description": ""
   },
   {
-    "Type": "with-class-with-params-in-shared",
+    "Type": "cmd-with-class-with-params-in-shared",
     "Class": "c1",
     "Params": [
       "p1",
@@ -26,7 +26,7 @@
     "Description": ""
   },
   {
-    "Type": "with-class-with-params-in-shared-outputs",
+    "Type": "cmd-with-class-with-params-in-shared-outputs",
     "Class": "c1",
     "Params": [
       "p1",
@@ -40,20 +40,7 @@
     "Description": ""
   },
   {
-    "Type": "with-class-with-params-in-state",
-    "Class": "c1",
-    "Params": [
-      "p1",
-      "pst1"
-    ],
-    "Outputs": [
-      "o1",
-      "o2"
-    ],
-    "Description": ""
-  },
-  {
-    "Type": "with-class-with-params-in-state-outputs",
+    "Type": "cmd-with-class-with-params-in-state-outputs",
     "Class": "c1",
     "Params": [
       "p1",
@@ -67,7 +54,7 @@
     "Description": ""
   },
   {
-    "Type": "with-class-with-params-in-state-outputs-shared",
+    "Type": "cmd-with-class-with-params-in-state-outputs-shared",
     "Class": "c1",
     "Params": [
       "p1",
@@ -82,7 +69,7 @@
     "Description": ""
   },
   {
-    "Type": "with-class-without-params",
+    "Type": "cmd-with-class-without-params",
     "Class": "c1",
     "Params": [],
     "Outputs": [
@@ -92,7 +79,7 @@
     "Description": ""
   },
   {
-    "Type": "without-class-with-params-in-outputs",
+    "Type": "cmd-without-class-with-params-in-outputs",
     "Class": "(any)",
     "Params": [
       "p1",
@@ -105,7 +92,7 @@
     "Description": ""
   },
   {
-    "Type": "without-class-with-params-in-shared",
+    "Type": "cmd-without-class-with-params-in-shared",
     "Class": "(any)",
     "Params": [
       "p1",
@@ -118,7 +105,7 @@
     "Description": ""
   },
   {
-    "Type": "without-class-with-params-in-shared-outputs",
+    "Type": "cmd-without-class-with-params-in-shared-outputs",
     "Class": "(any)",
     "Params": [
       "p1",
@@ -132,7 +119,7 @@
     "Description": ""
   },
   {
-    "Type": "without-class-with-params-in-state",
+    "Type": "cmd-without-class-with-params-in-state",
     "Class": "(any)",
     "Params": [
       "p1",
@@ -145,7 +132,7 @@
     "Description": ""
   },
   {
-    "Type": "without-class-with-params-in-state-outputs",
+    "Type": "cmd-without-class-with-params-in-state-outputs",
     "Class": "(any)",
     "Params": [
       "p1",
@@ -159,7 +146,7 @@
     "Description": ""
   },
   {
-    "Type": "without-class-with-params-in-state-outputs-shared",
+    "Type": "cmd-without-class-with-params-in-state-outputs-shared",
     "Class": "(any)",
     "Params": [
       "p1",
@@ -174,7 +161,7 @@
     "Description": ""
   },
   {
-    "Type": "without-class-without-params",
+    "Type": "cmd-without-class-without-params",
     "Class": "(any)",
     "Params": [],
     "Outputs": [
@@ -184,7 +171,201 @@
     "Description": ""
   },
   {
-    "Type": "without-class-without-params",
+    "Type": "cmd-without-class-without-params-with-description",
+    "Class": "(any)",
+    "Params": [],
+    "Outputs": [
+      "o1",
+      "o2"
+    ],
+    "Description": "cmd-without-class-without-params-with-description"
+  },
+  {
+    "Type": "template-with-class-with-params-in-outputs",
+    "Class": "c1",
+    "Params": [
+      "p1",
+      "po1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ],
+    "Description": ""
+  },
+  {
+    "Type": "template-with-class-with-params-in-shared",
+    "Class": "c1",
+    "Params": [
+      "p1",
+      "psh1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ],
+    "Description": ""
+  },
+  {
+    "Type": "template-with-class-with-params-in-shared-outputs",
+    "Class": "c1",
+    "Params": [
+      "p1",
+      "po1",
+      "psh1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ],
+    "Description": ""
+  },
+  {
+    "Type": "template-with-class-with-params-in-state",
+    "Class": "c1",
+    "Params": [
+      "p1",
+      "pst1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ],
+    "Description": ""
+  },
+  {
+    "Type": "template-with-class-with-params-in-state-outputs",
+    "Class": "c1",
+    "Params": [
+      "p1",
+      "po1",
+      "pst1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ],
+    "Description": ""
+  },
+  {
+    "Type": "template-with-class-with-params-in-state-outputs-shared",
+    "Class": "c1",
+    "Params": [
+      "p1",
+      "po1",
+      "psh1",
+      "pst1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ],
+    "Description": ""
+  },
+  {
+    "Type": "template-with-class-without-params",
+    "Class": "c1",
+    "Params": [],
+    "Outputs": [
+      "o1",
+      "o2"
+    ],
+    "Description": ""
+  },
+  {
+    "Type": "template-without-class-with-params-in-outputs",
+    "Class": "(any)",
+    "Params": [
+      "p1",
+      "po1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ],
+    "Description": ""
+  },
+  {
+    "Type": "template-without-class-with-params-in-shared",
+    "Class": "(any)",
+    "Params": [
+      "p1",
+      "psh1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ],
+    "Description": ""
+  },
+  {
+    "Type": "template-without-class-with-params-in-shared-outputs",
+    "Class": "(any)",
+    "Params": [
+      "p1",
+      "po1",
+      "psh1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ],
+    "Description": ""
+  },
+  {
+    "Type": "template-without-class-with-params-in-state",
+    "Class": "(any)",
+    "Params": [
+      "p1",
+      "psh1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ],
+    "Description": ""
+  },
+  {
+    "Type": "template-without-class-with-params-in-state-outputs",
+    "Class": "(any)",
+    "Params": [
+      "p1",
+      "po1",
+      "pst1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ],
+    "Description": ""
+  },
+  {
+    "Type": "template-without-class-with-params-in-state-outputs-shared",
+    "Class": "(any)",
+    "Params": [
+      "p1",
+      "po1",
+      "psh1",
+      "pst1"
+    ],
+    "Outputs": [
+      "o1",
+      "o2"
+    ],
+    "Description": ""
+  },
+  {
+    "Type": "template-without-class-without-params",
+    "Class": "(any)",
+    "Params": [],
+    "Outputs": [
+      "o1",
+      "o2"
+    ],
+    "Description": ""
+  },
+  {
+    "Type": "template-without-class-without-params-with-description",
     "Class": "(any)",
     "Params": [],
     "Outputs": [
