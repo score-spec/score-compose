@@ -6,7 +6,7 @@ Before you get started, please note that by contributing to this project, you co
 
 ### Where to Begin!
 
-If you have questions, ideas, or requests about Score, feel free to [open an issue](https://github.com/score-dev/score/issues) or join the conversation in our Slack community — drop your questions in the CNCF Slack`#score` channel.
+If you have questions, ideas, or requests about Score, feel free to [open an issue in one of the Score repositories](https://github.com/score-spec) or join the conversation in our Slack community — drop your questions in the `#score` channel of the [CNCF Slack](https://slack.cncf.io/).
 
 We welcome contributions of all kinds:
 
@@ -40,7 +40,7 @@ If you set your `user.name` and `user.email` git configs, you can sign your comm
 To submit any kinds of improvements, please consider the following:
 
 - Submit an [issue](https://github.com/score-spec/score-compose) describing your proposed change.
-- Want to get started? Pick an open issue from our [Good First Issues](https://github.com/score-spec/score-compose/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22).
+- Want to get started? Pick an open issue from our [Good First and Help Wanted Issues](https://clotributor.dev/search?foundation=cncf&project=score).
 - Fork this repository, develop and test your changes.
 - Create a `feature` branch and submit a pull request against the `main` branch.
 
@@ -51,7 +51,7 @@ To submit any kinds of improvements, please consider the following:
   - CI checks pass
   - Your PR is reviewed and approved by a maintainer (see [MAINTAINERS.md](MAINTAINERS.md))
 
-- If you are new to Score , consider reading our [Documentation](https://github.com/score-dev/docs) and [Examples](https://docs.score.dev/examples/)
+- If you are new to Score, consider reading our [Documentation](https://github.com/score-dev/docs) and [Examples](https://docs.score.dev/examples/)
 
 ## Pull Request Checklist :
 
