@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	dario.cat/mergo v1.0.2
 	github.com/Masterminds/sprig/v3 v3.3.0
-	github.com/compose-spec/compose-go/v2 v2.8.2
+	github.com/compose-spec/compose-go/v2 v2.9.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/score-spec/score-go v1.11.2
 	github.com/spf13/cobra v1.10.1
