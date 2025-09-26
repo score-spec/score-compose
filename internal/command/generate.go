@@ -211,7 +211,11 @@ arguments.
 		}
 
 		if len(currentState.Workloads) == 0 {
-			return fmt.Errorf("the project is empty, please provide a score file to generate from")
+			// Check if there's a score.yaml file in the current directory
+			if _, err := os.Stat("score.yaml"); err == nil {
+				return fmt.Errorf("no workloads to generate from. Did you mean to run: score-compose generate score.yaml")
+			}
+			return fmt.Errorf("no workloads to generate from. Please specify a score file, e.g., score-compose generate score.yaml")
 		}
 
 		loadedProvisioners, err := provloader.LoadProvisionersFromDirectory(sd.Path, provloader.DefaultSuffix)
