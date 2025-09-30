@@ -144,9 +144,6 @@ Once you have a `score.yaml` file created, modify it by following [this guide](h
 The generate command will convert Score files in the current Score compose project into a combined Docker compose
 manifest. All resources and links between Workloads will be resolved and provisioned as required.
 
-By default this command looks for score.yaml in the current directory, but can take explicit file names as positional
-arguments.
-
 "score-compose init" MUST be run first. An error will be thrown if the project directory is not present.
 
 Usage:
@@ -157,7 +154,7 @@ Examples:
   # Specify Score files
   score-compose generate score.yaml *.score.yaml
 
-  # Regenerate without adding new score files
+  # Regenerate without adding new score files (this command should have been previously executed with at least one score file)
   score-compose generate
 
   # Provide overrides when one score file is provided
