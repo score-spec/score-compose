@@ -2,11 +2,11 @@
 
 Thanks for your interest in contributing to Score and helping to improve the project 🎵 
 
-Before you get started, please note that by contributing to this project, you confirm that you are the author of your work, have the necessary rights to contribute it, and that your contribution may be provided under the terms of the [Apache License, Version 2.0](LICENSE).
+Before you get started, please note that by contributing to this project, you confirm that you are the author of your work, have the necessary rights to contribute to it, and that your contribution may be provided under the terms of the [Apache License, Version 2.0](LICENSE).
 
 ### Where to Begin!
 
-If you have questions, ideas, or requests about Score, feel free to [open an issue in one of the Score repositories](https://github.com/score-spec) or join the conversation in our Slack community — drop your questions in the `#score` channel of the [CNCF Slack](https://slack.cncf.io/).
+If you have questions, ideas, or requests about Score, feel free to open an issue in [one of the Score repositories](https://github.com/score-spec) or join the conversation in our Slack community — drop your questions in the `#score` channel of the [CNCF Slack](https://slack.cncf.io/).
 
 We welcome contributions of all kinds:
 
@@ -15,6 +15,7 @@ We welcome contributions of all kinds:
 - Bug and feature reports
 
 ### Steps to Contribute
+
 Fixes and improvements can be directly addressed by sending a Pull Request on GitHub. Pull requests will be reviewed by one or more maintainers and merged when acceptable.
 
 We ask that before contributing, please make the effort to coordinate with the maintainers of the project before submitting large or high impact PRs. This will prevent you from doing extra work that may or may not be merged.
@@ -34,19 +35,18 @@ Use your real name (sorry, no pseudonyms or anonymous contributions.)
 
 If you set your `user.name` and `user.email` git configs, you can sign your commit automatically with `git commit -s`. You can also use git [aliases](https://git-scm.com/book/tr/v2/Git-Basics-Git-Aliases) like `git config --global alias.ci 'commit -s'`. Now you can commit with git ci and the commit will be signed.
 
-<br />
 ### **Submitting a Pull Request**
 
 To submit any kinds of improvements, please consider the following:
 
-- Submit an [issue](https://github.com/score-spec/score-compose) describing your proposed change.
+- Submit an [issue](https://github.com/score-spec/score-compose/issues) describing your proposed change.
 - Want to get started? Pick an open issue from our [Good First and Help Wanted Issues](https://clotributor.dev/search?foundation=cncf&project=score).
 - Fork this repository, develop and test your changes.
 - Create a `feature` branch and submit a pull request against the `main` branch.
 
 ### How to Test Code
 
-- Please run `make test` unit tests.
+- Please run `make test` to execute unit tests.
 - Your branch can be merged after:
   - CI checks pass
   - Your PR is reviewed and approved by a maintainer (see [MAINTAINERS.md](MAINTAINERS.md))
@@ -55,7 +55,7 @@ To submit any kinds of improvements, please consider the following:
 
 ## Pull Request Checklist :
 
-- Rebase to the current master branch before submitting your pull request.
+- Rebase to the current `main` branch before submitting your pull request.
 - Commits should be as small as possible. Each commit should follow the checklist below:
   - For code changes, add tests relevant to the fixed bug or new feature
   - Pass the compile and tests in CI
@@ -77,11 +77,12 @@ $ addlicense -l apache -v -ignore '**/*.yaml' -c 'The Score Authors' ./cmd ./int
 ```
 
 ## Feature requests
-If you have ideas for improving Score, please open an [issue](https://github.com/score-dev/score/issues) and share the use case.
+
+If you have ideas for improving Score, please open an issue in [one of the Score repositories](https://github.com/score-spec) and share the use case.
 
 ### **Where can I go for help?**
 
-If you need any help, Please tag us on issue or reach out to [us](https://github.com/score-spec/spec?tab=readme-ov-file#-get-in-touch).
+If you need any help, please tag us on issue or reach out to [us](https://github.com/score-spec/spec?tab=readme-ov-file#-get-in-touch).
 
 ### **What does the Code of Conduct mean for me?**
 
