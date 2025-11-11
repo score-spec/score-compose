@@ -443,7 +443,7 @@ func init() {
 	generateCommand.Flags().StringP(generateCmdOutputFlag, "o", "compose.yaml", "The output file to write the composed compose file to")
 	generateCommand.Flags().String(generateCmdOverridesFileFlag, "", "An optional file of Score overrides to merge in")
 	generateCommand.Flags().StringArray(generateCmdOverridePropertyFlag, []string{}, "An optional set of path=key overrides to set or remove")
-	generateCommand.Flags().String(generateCmdImageFlag, "", "An optional container image to use for any container with image == '.'")
+	generateCommand.Flags().String(generateCmdImageFlag, "i", "", "An optional container image to use for any container with image == '.'")
 	generateCommand.Flags().StringArray(generateCmdBuildFlag, []string{}, "An optional build context to use for the given container --build=container=./dir or --build=container={\"context\":\"./dir\"}")
 	generateCommand.Flags().String(generateCmdEnvFileFlag, "", "Location to store a skeleton .env file for compose - this will override existing content")
 	generateCommand.Flags().StringArray(generateCmdPublishFlag, []string{}, "An optional set of HOST_PORT:<ref>:CONTAINER_PORT to publish on the host system.")
