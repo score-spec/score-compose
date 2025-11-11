@@ -62,7 +62,7 @@ Flags:
       --build stringArray               An optional build context to use for the given container --build=container=./dir or --build=container={"context":"./dir"}
       --env-file string                 Location to store a skeleton .env file for compose - this will override existing content
   -h, --help                            help for generate
-      --image string                    An optional container image to use for any container with image == '.'
+  -i, --image string                    An optional container image to use for any container with image == '.'
   -o, --output string                   The output file to write the composed compose file to (default "compose.yaml")
       --override-property stringArray   An optional set of path=key overrides to set or remove
       --overrides-file string           An optional file of Score overrides to merge in
