@@ -66,11 +66,6 @@ jobs:
       - name: docker images
         run: |
           docker images
-      - name: Test docker image
-        run: |
-          docker run --rm score-compose:pr-${{ github.event.number }} --version
-          docker run -v .:/score-compose --rm score-compose:pr-${{ github.event.number }} init
-          cat score.yaml
       - name: checkout code in main branch
         uses: actions/checkout@v6
         with:
@@ -97,5 +92,11 @@ jobs:
           to: local://score-compose:main
           write-comment: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Test docker image built in PR branch
+        run: |
+          docker run --rm score-compose:pr-${{ github.event.number }} --version
+          docker run -v .:/score-compose --rm score-compose:pr-${{ github.event.number }} init
+          cat score.yaml
+
 
 
