@@ -11,7 +11,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: checkout code in current PR branch
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           fetch-depth: 0
@@ -35,17 +35,66 @@ jobs:
         run: go install github.com/google/addlicense@dc31ac9ffcca99c9457226366135701794b128c0
       - name: Check licenses
         run: addlicense -l apache -check -v -ignore '**/*.yaml' -c 'The Score Authors' ./cmd ./internal/
-      - name: Build docker image
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
+        with:
+          daemon-config: |
+            {
+              "debug": true,
+              "features": {
+                "containerd-snapshotter": true
+              }
+            }
+      - name: docker login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER_NAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build container image from PR branch
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: false
           load: true
-          tags: score-compose:test
-          build-args: |
-            "VERSION=test"
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: mode=max
+          sbom: true
+          tags: score-compose:pr-${{ github.event.number }}
+      - name: docker images
+        run: |
+          docker images
       - name: Test docker image
         run: |
-          docker run --rm score-compose:test --version
-          docker run -v .:/score-compose --rm score-compose:test init
+          docker run --rm score-compose:pr-${{ github.event.number }} --version
+          docker run -v .:/score-compose --rm score-compose:pr-${{ github.event.number }} init
           cat score.yaml
+      - name: checkout code in main branch
+        uses: actions/checkout@v6
+        with:
+          ref: main
+      - name: Build container image from main branch
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: mode=max
+          sbom: true
+          tags: score-compose:main
+      - name: docker images
+        run: |
+          docker images
+      - name: Docker Scout Comparison between main branch and current PR branch
+        uses: docker/scout-action@v1
+        with:
+          command: compare
+          image: local://score-compose:pr-${{ github.event.number }}
+          to: local://score-compose:main
+          write-comment: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
