@@ -1162,8 +1162,7 @@ services:
             - type: bind
               source: /dev/something/thing
               target: /mnt/v2
-              bind:
-                create_host_path: true
+              bind: {}
             - type: volume
               source: named-volume
               target: /mnt/v3
@@ -1201,8 +1200,7 @@ func TestInitAndGenerate_with_volume_types_with_new_volumes_spec(t *testing.T) {
   outputs: |
     type: bind
     source: /dev/something
-    bind:
-      create_host_path: true
+    bind: {}
 `), 0644))
 
 	// write custom score file
@@ -1249,7 +1247,7 @@ services:
               source: /dev/something/thing
               target: /mnt/v2
               bind:
-                create_host_path: true
+                create_host_path: false
             - type: volume
               source: named-volume
               target: /mnt/v3
