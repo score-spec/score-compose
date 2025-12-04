@@ -88,16 +88,18 @@ jobs:
       - name: Docker Scout Comparison between main branch and current PR branch
         uses: docker/scout-action@v1
         with:
-          command: compare
+          command: quickview,compare
           image: local://score-compose:pr-${{ github.event.number }}
           to: local://score-compose:main
           write-comment: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          organization: ${{ secrets.DOCKER_HUB_ORG }}
       - name: Test docker image built in PR branch
         run: |
           docker run --rm score-compose:pr-${{ github.event.number }} --version
           docker run -v .:/score-compose --rm score-compose:pr-${{ github.event.number }} init
           cat score.yaml
+
 
 
 
