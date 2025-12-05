@@ -96,9 +96,13 @@ jobs:
           organization: ${{ secrets.DOCKER_HUB_ORG }}
       - name: Test docker image built in PR branch
         run: |
+          mkdir test
+          sudo chown -R 65532:65532 test/
+          cd test
           docker run --rm score-compose:pr-${{ github.event.number }} --version
           docker run -v .:/score-compose --rm score-compose:pr-${{ github.event.number }} init
           cat score.yaml
+
 
 
 
