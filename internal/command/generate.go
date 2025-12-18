@@ -237,7 +237,8 @@ arguments.
 			Networks: map[string]types.NetworkConfig{},
 		}
 
-		currentState, err = provisioners.ProvisionResources(context.Background(), currentState, loadedProvisioners, superProject)
+		var workloadModels provisioners.WorkloadModels
+		currentState, workloadModels, err = provisioners.ProvisionResources(context.Background(), currentState, loadedProvisioners, superProject)
 		if err != nil {
 			return fmt.Errorf("failed to provision: %w", err)
 		} else if len(currentState.Resources) > 0 {
@@ -263,6 +264,14 @@ arguments.
 						service.DependsOn = make(types.DependsOnConfig)
 					}
 					service.DependsOn[waitServiceName] = types.ServiceDependency{Condition: "service_completed_successfully", Required: true}
+				}
+				if modelNames, ok := workloadModels[workloadName]; ok && len(modelNames) > 0 {
+					if service.Models == nil {
+						service.Models = make(map[string]*types.ServiceModelConfig)
+					}
+					for _, modelName := range modelNames {
+						service.Models[modelName] = &types.ServiceModelConfig{}
+					}
 				}
 				superProject.Services[serviceName] = service
 			}
