@@ -80,6 +80,9 @@ func TestApplyToStateAndProject(t *testing.T) {
 			ComposeVolumes: map[string]compose.VolumeConfig{
 				"some-volume": {Name: "volume"},
 			},
+			ComposeModels: map[string]compose.ModelConfig{
+				"some-model": {Name: "model-name", Model: "provider/model-id"},
+			},
 		}
 		afterState, err := output.ApplyToStateAndProject(startState, resUid, composeProject)
 		require.NoError(t, err)
@@ -91,6 +94,9 @@ func TestApplyToStateAndProject(t *testing.T) {
 		assert.Len(t, composeProject.Networks, 1)
 		assert.Len(t, composeProject.Volumes, 1)
 		assert.Len(t, composeProject.Services, 1)
+		assert.Len(t, composeProject.Models, 1)
+		assert.Equal(t, "model-name", composeProject.Models["some-model"].Name)
+		assert.Equal(t, "provider/model-id", composeProject.Models["some-model"].Model)
 		paths := make([]string, 0)
 		_ = filepath.WalkDir(td, func(path string, d fs.DirEntry, err error) error {
 			if d.IsDir() {

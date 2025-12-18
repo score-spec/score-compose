@@ -92,6 +92,7 @@ type ProvisionOutput struct {
 	ComposeNetworks      map[string]compose.NetworkConfig `json:"compose_networks"`
 	ComposeVolumes       map[string]compose.VolumeConfig  `json:"compose_volumes"`
 	ComposeServices      map[string]compose.ServiceConfig `json:"compose_services"`
+	ComposeModels        map[string]compose.ModelConfig   `json:"compose_models"`
 
 	// For testing and legacy reasons, built in provisioners can set a direct lookup function
 	OutputLookupFunc framework.OutputLookupFunc `json:"-"`
@@ -166,6 +167,7 @@ func (po *ProvisionOutput) ApplyToStateAndProject(state *project.State, resUid f
 		"#volumes", len(po.ComposeVolumes),
 		"#networks", len(po.ComposeNetworks),
 		"#services", len(po.ComposeServices),
+		"#models", len(po.ComposeModels),
 	)
 
 	out := *state
@@ -259,6 +261,12 @@ func (po *ProvisionOutput) ApplyToStateAndProject(state *project.State, resUid f
 			project.Services = make(compose.Services)
 		}
 		project.Services[serviceName] = service
+	}
+	for modelName, model := range po.ComposeModels {
+		if project.Models == nil {
+			project.Models = make(compose.Models)
+		}
+		project.Models[modelName] = model
 	}
 
 	out.Resources[resUid] = existing
