@@ -68,3 +68,4 @@ jobs:
       - name: Sign container image
         run: |
           cosign sign --yes ghcr.io/score-spec/score-compose@${{ steps.build-push-container.outputs.digest }}
+          cosign sign --yes scorespec/score-compose@${{ steps.build-push-container.outputs.digest }}
