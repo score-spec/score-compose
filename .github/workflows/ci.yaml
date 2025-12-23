@@ -9,7 +9,7 @@ permissions:
   contents: read
   pull-requests: write
 jobs:
-  test:
+  test-code:
     runs-on: ubuntu-latest
     steps:
       - name: checkout code in current PR branch
@@ -36,6 +36,15 @@ jobs:
         run: go install github.com/google/addlicense@dc31ac9ffcca99c9457226366135701794b128c0
       - name: Check licenses
         run: addlicense -l apache -check -v -ignore '**/*.yaml' -c 'The Score Authors' ./cmd ./internal/
+  test-container:
+    runs-on: ubuntu-latest
+    environment: ci-pr
+    if: ${{ !github.event.pull_request.head.repo.fork }}
+    steps:
+      - name: checkout code in current PR branch
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          fetch-depth: 0
       - name: Set up Docker
         uses: docker/setup-docker-action@e61617a16c407a86262fb923c35a616ddbe070b3 # v4.6.0
         with:
@@ -49,10 +58,11 @@ jobs:
       - name: docker login
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
+          registry: docker.io
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
       - name: Build container image from PR branch
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
@@ -102,12 +112,3 @@ jobs:
           docker run --rm score-compose:pr-${{ github.event.number }} --version
           docker run -v .:/score-compose --rm score-compose:pr-${{ github.event.number }} init
           cat score.yaml
-
-
-
-
-
-
-
-
-
