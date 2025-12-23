@@ -70,6 +70,9 @@ type Provisioner struct {
 	// ComposeServicesTemplate generates a set of services to add to the compose project. These will replace any with
 	// the same name already.
 	ComposeServicesTemplate string `yaml:"services,omitempty"`
+	// ComposeModelsTemplate generates a set of models to add to the compose project. These will replace any with
+	// the same name already.
+	ComposeModelsTemplate string `yaml:"models,omitempty"`
 
 	// InfoLogsTemplate allows the provisioner to return informational messages for the user which may help connecting or
 	// testing the provisioned resource
@@ -266,6 +269,11 @@ func (p *Provisioner) Provision(ctx context.Context, input *provisioners.Input) 
 	out.ComposeVolumes = make(map[string]compose.VolumeConfig)
 	if err := renderTemplateAndDecode(p.ComposeVolumesTemplate, &data, &out.ComposeVolumes, true); err != nil {
 		return nil, fmt.Errorf("volumes template failed: %w", err)
+	}
+
+	out.ComposeModels = make(map[string]compose.ModelConfig)
+	if err := renderTemplateAndDecode(p.ComposeModelsTemplate, &data, &out.ComposeModels, true); err != nil {
+		return nil, fmt.Errorf("models template failed: %w", err)
 	}
 
 	var infoLogs []string

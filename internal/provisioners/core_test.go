@@ -80,6 +80,9 @@ func TestApplyToStateAndProject(t *testing.T) {
 			ComposeVolumes: map[string]compose.VolumeConfig{
 				"some-volume": {Name: "volume"},
 			},
+			ComposeModels: map[string]compose.ModelConfig{
+				"some-model": {Name: "model-name", Model: "provider/model-id"},
+			},
 		}
 		afterState, err := output.ApplyToStateAndProject(startState, resUid, composeProject)
 		require.NoError(t, err)
@@ -91,6 +94,9 @@ func TestApplyToStateAndProject(t *testing.T) {
 		assert.Len(t, composeProject.Networks, 1)
 		assert.Len(t, composeProject.Volumes, 1)
 		assert.Len(t, composeProject.Services, 1)
+		assert.Len(t, composeProject.Models, 1)
+		assert.Equal(t, "model-name", composeProject.Models["some-model"].Name)
+		assert.Equal(t, "provider/model-id", composeProject.Models["some-model"].Model)
 		paths := make([]string, 0)
 		_ = filepath.WalkDir(td, func(path string, d fs.DirEntry, err error) error {
 			if d.IsDir() {
@@ -151,7 +157,7 @@ func TestProvisionResourcesWithNetworkService(t *testing.T) {
 			return &ProvisionOutput{}, nil
 		}),
 	}
-	after, err := ProvisionResources(context.Background(), state, p, nil)
+	after, _, err := ProvisionResources(context.Background(), state, p, nil)
 	if assert.NoError(t, err) {
 		assert.Len(t, after.Resources, 1)
 	}
@@ -176,7 +182,7 @@ func TestProvisionResourcesWithResourceParams(t *testing.T) {
 			return &ProvisionOutput{ResourceOutputs: map[string]interface{}{"key": "value"}}, nil
 		}),
 	}
-	after, err := ProvisionResources(context.Background(), state, p, nil)
+	after, _, err := ProvisionResources(context.Background(), state, p, nil)
 	if assert.NoError(t, err) {
 		assert.Len(t, after.Resources, 2)
 	}
@@ -200,6 +206,39 @@ func TestProvisionResourcesWithResourceParams_fail(t *testing.T) {
 			return &ProvisionOutput{ResourceOutputs: map[string]interface{}{}}, nil
 		}),
 	}
-	_, err := ProvisionResources(context.Background(), state, p, nil)
+	_, _, err := ProvisionResources(context.Background(), state, p, nil)
 	assert.EqualError(t, err, "failed to substitute params for resource 'a.default#w1.a': x: invalid ref 'resources.b.unknown': key 'unknown' not found")
+}
+
+func TestProvisionResourcesWithModels(t *testing.T) {
+	state := new(project.State)
+	state, _ = state.WithWorkload(&score.Workload{
+		Metadata: map[string]interface{}{"name": "w1"},
+		Containers: map[string]score.Container{
+			"main": {},
+		},
+		Resources: map[string]score.Resource{
+			"my-model": {Type: "llm-model"},
+		},
+	}, nil, project.WorkloadExtras{})
+	state, _ = state.WithPrimedResources()
+	composeProject := &compose.Project{}
+	p := []Provisioner{
+		NewEphemeralProvisioner("ephemeral://blah", "llm-model.default#w1.my-model", func(ctx context.Context, input *Input) (*ProvisionOutput, error) {
+			return &ProvisionOutput{
+				ComposeModels: map[string]compose.ModelConfig{
+					"w1-my-model": {Name: "w1-my-model", Model: "ai/gemma3:270M-UD-IQ2_XXS"},
+				},
+			}, nil
+		}),
+	}
+	after, workloadModels, err := ProvisionResources(context.Background(), state, p, composeProject)
+	if assert.NoError(t, err) {
+		assert.Len(t, after.Resources, 1)
+		assert.Len(t, composeProject.Models, 1)
+		assert.Equal(t, "ai/gemma3:270M-UD-IQ2_XXS", composeProject.Models["w1-my-model"].Model)
+		assert.Len(t, workloadModels, 1)
+		assert.Contains(t, workloadModels, "w1")
+		assert.Equal(t, []string{"w1-my-model"}, workloadModels["w1"])
+	}
 }

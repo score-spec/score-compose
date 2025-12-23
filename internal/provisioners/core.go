@@ -92,6 +92,7 @@ type ProvisionOutput struct {
 	ComposeNetworks      map[string]compose.NetworkConfig `json:"compose_networks"`
 	ComposeVolumes       map[string]compose.VolumeConfig  `json:"compose_volumes"`
 	ComposeServices      map[string]compose.ServiceConfig `json:"compose_services"`
+	ComposeModels        map[string]compose.ModelConfig   `json:"compose_models"`
 
 	// For testing and legacy reasons, built in provisioners can set a direct lookup function
 	OutputLookupFunc framework.OutputLookupFunc `json:"-"`
@@ -166,6 +167,7 @@ func (po *ProvisionOutput) ApplyToStateAndProject(state *project.State, resUid f
 		"#volumes", len(po.ComposeVolumes),
 		"#networks", len(po.ComposeNetworks),
 		"#services", len(po.ComposeServices),
+		"#models", len(po.ComposeModels),
 	)
 
 	out := *state
@@ -260,6 +262,12 @@ func (po *ProvisionOutput) ApplyToStateAndProject(state *project.State, resUid f
 		}
 		project.Services[serviceName] = service
 	}
+	for modelName, model := range po.ComposeModels {
+		if project.Models == nil {
+			project.Models = make(compose.Models)
+		}
+		project.Models[modelName] = model
+	}
 
 	out.Resources[resUid] = existing
 	return &out, nil
@@ -297,13 +305,18 @@ func buildWorkloadServices(state *project.State) map[string]NetworkService {
 	return out
 }
 
-func ProvisionResources(ctx context.Context, state *project.State, provisioners []Provisioner, composeProject *compose.Project) (*project.State, error) {
+// WorkloadModels maps workload names to their associated model names.
+// This is used to inject model references into workload services.
+type WorkloadModels map[string][]string
+
+func ProvisionResources(ctx context.Context, state *project.State, provisioners []Provisioner, composeProject *compose.Project) (*project.State, WorkloadModels, error) {
 	out := state
+	workloadModels := make(WorkloadModels)
 
 	// provision in sorted order
 	orderedResources, err := out.GetSortedResourceUids()
 	if err != nil {
-		return nil, fmt.Errorf("failed to determine sort order for provisioning: %w", err)
+		return nil, nil, fmt.Errorf("failed to determine sort order for provisioning: %w", err)
 	}
 
 	workloadServices := buildWorkloadServices(state)
@@ -314,24 +327,24 @@ func ProvisionResources(ctx context.Context, state *project.State, provisioners 
 			return provisioner.Match(resUid)
 		})
 		if provisionerIndex < 0 {
-			return nil, fmt.Errorf("resource '%s' is not supported by any provisioner", resUid)
+			return nil, nil, fmt.Errorf("resource '%s' is not supported by any provisioner", resUid)
 		}
 		provisioner := provisioners[provisionerIndex]
 		if resState.ProvisionerUri != "" && resState.ProvisionerUri != provisioner.Uri() {
-			return nil, fmt.Errorf("resource '%s' was previously provisioned by a different provider - undefined behavior", resUid)
+			return nil, nil, fmt.Errorf("resource '%s' was previously provisioned by a different provider - undefined behavior", resUid)
 		}
 
 		var params map[string]interface{}
 		if resState.Params != nil && len(resState.Params) > 0 {
 			resOutputs, err := out.GetResourceOutputForWorkload(resState.SourceWorkload)
 			if err != nil {
-				return nil, fmt.Errorf("failed to find resource params for resource '%s': %w", resUid, err)
+				return nil, nil, fmt.Errorf("failed to find resource params for resource '%s': %w", resUid, err)
 			}
 			sf := framework.BuildSubstitutionFunction(out.Workloads[resState.SourceWorkload].Spec.Metadata, resOutputs)
 			sf = util.WrapImmediateSubstitutionFunction(sf)
 			rawParams, err := framework.Substitute(resState.Params, sf)
 			if err != nil {
-				return nil, fmt.Errorf("failed to substitute params for resource '%s': %w", resUid, err)
+				return nil, nil, fmt.Errorf("failed to substitute params for resource '%s': %w", resUid, err)
 			}
 			params = rawParams.(map[string]interface{})
 		}
@@ -351,15 +364,22 @@ func ProvisionResources(ctx context.Context, state *project.State, provisioners 
 			MountDirectoryPath: out.Extras.MountsDirectory,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("resource '%s': failed to provision: %w", resUid, err)
+			return nil, nil, fmt.Errorf("resource '%s': failed to provision: %w", resUid, err)
+		}
+
+		// Track models for the source workload
+		if len(output.ComposeModels) > 0 {
+			for modelName := range output.ComposeModels {
+				workloadModels[resState.SourceWorkload] = append(workloadModels[resState.SourceWorkload], modelName)
+			}
 		}
 
 		output.ProvisionerUri = provisioner.Uri()
 		out, err = output.ApplyToStateAndProject(out, resUid, composeProject)
 		if err != nil {
-			return nil, fmt.Errorf("resource '%s': failed to apply outputs: %w", resUid, err)
+			return nil, nil, fmt.Errorf("resource '%s': failed to apply outputs: %w", resUid, err)
 		}
 	}
 
-	return out, nil
+	return out, workloadModels, nil
 }

@@ -182,9 +182,10 @@ The following extra fields can be configured as required on each instance of thi
 | `outputs`     | String, Go template | A Go template for a valid YAML dictionary. The values here are the outputs of the resource that can be accessed through `${resources.*}` placeholder resolution.                                                             |
 | `directories` | String, Go template | A Go template for a valid YAML dictionary. Each path -> bool mapping will create (true) or delete (false) a directory relative to the mounts directory.                                                                      |
 | `files`       | String, Go template | A Go template for a valid YAML dictionary. Each path -> string\|null will create a relative file (string) or delete it (null) relative to the mounts directory.                                                              |
-| `networks`    | String, Go template | A Go template for a valid set of named Compose [Networks](https://github.com/compose-spec/compose-spec/blob/master/06-networks.md). These will be added to the output project.                                               |
-| `volumes`     | String, Go template | A Go template for a valid set of named Compose [Volumes](https://github.com/compose-spec/compose-spec/blob/master/07-volumes.md).                                                                                            |
-| `services`    | String, Go template | A Go template for a valid set of named Compose [Services](https://github.com/compose-spec/compose-spec/blob/master/05-services.md).                                                                                          |
+| `networks`    | String, Go template | A Go template for a valid set of named Compose [Networks](https://github.com/compose-spec/compose-spec/blob/main/06-networks.md). These will be added to the output project.                                               |
+| `volumes`     | String, Go template | A Go template for a valid set of named Compose [Volumes](https://github.com/compose-spec/compose-spec/blob/main/07-volumes.md).                                                                                            |
+| `services`    | String, Go template | A Go template for a valid set of named Compose [Services](https://github.com/compose-spec/compose-spec/blob/main/05-services.md).                                                                                          |
+| `models`      | String, Go template | A Go template for a valid set of named Compose [Models](https://docs.docker.com/compose/how-tos/model-runner/). These define AI/ML models that can be used by services.                                                       |
 
 Each template has access to the [Sprig](http://masterminds.github.io/sprig/) functions library and executes with access to the following structure:
 
@@ -206,6 +207,46 @@ type Data struct {
 ```
 
 Browse the default provisioners for inspiration or more clues to how these work!
+
+#### Example: Provisioning a Model
+
+The `models` template field allows provisioners to define AI/ML models in the Compose output. Here's an example of a custom provisioner that provisions a model:
+
+```yaml
+- uri: template://llm-model
+  type: llm-model
+  class: default
+  init: |
+    name: {{ .Id | replace "." "-" }}
+  models: |
+    {{ .Init.name }}:
+      model: {{ .Params.model | default "ai/smollm2" }}
+      context_size: {{ .Params.context_size | default 2048 }}
+  outputs: |
+    name: {{ .Init.name }}
+```
+
+When used with the following Score resource:
+
+```yaml
+resources:
+  my-llm:
+    type: llm-model
+    params:
+      model: ai/mistral
+      context_size: 4096
+```
+
+This will generate the following in the Compose output:
+
+```yaml
+models:
+  my-llm:
+    model: ai/mistral
+    context_size: 4096
+```
+
+Services can then reference these models via the `models` field in the service configuration.
 
 ### The `cmd://` provisioner
 
