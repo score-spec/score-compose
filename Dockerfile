@@ -1,4 +1,4 @@
-FROM golang:1.25.5-alpine@sha256:ac09a5f469f307e5da71e766b0bd59c9c49ea460a528cc3e6686513d64a6f1fb AS builder
+FROM dhi.io/golang:1.25.5-alpine3.22-dev@sha256:74ac3dad905f3b96e47cbaac4e2db4313f7d6982a8a4e3cf43cd72157d36363c AS builder
 
 ARG VERSION=0.0.0
 
@@ -13,8 +13,8 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w -X github.com/score-spec/score-compose/internal/version.Version=${VERSION}" -o /usr/local/bin/score-compose ./cmd/score-compose
 
-# We can use gcr.io/distroless/static since we don't rely on any linux libs or state, but we need ca-certificates to connect to https/oci with the init command.
-FROM gcr.io/distroless/static-debian13:nonroot@sha256:b5b9fd04c8dcf72a173183c0b7dee47e053e002246b308a59f3441db7b8b9cc4
+# We can use static since we don't rely on any linux libs or state, but we need ca-certificates to connect to https/oci with the init command.
+FROM dhi.io/static:20250911-alpine3.22@sha256:d36af7c8b762bca5ac335571b74a84887b11334e227e70cee0c17521edef5c13
 
 # Set the current working directory inside the container.
 WORKDIR /score-compose
