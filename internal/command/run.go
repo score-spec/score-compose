@@ -207,7 +207,7 @@ func run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	state, err = provisioners.ProvisionResources(context.Background(), state, provisionerList, nil)
+	state, _, err = provisioners.ProvisionResources(context.Background(), state, provisionerList, nil)
 	if err != nil {
 		return fmt.Errorf("failed to provision resources: %w", err)
 	}
