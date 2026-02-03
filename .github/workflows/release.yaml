@@ -3,10 +3,8 @@ on:
   push:
     tags:
       - 0.**
-permissions:
-  contents: read
 jobs:
-  release:
+  release-go-binary:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -36,38 +34,32 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
-        with:
-          version: latest
-      - name: docker login
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_RELEASE_TOKEN }}
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
-        with:
-          registry: ghcr.io
+  release-container-image:
+    uses: docker/github-builder/.github/workflows/build.yml@v1
+    permissions:
+      contents: read # to fetch the repository content
+      id-token: write # to sign attestation(s) with GitHub OIDC Token
+      packages: write # to push container image to ghcr
+    with:
+      output: image
+      push: true
+      platforms: linux/amd64,linux/arm64
+      sbom: true
+      context: .
+      set-meta-labels: true
+      set-meta-annotations: true
+      build-args: |
+        "VERSION=${{ github.ref_name }}"
+      meta-images: |
+        ghcr.io/score-spec/score-compose
+        scorespec/score-compose
+      meta-tags: |
+        type=ref,event=tag
+        latest
+    secrets:
+      registry-auths: |
+        - registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push docker image
-        id: build-push-container
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          provenance: mode=max
-          sbom: true
-          tags: |
-            ghcr.io/score-spec/score-compose:${{ github.ref_name }}
-            ghcr.io/score-spec/score-compose:latest
-            scorespec/score-compose:${{ github.ref_name }}
-            scorespec/score-compose:latest
-          build-args: |
-            "VERSION=${{ github.ref_name }}"
-      - name: Sign container image
-        run: |
-          cosign sign --yes ghcr.io/score-spec/score-compose@${{ steps.build-push-container.outputs.digest }}
-          cosign sign --yes scorespec/score-compose@${{ steps.build-push-container.outputs.digest }}
+        - username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_RELEASE_TOKEN }}
