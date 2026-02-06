@@ -61,7 +61,6 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-    environment: ci-pr
     if: ${{ !github.event.pull_request.head.repo.fork }}
     steps:
       - name: checkout code in current PR branch
@@ -136,3 +135,4 @@ jobs:
           docker run --rm score-compose:pr-${{ github.event.number }} --version
           docker run -v .:/score-compose --rm score-compose:pr-${{ github.event.number }} init
           cat score.yaml
+
