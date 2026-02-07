@@ -36,7 +36,7 @@ jobs:
       - name: Check licenses
         run: addlicense -l apache -check -v -ignore '**/*.yaml' -c 'The Score Authors' ./cmd ./internal/
   test-multi-arch-build:
-    uses: docker/github-builder/.github/workflows/build.yml@v1
+    uses: docker/github-builder/.github/workflows/build.yml@c767551a26459c30e1f683df73a12fdb918f7068 # v1.0.0
     if: ${{ !github.event.pull_request.head.repo.fork }}
     permissions:
       contents: read
@@ -135,4 +135,5 @@ jobs:
           docker run --rm score-compose:pr-${{ github.event.number }} --version
           docker run -v .:/score-compose --rm score-compose:pr-${{ github.event.number }} init
           cat score.yaml
+
 
