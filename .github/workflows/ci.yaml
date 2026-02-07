@@ -5,12 +5,11 @@ on:
   push:
     branches:
       - main
-permissions:
-  contents: read
-  pull-requests: write
 jobs:
   test-code:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: checkout code in current PR branch
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -36,9 +35,32 @@ jobs:
         run: go install github.com/google/addlicense@dc31ac9ffcca99c9457226366135701794b128c0
       - name: Check licenses
         run: addlicense -l apache -check -v -ignore '**/*.yaml' -c 'The Score Authors' ./cmd ./internal/
+  test-multi-arch-build:
+    uses: docker/github-builder/.github/workflows/build.yml@c767551a26459c30e1f683df73a12fdb918f7068 # v1.0.0
+    if: ${{ !github.event.pull_request.head.repo.fork }}
+    permissions:
+      contents: read
+    with:
+      output: image
+      push: false
+      platforms: linux/amd64,linux/arm64
+      sbom: true
+      context: .
+      set-meta-labels: true
+      set-meta-annotations: true
+      meta-images: |
+        my-sample-workload
+      meta-tags: |
+        type=ref,event=pr
+    secrets:
+      registry-auths: |
+        - username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
   test-container:
     runs-on: ubuntu-latest
-    environment: ci-pr
+    permissions:
+      contents: read
+      pull-requests: write
     if: ${{ !github.event.pull_request.head.repo.fork }}
     steps:
       - name: checkout code in current PR branch
