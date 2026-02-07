@@ -35,7 +35,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
   release-container-image:
-    uses: docker/github-builder/.github/workflows/build.yml@v1
+    uses: docker/github-builder/.github/workflows/build.yml@c767551a26459c30e1f683df73a12fdb918f7068 # v1.0.0
     permissions:
       contents: read # to fetch the repository content
       id-token: write # to sign attestation(s) with GitHub OIDC Token
