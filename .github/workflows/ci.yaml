@@ -5,11 +5,11 @@ on:
   push:
     branches:
       - main
+permissions:
+  contents: read
 jobs:
   test-code:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - name: checkout code in current PR branch
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -38,8 +38,6 @@ jobs:
   test-multi-arch-build:
     uses: docker/github-builder/.github/workflows/build.yml@c767551a26459c30e1f683df73a12fdb918f7068 # v1.0.0
     if: ${{ !github.event.pull_request.head.repo.fork }}
-    permissions:
-      contents: read
     with:
       output: image
       push: false
@@ -59,7 +57,6 @@ jobs:
   test-container:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       pull-requests: write
     if: ${{ !github.event.pull_request.head.repo.fork }}
     steps:
@@ -141,7 +138,3 @@ jobs:
           docker run --rm score-compose:pr-${{ github.event.number }} --version
           docker run -v .:/score-compose --rm score-compose:pr-${{ github.event.number }} init
           cat score.yaml
-
-
-
-
