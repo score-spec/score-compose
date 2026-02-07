@@ -47,7 +47,7 @@ jobs:
       set-meta-labels: true
       set-meta-annotations: true
       meta-images: |
-        my-sample-workload
+        score-compose
       meta-tags: |
         type=ref,event=pr
     secrets:
@@ -138,3 +138,4 @@ jobs:
           docker run --rm score-compose:pr-${{ github.event.number }} --version
           docker run -v .:/score-compose --rm score-compose:pr-${{ github.event.number }} init
           cat score.yaml
+
