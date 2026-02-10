@@ -43,6 +43,7 @@ jobs:
       push: false
       platforms: linux/amd64,linux/arm64
       sbom: true
+      cache: true
       context: .
       set-meta-labels: true
       set-meta-annotations: true
@@ -138,4 +139,5 @@ jobs:
           docker run --rm score-compose:pr-${{ github.event.number }} --version
           docker run -v .:/score-compose --rm score-compose:pr-${{ github.event.number }} init
           cat score.yaml
+
 
