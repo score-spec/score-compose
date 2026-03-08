@@ -1,4 +1,4 @@
-FROM dhi.io/golang:1.26.0-alpine3.23-dev@sha256:ce708989231419cc6e36e5fe0f9e7a1e2e1b684b82985c19026c56c4132277f9 AS builder
+FROM dhi.io/golang:1.26.1-alpine3.23-dev@sha256:55d6cb7d99b2e6e6ed9a766a0b9e39f6cf29fa0471c2f274d90102d758c8e0b3 AS builder
 
 ARG VERSION=0.0.0
 
