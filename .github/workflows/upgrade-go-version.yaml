@@ -1,0 +1,46 @@
+name: Upgrade Go version
+on:
+  workflow_dispatch:
+    inputs:
+      go-version:
+        required: true
+      go-toolchain-version:
+        required: true
+permissions:
+  contents: read
+jobs:
+  upgrade-go-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version: ${{ github.event.inputs.go-toolchain-version }}
+      - name: go get all
+        run: |
+          go mod edit -go ${{ github.event.inputs.go-version }}
+          go mod edit -toolchain go${{ github.event.inputs.go-toolchain-version }}
+          go get -u all
+          go mod tidy
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Upgrade Go version to ${{ github.event.inputs.go-toolchain-version }}
+          title: Upgrade Go version to ${{ github.event.inputs.go-toolchain-version }}
+          body: |
+            Upgrade Go version to ${{ github.event.inputs.go-toolchain-version }}:
+            https://go.dev/doc/devel/release
+            - [ ] Set PR as "Ready for review"
+            - [ ] Check CI
+            - [ ] Submit PR review
+          branch: upgrade-go
+          delete-branch: true
+          signoff: true
+          draft: always-true # Because of: https://github.com/peter-evans/create-pull-request/blob/main/docs/concepts-guidelines.md#triggering-further-workflow-runs.
