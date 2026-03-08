@@ -1,7 +1,11 @@
 name: ci
 on:
-  # We run the CI checks on any pull request updates or pushes to the main branch after PR merge.
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
   push:
     branches:
       - main
@@ -139,5 +143,6 @@ jobs:
           docker run --rm score-compose:pr-${{ github.event.number }} --version
           docker run -v .:/score-compose --rm score-compose:pr-${{ github.event.number }} init
           cat score.yaml
+
 
 
