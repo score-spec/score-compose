@@ -35,7 +35,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
   release-container-image:
-    uses: docker/github-builder/.github/workflows/build.yml@1fbf7b561327a08e044298fe9684dac8d248c7d9 # v1.2.0
+    uses: docker/github-builder/.github/workflows/build.yml@70313223e2665c3211b454b3fea6534624e78d64 # v1.4.0
     permissions:
       id-token: write # to sign attestation(s) with GitHub OIDC Token
       packages: write # to push container image to ghcr
