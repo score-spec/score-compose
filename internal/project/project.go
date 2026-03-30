@@ -38,6 +38,7 @@ type State = framework.State[StateExtras, WorkloadExtras, framework.NoExtras]
 
 type StateExtras struct {
 	ComposeProjectName string   `yaml:"compose_project"`
+	ComposeVersion     string   `yaml:"compose_version,omitempty"`
 	MountsDirectory    string   `yaml:"mounts_directory"`
 	PatchingTemplates  []string `yaml:"patching_templates"`
 }

@@ -86,6 +86,7 @@ URI Retrieval:
     - Stdin       : - (read from standard input)
 
 Flags:
+      --compose-version string        Set a compose file version string (e.g. "3") for compatibility with older tools such as Podman. When set, the top-level 'name' field is omitted and service annotations are converted to labels.
   -f, --file string                   The score file to initialize (default "./score.yaml")
   -h, --help                          help for init
       --no-default-provisioners       Disable generation of the default provisioners file
@@ -327,5 +328,37 @@ func TestInitWithPatchingFiles(t *testing.T) {
 		assert.NoError(t, os.WriteFile(filepath.Join(td, "patch-templates-3"), []byte(`{{ what is this }}`), 0644))
 		_, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--patch-templates", filepath.Join(td, "patch-templates-3")})
 		assert.Error(t, err, "failed to parse template: template: :1: function \"what\" not defined")
+	})
+}
+
+func TestInitWithComposeVersion(t *testing.T) {
+	_ = changeToTempDir(t)
+
+	t.Run("set on new project", func(t *testing.T) {
+		_, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--no-sample", "--compose-version", "3"})
+		require.NoError(t, err)
+		sd, ok, err := project.LoadStateDirectory(".")
+		require.NoError(t, err)
+		require.True(t, ok)
+		assert.Equal(t, "3", sd.State.Extras.ComposeVersion)
+	})
+
+	t.Run("update on re-init", func(t *testing.T) {
+		_, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--no-sample", "--compose-version", "3.8"})
+		require.NoError(t, err)
+		sd, ok, err := project.LoadStateDirectory(".")
+		require.NoError(t, err)
+		require.True(t, ok)
+		assert.Equal(t, "3.8", sd.State.Extras.ComposeVersion)
+	})
+
+	t.Run("not changed when flag absent on re-init", func(t *testing.T) {
+		_, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--no-sample"})
+		require.NoError(t, err)
+		sd, ok, err := project.LoadStateDirectory(".")
+		require.NoError(t, err)
+		require.True(t, ok)
+		// should still be "3.8" from previous re-init
+		assert.Equal(t, "3.8", sd.State.Extras.ComposeVersion)
 	})
 }

@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -1628,4 +1629,53 @@ services:
         privileged: true
         read_only: true
 `)
+}
+
+func TestInitAndGenerate_with_compose_version(t *testing.T) {
+	td := changeToTempDir(t)
+
+	assert.NoError(t, os.WriteFile(filepath.Join(td, "score.yaml"), []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+  annotations:
+    my.org/custom: "value"
+containers:
+  hello:
+    image: nginx:latest
+    variables:
+      PORT: "8080"
+`), 0644))
+
+	t.Run("default output has name and annotations", func(t *testing.T) {
+		_, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--no-sample"})
+		require.NoError(t, err)
+		_, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+		require.NoError(t, err)
+		raw, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+		require.NoError(t, err)
+		content := string(raw)
+		// regression guard: default output must contain name: and annotations:, no version:
+		assert.Contains(t, content, "name:")
+		assert.Contains(t, content, "annotations:")
+		assert.NotContains(t, content, "version:")
+	})
+
+	t.Run("legacy output has version and labels not annotations", func(t *testing.T) {
+		_, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init", "--no-sample", "--compose-version", "3"})
+		require.NoError(t, err)
+		_, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+		require.NoError(t, err)
+		raw, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+		require.NoError(t, err)
+		content := string(raw)
+		assert.Contains(t, content, `version: "3"`)
+		assert.NotContains(t, content, "\nname:")
+		assert.False(t, strings.HasPrefix(content, "name:"), "output should not start with name:")
+		assert.NotContains(t, content, "annotations:")
+		assert.Contains(t, content, "labels:")
+		assert.Contains(t, content, "compose.score.dev/workload-name: example")
+		assert.Contains(t, content, "my.org/custom: value")
+		assert.Contains(t, content, "services:")
+	})
 }
