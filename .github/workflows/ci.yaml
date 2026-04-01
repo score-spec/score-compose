@@ -22,7 +22,7 @@ jobs:
       - name: Fetch all tags
         run: git fetch --force --tags
       - name: Set up Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version-file: 'go.mod'
       - name: Run Go Vet
@@ -40,7 +40,7 @@ jobs:
       - name: Check licenses
         run: addlicense -l apache -check -v -ignore '**/*.yaml' -c 'The Score Authors' ./cmd ./internal/
   test-multi-arch-build:
-    uses: docker/github-builder/.github/workflows/build.yml@abff7868c866c54704b6afa9ad5871948ca97334 # v1.1.0
+    uses: docker/github-builder/.github/workflows/build.yml@70313223e2665c3211b454b3fea6534624e78d64 # v1.4.0
     if: ${{ !github.event.pull_request.head.repo.fork }}
     with:
       output: image
@@ -127,7 +127,7 @@ jobs:
         run: |
           docker images
       - name: Docker Scout Comparison between main branch and current PR branch
-        uses: docker/scout-action@75ec1d410792f411fb41df7ab69a62d14d9b6884 # v1.20.1
+        uses: docker/scout-action@8910519cee8ac046f3ee99686b0dc6654d5ba1a7 # v1.20.3
         with:
           command: compare
           image: local://score-compose:pr-${{ github.event.number }}
