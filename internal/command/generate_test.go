@@ -107,7 +107,7 @@ func TestGenerateWithoutScoreFiles(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "", stdout)
 	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate"})
-	assert.EqualError(t, err, "the project has no workloads yet; run \"score-compose generate <score-file>\" first (for example \"score.yaml\")")
+	assert.EqualError(t, err, "no workloads found, please provide a Score file to generate from")
 	assert.Equal(t, "", stdout)
 }
 
