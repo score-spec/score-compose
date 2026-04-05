@@ -15,5 +15,6 @@ build:
 	go build ./cmd/score-compose/
 
 test:
-	go vet ./...    
+	go vet ./...
+	go env -w GOTOOLCHAIN="$(shell go env GOVERSION)+auto"
 	go test ./... -cover -race
