@@ -173,11 +173,11 @@ Flags:
       --build stringArray               An optional build context to use for the given container --build=container=./dir or --build=container={"context":"./dir"}
       --env-file string                 Location to store a skeleton .env file for compose - this will override existing content
   -h, --help                            help for generate
-      --image string                    An optional container image to use for any container with image == '.'
+  -i, --image string                    An optional container image to use for any container with image == '.'
   -o, --output string                   The output file to write the composed compose file to (default "compose.yaml")
       --override-property stringArray   An optional set of path=key overrides to set or remove
       --overrides-file string           An optional file of Score overrides to merge in
-      --publish stringArray             An optional set of HOST_PORT:<ref>:CONTAINER_PORT to publish on the host system.
+  -p, --publish stringArray             An optional set of HOST_PORT:<ref>:CONTAINER_PORT to publish on the host system.
 
 Global Flags:
       --quiet           Mute any logging output
@@ -186,7 +186,7 @@ Global Flags:
 
 **NOTE**: The `score-compose run` command still exists but is hidden and should be considered deprecated as it does not support resource provisioning.
 
-### Using the `--publish` flag
+### Using the `--publish` (`-p`) flag
 
 `score-compose` installs all workloads and resource services into the compose docker network but does not publish ports on the host by default. To access ports inside the network, the user must either exec into a target container, run a new `socat` container with published ports, use a `route` resource that publishes "public" ports, or modify the compose.yaml directly.
 
