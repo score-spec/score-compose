@@ -66,7 +66,7 @@ Flags:
   -o, --output string                   The output file to write the composed compose file to (default "compose.yaml")
       --override-property stringArray   An optional set of path=key overrides to set or remove
       --overrides-file string           An optional file of Score overrides to merge in
-      --publish stringArray             An optional set of HOST_PORT:<ref>:CONTAINER_PORT to publish on the host system.
+  -p, --publish stringArray             An optional set of HOST_PORT:<ref>:CONTAINER_PORT to publish on the host system.
 
 Global Flags:
       --quiet           Mute any logging output
