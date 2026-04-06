@@ -7,7 +7,7 @@ toolchain go1.26.1
 require (
 	dario.cat/mergo v1.0.2
 	github.com/Masterminds/sprig/v3 v3.3.0
-	github.com/compose-spec/compose-go/v2 v2.10.1
+	github.com/compose-spec/compose-go/v2 v2.10.2
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/score-spec/score-go v1.12.1
 	github.com/spf13/cobra v1.10.2
