@@ -41,7 +41,6 @@ jobs:
         run: addlicense -l apache -check -v -ignore '**/*.yaml' -c 'The Score Authors' ./cmd ./internal/
   test-multi-arch-build:
     uses: docker/github-builder/.github/workflows/build.yml@2497a7d1e7d8683af4949c9d6d62012bc16ed59c # v1.5.0
-    if: ${{ !github.event.pull_request.head.repo.fork }}
     with:
       output: image
       push: false
@@ -63,7 +62,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
-    if: ${{ !github.event.pull_request.head.repo.fork }}
     steps:
       - name: checkout code in current PR branch
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
