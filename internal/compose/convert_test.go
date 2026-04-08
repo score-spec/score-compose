@@ -468,6 +468,211 @@ func TestScoreConvert(t *testing.T) {
 			},
 			Error: errors.New("containers.test.volumes[/mnt/data]: resource 'thing.default#test.data' has no 'type' output"),
 		},
+
+		// Before -> depends_on tests
+		//
+		{
+			Name: "Should convert before with ready complete to depends_on",
+			Source: &score.Workload{
+				Metadata: score.WorkloadMetadata{
+					"name": "test",
+				},
+				Containers: score.WorkloadContainers{
+					"init": score.Container{
+						Image: "busybox",
+						Before: []score.ContainerBeforeElem{
+							{
+								Containers: []string{"main"},
+								Ready:      util.Ref(score.ContainerBeforeElemReadyComplete),
+							},
+						},
+					},
+					"main": score.Container{
+						Image: "nginx",
+					},
+				},
+			},
+			Project: &compose.Project{
+				Services: compose.Services{
+					"test-init": {
+						Name: "test-init",
+						Annotations: map[string]string{
+							"compose.score.dev/workload-name": "test",
+						},
+						Hostname:    "test",
+						Image:       "busybox",
+						Environment: compose.MappingWithEquals{},
+					},
+					"test-main": {
+						Name: "test-main",
+						Annotations: map[string]string{
+							"compose.score.dev/workload-name": "test",
+						},
+						Image:       "nginx",
+						NetworkMode: "service:test-init",
+						Environment: compose.MappingWithEquals{},
+						DependsOn: compose.DependsOnConfig{
+							"test-init": {Condition: "service_completed_successfully", Required: true},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "Should convert chained before entries",
+			Source: &score.Workload{
+				Metadata: score.WorkloadMetadata{
+					"name": "test",
+				},
+				Containers: score.WorkloadContainers{
+					"init-one": score.Container{
+						Image: "busybox",
+						Before: []score.ContainerBeforeElem{
+							{
+								Containers: []string{"init-two"},
+							},
+						},
+					},
+					"init-two": score.Container{
+						Image: "busybox",
+						Before: []score.ContainerBeforeElem{
+							{
+								Containers: []string{"main"},
+							},
+						},
+					},
+					"main": score.Container{
+						Image: "nginx",
+					},
+				},
+			},
+			Project: &compose.Project{
+				Services: compose.Services{
+					"test-init-one": {
+						Name: "test-init-one",
+						Annotations: map[string]string{
+							"compose.score.dev/workload-name": "test",
+						},
+						Hostname:    "test",
+						Image:       "busybox",
+						Environment: compose.MappingWithEquals{},
+					},
+					"test-init-two": {
+						Name: "test-init-two",
+						Annotations: map[string]string{
+							"compose.score.dev/workload-name": "test",
+						},
+						Image:       "busybox",
+						NetworkMode: "service:test-init-one",
+						Environment: compose.MappingWithEquals{},
+						DependsOn: compose.DependsOnConfig{
+							"test-init-one": {Condition: "service_started", Required: true},
+						},
+					},
+					"test-main": {
+						Name: "test-main",
+						Annotations: map[string]string{
+							"compose.score.dev/workload-name": "test",
+						},
+						Image:       "nginx",
+						NetworkMode: "service:test-init-one",
+						Environment: compose.MappingWithEquals{},
+						DependsOn: compose.DependsOnConfig{
+							"test-init-two": {Condition: "service_started", Required: true},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "Should convert before with ready started and complete mixed",
+			Source: &score.Workload{
+				Metadata: score.WorkloadMetadata{
+					"name": "test",
+				},
+				Containers: score.WorkloadContainers{
+					"init": score.Container{
+						Image: "busybox",
+						Before: []score.ContainerBeforeElem{
+							{
+								Ready:      util.Ref(score.ContainerBeforeElemReadyComplete),
+								Containers: []string{"main"},
+							},
+						},
+					},
+					"main": score.Container{
+						Image: "nginx",
+					},
+					"sidecar": score.Container{
+						Image: "envoy",
+						Before: []score.ContainerBeforeElem{
+							{
+								Containers: []string{"main"},
+								Ready:      util.Ref(score.ContainerBeforeElemReadyStarted),
+							},
+						},
+					},
+				},
+			},
+			Project: &compose.Project{
+				Services: compose.Services{
+					"test-init": {
+						Name: "test-init",
+						Annotations: map[string]string{
+							"compose.score.dev/workload-name": "test",
+						},
+						Hostname:    "test",
+						Image:       "busybox",
+						Environment: compose.MappingWithEquals{},
+					},
+					"test-main": {
+						Name: "test-main",
+						Annotations: map[string]string{
+							"compose.score.dev/workload-name": "test",
+						},
+						Image:       "nginx",
+						NetworkMode: "service:test-init",
+						Environment: compose.MappingWithEquals{},
+						DependsOn: compose.DependsOnConfig{
+							"test-init":    {Condition: "service_completed_successfully", Required: true},
+							"test-sidecar": {Condition: "service_started", Required: true},
+						},
+					},
+					"test-sidecar": {
+						Name: "test-sidecar",
+						Annotations: map[string]string{
+							"compose.score.dev/workload-name": "test",
+						},
+						Image:       "envoy",
+						NetworkMode: "service:test-init",
+						Environment: compose.MappingWithEquals{},
+					},
+				},
+			},
+		},
+		{
+			Name: "Should fail when ready healthy is used without a healthcheck probe",
+			Source: &score.Workload{
+				Metadata: score.WorkloadMetadata{
+					"name": "test",
+				},
+				Containers: score.WorkloadContainers{
+					"init": score.Container{
+						Image: "busybox",
+						Before: []score.ContainerBeforeElem{
+							{
+								Containers: []string{"main"},
+								Ready:      util.Ref(score.ContainerBeforeElemReadyHealthy),
+							},
+						},
+					},
+					"main": score.Container{
+						Image: "nginx",
+					},
+				},
+			},
+			Error: errors.New("containers.init.before: ready 'healthy' requires a readiness or liveness probe to be defined"),
+		},
 	}
 
 	for _, tt := range tests {

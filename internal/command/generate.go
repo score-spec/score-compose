@@ -166,6 +166,11 @@ arguments.
 				return fmt.Errorf("failed to convert '%s' to structure: %w", workloadName, err)
 			}
 
+			// Validate container before relationships (cycles, unknown refs, self-refs)
+			if err := validateContainerBefore(&out); err != nil {
+				return fmt.Errorf("validation errors in workload '%s': %w", workloadName, err)
+			}
+
 			// Gather container build contexts, these will be stored and added to the generated compose output later
 			containerBuildContexts := make(map[string]types.BuildConfig)
 			if v, _ := cmd.Flags().GetStringArray(generateCmdBuildFlag); len(v) > 0 {
@@ -536,4 +541,70 @@ func injectWaitService(p *types.Project) (string, bool) {
 	}
 	p.Services[newService.Name] = newService
 	return newService.Name, true
+}
+
+// validateContainerBefore validates before relationships in a workload:
+// - All container names referenced in before entries must exist
+// - A container may not reference itself in a before entry
+// - The before relationships must not contain cycles
+func validateContainerBefore(workload *score.Workload) error {
+	containerNames := make(map[string]struct{}, len(workload.Containers))
+	for name := range workload.Containers {
+		containerNames[name] = struct{}{}
+	}
+
+	errMsgs := []string{}
+
+	// waitingFor maps a container name to the containers it references in its before field.
+	waitingFor := make(map[string][]string)
+	for containerName, container := range workload.Containers {
+		for _, beforeElem := range container.Before {
+			for _, dep := range beforeElem.Containers {
+				if dep == containerName {
+					errMsgs = append(errMsgs, fmt.Sprintf("container %q has a self-referencing before entry", containerName))
+					continue
+				}
+				if _, exists := containerNames[dep]; !exists {
+					errMsgs = append(errMsgs, fmt.Sprintf("container %q before refers to unknown container %q", containerName, dep))
+					continue
+				}
+				waitingFor[containerName] = append(waitingFor[containerName], dep)
+			}
+		}
+	}
+
+	// DFS cycle detection using white/gray/black coloring.
+	const (
+		white = 0
+		gray  = 1
+		black = 2
+	)
+	color := make(map[string]int)
+	var dfs func(node string) bool
+	dfs = func(node string) bool {
+		color[node] = gray
+		for _, dep := range waitingFor[node] {
+			if color[dep] == gray {
+				return true
+			}
+			if color[dep] == white {
+				if dfs(dep) {
+					return true
+				}
+			}
+		}
+		color[node] = black
+		return false
+	}
+	for name := range workload.Containers {
+		if color[name] == white && dfs(name) {
+			errMsgs = append(errMsgs, "containers before relationships contain a cycle")
+			break
+		}
+	}
+
+	if len(errMsgs) > 0 {
+		return fmt.Errorf("%s", strings.Join(errMsgs, "; "))
+	}
+	return nil
 }

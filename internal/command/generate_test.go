@@ -453,6 +453,77 @@ resources:
 	})
 }
 
+func TestInitAndGenerate_with_before_ordering(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	assert.NoError(t, os.WriteFile("score.yaml", []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  init:
+    image: busybox
+    before:
+    - ready: complete
+      containers:
+      - main
+  main:
+    image: nginx
+`), 0644))
+	// generate
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	raw, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+	assert.NoError(t, err)
+	assert.Contains(t, string(raw), "depends_on")
+	assert.Contains(t, string(raw), "service_completed_successfully")
+
+	t.Run("validate compose spec", func(t *testing.T) {
+		if os.Getenv("NO_DOCKER") != "" {
+			t.Skip("NO_DOCKER is set")
+			return
+		}
+		dockerCmd, err := exec.LookPath("docker")
+		require.NoError(t, err)
+		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "config", "--quiet", "--dry-run")
+		cmd.Dir = td
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		assert.NoError(t, cmd.Run())
+	})
+}
+
+func TestInitAndGenerate_with_before_cycle(t *testing.T) {
+	_ = changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	assert.NoError(t, os.WriteFile("score.yaml", []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  app:
+    image: busybox
+    before:
+    - containers:
+      - backend
+  backend:
+    image: busybox
+    before:
+    - containers:
+      - app
+`), 0644))
+	_, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cycle")
+}
+
 func TestGeneratePostgresResource(t *testing.T) {
 	td := changeToTempDir(t)
 	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})

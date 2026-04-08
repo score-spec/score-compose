@@ -184,6 +184,47 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 		}
 		composeProject.Services[svc.Name] = svc
 	}
+
+	// Invert before -> depends_on: if container A declares before [B], then service B depends_on A.
+	for _, containerName := range containerNames {
+		cSpec := spec.Containers[containerName]
+		for _, beforeElem := range cSpec.Before {
+			// Determine the compose condition from the ready field
+			condition := "service_started" // default when ready is not specified
+			if beforeElem.Ready != nil {
+				switch *beforeElem.Ready {
+				case score.ContainerBeforeElemReadyComplete:
+					condition = "service_completed_successfully"
+				case score.ContainerBeforeElemReadyHealthy:
+					condition = "service_healthy"
+				case score.ContainerBeforeElemReadyStarted:
+					condition = "service_started"
+				}
+			}
+
+			sourceServiceName := workloadName + "-" + containerName
+
+			for _, targetContainerName := range beforeElem.Containers {
+				targetServiceName := workloadName + "-" + targetContainerName
+
+				if condition == "service_healthy" && cSpec.ReadinessProbe == nil && cSpec.LivenessProbe == nil {
+					return nil, fmt.Errorf("containers.%s.before: ready 'healthy' requires a readiness or liveness probe to be defined", containerName)
+				}
+
+				// Add depends_on to the target service
+				svc := composeProject.Services[targetServiceName]
+				if svc.DependsOn == nil {
+					svc.DependsOn = make(compose.DependsOnConfig)
+				}
+				svc.DependsOn[sourceServiceName] = compose.ServiceDependency{
+					Condition: condition,
+					Required:  true,
+				}
+				composeProject.Services[targetServiceName] = svc
+			}
+		}
+	}
+
 	return &composeProject, nil
 }
 
