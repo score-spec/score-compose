@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	compose "github.com/compose-spec/compose-go/v2/types"
 	"github.com/score-spec/score-go/framework"
@@ -101,6 +102,41 @@ func TestScoreConvert(t *testing.T) {
 						},
 						Environment: compose.MappingWithEquals{
 							"CONNECTION_STRING": stringPtr("test connection string"),
+						},
+					},
+				},
+			},
+		},
+
+		{
+			Name: "Should use livenessProbe when readinessProbe is not set",
+			Source: &score.Workload{
+				Metadata: score.WorkloadMetadata{
+					"name": "test",
+				},
+				Containers: score.WorkloadContainers{
+					"backend": score.Container{
+						Image: "busybox",
+						LivenessProbe: &score.ContainerProbe{
+							Exec: &score.ExecProbe{Command: []string{"true"}},
+						},
+					},
+				},
+			},
+			Project: &compose.Project{
+				Services: compose.Services{
+					"test-backend": {
+						Name: "test-backend",
+						Annotations: map[string]string{
+							"compose.score.dev/workload-name": "test",
+						},
+						Hostname: "test",
+						Image:    "busybox",
+						Environment: compose.MappingWithEquals{},
+						HealthCheck: &compose.HealthCheckConfig{
+							Test:     compose.HealthCheckTest{"CMD", "true"},
+							Interval: util.Ref(compose.Duration(5 * time.Second)),
+							Timeout:  util.Ref(compose.Duration(5 * time.Second)),
 						},
 					},
 				},
