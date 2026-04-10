@@ -158,7 +158,7 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 				svc.HealthCheck = hc
 			}
 		} else if cSpec.LivenessProbe != nil {
-			if hc, err := convertProbeToExec(cSpec.ReadinessProbe); err != nil {
+			if hc, err := convertProbeToExec(cSpec.LivenessProbe); err != nil {
 				return nil, fmt.Errorf("containers.%s.livenessProbe: %w", containerName, err)
 			} else if hc != nil {
 				svc.HealthCheck = hc
