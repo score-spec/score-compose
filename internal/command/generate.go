@@ -121,9 +121,9 @@ arguments.
 		// Now read, parse, and apply any override properties to the score files
 		if v, _ := cmd.Flags().GetStringArray(generateCmdOverridePropertyFlag); len(v) > 0 {
 			if len(workloadNames) == 0 {
-				return fmt.Errorf("--%s cannot be used without providing a score file", generateCmdOverridesFileFlag)
+				return fmt.Errorf("--%s cannot be used without providing a score file", generateCmdOverridePropertyFlag)
 			} else if len(workloadNames) > 1 {
-				return fmt.Errorf("--%s cannot be used when multiple score files are provided", generateCmdOverridesFileFlag)
+				return fmt.Errorf("--%s cannot be used when multiple score files are provided", generateCmdOverridePropertyFlag)
 			}
 			for _, overridePropertyEntry := range v {
 				if workloadSpecs[workloadNames[0]], err = parseAndApplyOverrideProperty(overridePropertyEntry, generateCmdOverridePropertyFlag, workloadSpecs[workloadNames[0]]); err != nil {
