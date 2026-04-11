@@ -42,17 +42,17 @@ func TestExample(t *testing.T) {
 			adds:   []string{"score.yaml"},
 			expected: `name: 01-hello
 services:
-    hello-world-hello:
-        annotations:
-            compose.score.dev/workload-name: hello-world
-            your.custom/annotation: value
-        command:
-            - -c
-            - while true; do echo Hello World!; sleep 5; done
-        entrypoint:
-            - /bin/sh
-        hostname: hello-world
-        image: busybox
+  hello-world-hello:
+    annotations:
+      compose.score.dev/workload-name: hello-world
+      your.custom/annotation: value
+    command:
+      - -c
+      - while true; do echo Hello World!; sleep 5; done
+    entrypoint:
+      - /bin/sh
+    hostname: hello-world
+    image: busybox
 `,
 		},
 		{
@@ -60,21 +60,21 @@ services:
 			adds:   []string{"score.yaml"},
 			expected: `name: 02-environment
 services:
-    hello-world-hello:
-        annotations:
-            compose.score.dev/workload-name: hello-world
-        command:
-            - -c
-            - while true; do echo $${GREETING} $${NAME}!; sleep 5; done
-        entrypoint:
-            - /bin/sh
-        environment:
-            ESCAPED: $$_$${fizzbuzz}
-            GREETING: Hello
-            NAME: ${NAME}
-            WORKLOAD_NAME: hello-world
-        hostname: hello-world
-        image: busybox
+  hello-world-hello:
+    annotations:
+      compose.score.dev/workload-name: hello-world
+    command:
+      - -c
+      - while true; do echo $${GREETING} $${NAME}!; sleep 5; done
+    entrypoint:
+      - /bin/sh
+    environment:
+      ESCAPED: $$_$${fizzbuzz}
+      GREETING: Hello
+      NAME: ${NAME}
+      WORKLOAD_NAME: hello-world
+    hostname: hello-world
+    image: busybox
 `,
 		},
 		{
@@ -82,26 +82,26 @@ services:
 			adds:   []string{"score.yaml"},
 			expected: `name: 03-files
 services:
-    hello-world-hello:
-        annotations:
-            compose.score.dev/workload-name: hello-world
-        command:
-            - -c
-            - while true; do cat /fileA.txt; cat /fileB.txt; cat /fileC.bin; sleep 5; done
-        entrypoint:
-            - /bin/sh
-        hostname: hello-world
-        image: busybox
-        volumes:
-            - type: bind
-              source: .score-compose/mounts/files/hello-world-files-fileA.txt
-              target: /fileA.txt
-            - type: bind
-              source: .score-compose/mounts/files/hello-world-files-fileB.txt
-              target: /fileB.txt
-            - type: bind
-              source: .score-compose/mounts/files/hello-world-files-fileC.bin
-              target: /fileC.bin
+  hello-world-hello:
+    annotations:
+      compose.score.dev/workload-name: hello-world
+    command:
+      - -c
+      - while true; do cat /fileA.txt; cat /fileB.txt; cat /fileC.bin; sleep 5; done
+    entrypoint:
+      - /bin/sh
+    hostname: hello-world
+    image: busybox
+    volumes:
+      - type: bind
+        source: .score-compose/mounts/files/hello-world-files-fileA.txt
+        target: /fileA.txt
+      - type: bind
+        source: .score-compose/mounts/files/hello-world-files-fileB.txt
+        target: /fileB.txt
+      - type: bind
+        source: .score-compose/mounts/files/hello-world-files-fileC.bin
+        target: /fileC.bin
 `,
 		},
 		{
@@ -112,27 +112,27 @@ services:
 			},
 			expected: `name: 04-multiple-workloads
 services:
-    hello-world-2-first:
-        annotations:
-            compose.score.dev/workload-name: hello-world-2
-        environment:
-            NGINX_PORT: "8080"
-        hostname: hello-world-2
-        image: nginx:latest
-    hello-world-first:
-        annotations:
-            compose.score.dev/workload-name: hello-world
-        environment:
-            NGINX_PORT: "8080"
-        hostname: hello-world
-        image: nginx:latest
-    hello-world-second:
-        annotations:
-            compose.score.dev/workload-name: hello-world
-        environment:
-            NGINX_PORT: "8081"
-        image: nginx:latest
-        network_mode: service:hello-world-first
+  hello-world-2-first:
+    annotations:
+      compose.score.dev/workload-name: hello-world-2
+    environment:
+      NGINX_PORT: "8080"
+    hostname: hello-world-2
+    image: nginx:latest
+  hello-world-first:
+    annotations:
+      compose.score.dev/workload-name: hello-world
+    environment:
+      NGINX_PORT: "8080"
+    hostname: hello-world
+    image: nginx:latest
+  hello-world-second:
+    annotations:
+      compose.score.dev/workload-name: hello-world
+    environment:
+      NGINX_PORT: "8081"
+    image: nginx:latest
+    network_mode: service:hello-world-first
 `,
 		},
 		{
@@ -140,30 +140,30 @@ services:
 			adds:   []string{"score.yaml"},
 			expected: `name: 05-volume-mounts
 services:
-    hello-world-first:
-        annotations:
-            compose.score.dev/workload-name: hello-world
-        hostname: hello-world
-        image: nginx:latest
-        volumes:
-            - type: volume
-              source: hello-world-data-8MjJEo
-              target: /data
+  hello-world-first:
+    annotations:
+      compose.score.dev/workload-name: hello-world
+    hostname: hello-world
+    image: nginx:latest
+    volumes:
+      - type: volume
+        source: hello-world-data-8MjJEo
+        target: /data
 volumes:
-    hello-world-data-8MjJEo:
-        name: hello-world-data-8MjJEo
-        driver: local
-        labels:
-            dev.score.compose.res.uid: volume.default#hello-world.data
+  hello-world-data-8MjJEo:
+    name: hello-world-data-8MjJEo
+    driver: local
+    labels:
+      dev.score.compose.res.uid: volume.default#hello-world.data
 `,
 		},
 		{
 			subDir: "06-resource-provisioning",
 			adds:   []string{"score.yaml", "score2.yaml", "--publish 6379:redis#main-cache.host:6379"},
 			expectedContains: `
-        ports:
-            - target: 6379
-              published: "6379"
+    ports:
+      - target: 6379
+        published: "6379"
 `,
 		},
 		{
@@ -171,13 +171,13 @@ volumes:
 			adds:   []string{"score.yaml --override-property containers.web.variables.DEBUG=\"true\""},
 			expected: `name: 07-overrides
 services:
-    hello-world-web:
-        annotations:
-            compose.score.dev/workload-name: hello-world
-        environment:
-            DEBUG: "true"
-        hostname: hello-world
-        image: nginx
+  hello-world-web:
+    annotations:
+      compose.score.dev/workload-name: hello-world
+    environment:
+      DEBUG: "true"
+    hostname: hello-world
+    image: nginx
 `,
 		},
 		{
@@ -185,36 +185,36 @@ services:
 			adds:   []string{"scoreA.yaml", "scoreB.yaml", "--publish 8080:workload-a:80"},
 			expected: `name: 08-service-port-resource
 services:
-    workload-a-example:
-        annotations:
-            compose.score.dev/workload-name: workload-a
-        hostname: workload-a
-        healthcheck:
-            test:
-                - CMD
-                - /usr/bin/curl
-                - -f
-                - -m
-                - "5"
-                - http://localhost
-            timeout: 5s
-            interval: 5s
-        image: nginx
-        ports:
-            - target: 80
-              published: "8080"
-    workload-b-example:
-        annotations:
-            compose.score.dev/workload-name: workload-b
-        command:
-            - -c
-            - while true; do wget $${DEPENDENCY_URL} || true; sleep 5; done
-        entrypoint:
-            - /bin/sh
-        environment:
-            DEPENDENCY_URL: http://workload-a:80
-        hostname: workload-b
-        image: busybox
+  workload-a-example:
+    annotations:
+      compose.score.dev/workload-name: workload-a
+    hostname: workload-a
+    healthcheck:
+      test:
+        - CMD
+        - /usr/bin/curl
+        - -f
+        - -m
+        - "5"
+        - http://localhost
+      timeout: 5s
+      interval: 5s
+    image: nginx
+    ports:
+      - target: 80
+        published: "8080"
+  workload-b-example:
+    annotations:
+      compose.score.dev/workload-name: workload-b
+    command:
+      - -c
+      - while true; do wget $${DEPENDENCY_URL} || true; sleep 5; done
+    entrypoint:
+      - /bin/sh
+    environment:
+      DEPENDENCY_URL: http://workload-a:80
+    hostname: workload-b
+    image: busybox
 `,
 		},
 		{

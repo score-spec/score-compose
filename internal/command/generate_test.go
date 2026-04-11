@@ -158,14 +158,14 @@ func TestInitAndGenerate_with_sample(t *testing.T) {
 	assert.NoError(t, err)
 	expectedOutput := `name: "001"
 services:
-    example-hello-world:
-        annotations:
-            compose.score.dev/workload-name: example
-        environment:
-            EXAMPLE_VARIABLE: example-value
-            THING: ${THING}
-        hostname: example
-        image: nginx:latest
+  example-hello-world:
+    annotations:
+      compose.score.dev/workload-name: example
+    environment:
+      EXAMPLE_VARIABLE: example-value
+      THING: ${THING}
+    hostname: example
+    image: nginx:latest
 `
 	assert.Equal(t, expectedOutput, string(raw))
 	// generate again just for luck
@@ -219,11 +219,11 @@ containers:
 		assert.NoError(t, err)
 		expectedOutput := `name: "001"
 services:
-    example-example:
-        annotations:
-            compose.score.dev/workload-name: example
-        hostname: example
-        image: busybox:latest
+  example-example:
+    annotations:
+      compose.score.dev/workload-name: example
+    hostname: example
+    image: busybox:latest
 `
 		assert.Equal(t, expectedOutput, string(raw))
 		// generate again just for luck
@@ -246,12 +246,12 @@ services:
 		assert.NoError(t, err)
 		expectedOutput := `name: "001"
 services:
-    example-example:
-        annotations:
-            compose.score.dev/workload-name: example
-        build:
-            context: ./dir
-        hostname: example
+  example-example:
+    annotations:
+      compose.score.dev/workload-name: example
+    build:
+      context: ./dir
+    hostname: example
 `
 		assert.Equal(t, expectedOutput, string(raw))
 		// generate again just for luck
@@ -273,14 +273,14 @@ services:
 		assert.NoError(t, err)
 		expectedOutput := `name: "001"
 services:
-    example-example:
-        annotations:
-            compose.score.dev/workload-name: example
-        build:
-            context: ./dir
-            args:
-                DEBUG: "true"
-        hostname: example
+  example-example:
+    annotations:
+      compose.score.dev/workload-name: example
+    build:
+      context: ./dir
+      args:
+        DEBUG: "true"
+    hostname: example
 `
 		assert.Equal(t, expectedOutput, string(raw))
 	})
@@ -295,14 +295,14 @@ services:
 		assert.NoError(t, err)
 		expectedOutput := `name: "001"
 services:
-    example-example:
-        annotations:
-            compose.score.dev/workload-name: example
-        build:
-            context: ./dir
-            args:
-                DEBUG: null
-        hostname: example
+  example-example:
+    annotations:
+      compose.score.dev/workload-name: example
+    build:
+      context: ./dir
+      args:
+        DEBUG: null
+    hostname: example
 `
 		assert.Equal(t, expectedOutput, string(raw))
 	})
@@ -317,12 +317,12 @@ services:
 		assert.NoError(t, err)
 		expectedOutput := `name: "001"
 services:
-    example-example:
-        annotations:
-            compose.score.dev/workload-name: example
-        build:
-            context: ./dir
-        hostname: example
+  example-example:
+    annotations:
+      compose.score.dev/workload-name: example
+    build:
+      context: ./dir
+    hostname: example
 `
 		assert.Equal(t, expectedOutput, string(raw))
 	})
@@ -353,15 +353,15 @@ containers:
 	assert.NoError(t, err)
 	assert.Equal(t, `name: "001"
 services:
-    example-example:
-        annotations:
-            compose.score.dev/workload-name: example
-        hostname: example
-        image: foo
-        volumes:
-            - type: bind
-              source: .score-compose/mounts/files/example-files-blah.txt
-              target: /blah.txt
+  example-example:
+    annotations:
+      compose.score.dev/workload-name: example
+    hostname: example
+    image: foo
+    volumes:
+      - type: bind
+        source: .score-compose/mounts/files/example-files-blah.txt
+        target: /blah.txt
 `, string(raw))
 }
 
@@ -389,15 +389,15 @@ containers:
 	assert.NoError(t, err)
 	assert.Equal(t, `name: "001"
 services:
-    example-example:
-        annotations:
-            compose.score.dev/workload-name: example
-        hostname: example
-        image: foo
-        volumes:
-            - type: bind
-              source: .score-compose/mounts/files/example-files-blah.txt
-              target: /blah.txt
+  example-example:
+    annotations:
+      compose.score.dev/workload-name: example
+    hostname: example
+    image: foo
+    volumes:
+      - type: bind
+        source: .score-compose/mounts/files/example-files-blah.txt
+        target: /blah.txt
 `, string(raw))
 }
 
@@ -600,41 +600,41 @@ resources:
 	assert.NoError(t, err)
 	assert.Equal(t, `name: "001"
 services:
-    example-example:
-        annotations:
-            compose.score.dev/workload-name: example
-        depends_on:
-            wait-for-resources:
-                condition: service_completed_successfully
-                required: true
-        hostname: example
-        image: foo
-    generic_service:
-        image: other
-    init_service:
-        image: thing
-        labels:
-            dev.score.compose.labels.is-init-container: "true"
-    service_with_healthcheck:
-        healthcheck:
-            test:
-                - CMD
-                - boo
-        image: something
-    wait-for-resources:
-        command:
-            - echo
-        depends_on:
-            generic_service:
-                condition: service_started
-                required: true
-            init_service:
-                condition: service_completed_successfully
-                required: true
-            service_with_healthcheck:
-                condition: service_healthy
-                required: true
-        image: alpine
+  example-example:
+    annotations:
+      compose.score.dev/workload-name: example
+    depends_on:
+      wait-for-resources:
+        condition: service_completed_successfully
+        required: true
+    hostname: example
+    image: foo
+  generic_service:
+    image: other
+  init_service:
+    image: thing
+    labels:
+      dev.score.compose.labels.is-init-container: "true"
+  service_with_healthcheck:
+    healthcheck:
+      test:
+        - CMD
+        - boo
+    image: something
+  wait-for-resources:
+    command:
+      - echo
+    depends_on:
+      generic_service:
+        condition: service_started
+        required: true
+      init_service:
+        condition: service_completed_successfully
+        required: true
+      service_with_healthcheck:
+        condition: service_healthy
+        required: true
+    image: alpine
 `, string(raw))
 
 	t.Run("validate compose spec", func(t *testing.T) {
@@ -699,30 +699,30 @@ resources:
 	assert.NoError(t, err)
 	assert.Equal(t, `name: "001"
 services:
-    bar-service:
-        image: value
-    example-example:
-        annotations:
-            compose.score.dev/workload-name: example
-        depends_on:
-            wait-for-resources:
-                condition: service_completed_successfully
-                required: true
-        hostname: example
-        image: busybox
-    foo-service:
-        image: foo-image
-    wait-for-resources:
-        command:
-            - echo
-        depends_on:
-            bar-service:
-                condition: service_started
-                required: true
-            foo-service:
-                condition: service_started
-                required: true
-        image: alpine
+  bar-service:
+    image: value
+  example-example:
+    annotations:
+      compose.score.dev/workload-name: example
+    depends_on:
+      wait-for-resources:
+        condition: service_completed_successfully
+        required: true
+    hostname: example
+    image: busybox
+  foo-service:
+    image: foo-image
+  wait-for-resources:
+    command:
+      - echo
+    depends_on:
+      bar-service:
+        condition: service_started
+        required: true
+      foo-service:
+        condition: service_started
+        required: true
+    image: alpine
 `, string(raw))
 }
 
@@ -859,14 +859,14 @@ containers:
 	assert.NoError(t, err)
 	assert.Equal(t, `name: "001"
 services:
-    example-example:
-        annotations:
-            compose.score.dev/workload-name: example
-            key.com/foo-bar: thing
-        environment:
-            REF: thing
-        hostname: example
-        image: foo
+  example-example:
+    annotations:
+      compose.score.dev/workload-name: example
+      key.com/foo-bar: thing
+    environment:
+      REF: thing
+    hostname: example
+    image: foo
 `, string(raw))
 
 	t.Run("validate compose spec", func(t *testing.T) {
@@ -1002,13 +1002,13 @@ resources:
 	assert.NoError(t, err)
 	assert.Equal(t, `name: "001"
 services:
-    example-example:
-        annotations:
-            compose.score.dev/workload-name: example
-        environment:
-            ONE: ${UNKNOWN_SCORE_VARIABLE}
-        hostname: example
-        image: foo
+  example-example:
+    annotations:
+      compose.score.dev/workload-name: example
+    environment:
+      ONE: ${UNKNOWN_SCORE_VARIABLE}
+    hostname: example
+    image: foo
 `, string(raw))
 }
 
@@ -1153,26 +1153,26 @@ resources:
 	assert.NoError(t, err)
 	assert.Equal(t, `name: "001"
 services:
-    example-example:
-        annotations:
-            compose.score.dev/workload-name: example
-        hostname: example
-        image: busybox
-        volumes:
-            - type: bind
-              source: /dev/something/thing
-              target: /mnt/v2
-              bind: {}
-            - type: volume
-              source: named-volume
-              target: /mnt/v3
-              volume:
-                subpath: other/thing
-            - type: tmpfs
-              source: tmp-volume.default#example.v1
-              target: /mnt/v1
-              tmpfs:
-                size: "10000000"
+  example-example:
+    annotations:
+      compose.score.dev/workload-name: example
+    hostname: example
+    image: busybox
+    volumes:
+      - type: bind
+        source: /dev/something/thing
+        target: /mnt/v2
+        bind: {}
+      - type: volume
+        source: named-volume
+        target: /mnt/v3
+        volume:
+          subpath: other/thing
+      - type: tmpfs
+        source: tmp-volume.default#example.v1
+        target: /mnt/v1
+        tmpfs:
+          size: "10000000"
 `, string(raw))
 }
 
@@ -1237,27 +1237,27 @@ resources:
 	assert.NoError(t, err)
 	assert.Equal(t, `name: "001"
 services:
-    example-example:
-        annotations:
-            compose.score.dev/workload-name: example
-        hostname: example
-        image: busybox
-        volumes:
-            - type: bind
-              source: /dev/something/thing
-              target: /mnt/v2
-              bind:
-                create_host_path: false
-            - type: volume
-              source: named-volume
-              target: /mnt/v3
-              volume:
-                subpath: other/thing
-            - type: tmpfs
-              source: tmp-volume.default#example.v1
-              target: /mnt/v1
-              tmpfs:
-                size: "10000000"
+  example-example:
+    annotations:
+      compose.score.dev/workload-name: example
+    hostname: example
+    image: busybox
+    volumes:
+      - type: bind
+        source: /dev/something/thing
+        target: /mnt/v2
+        bind:
+          create_host_path: false
+      - type: volume
+        source: named-volume
+        target: /mnt/v3
+        volume:
+          subpath: other/thing
+      - type: tmpfs
+        source: tmp-volume.default#example.v1
+        target: /mnt/v1
+        tmpfs:
+          size: "10000000"
 `, string(raw))
 }
 
@@ -1620,12 +1620,12 @@ containers:
 	assert.NoError(t, err)
 	assert.Equal(t, string(raw), `name: "001"
 services:
-    example-hello-future:
-        annotations:
-            compose.score.dev/workload-name: example
-        hostname: example
-        image: foo
-        privileged: true
-        read_only: true
+  example-hello-future:
+    annotations:
+      compose.score.dev/workload-name: example
+    hostname: example
+    image: foo
+    privileged: true
+    read_only: true
 `)
 }

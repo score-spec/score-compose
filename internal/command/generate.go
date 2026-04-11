@@ -15,6 +15,7 @@
 package command
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
@@ -376,14 +377,17 @@ arguments.
 			return fmt.Errorf("failed to persist updated state directory: %w", err)
 		}
 
-		raw, _ := yaml.Marshal(superProject)
+		var rawBuf bytes.Buffer
+		if err := compose.WriteYAML(&rawBuf, superProject); err != nil {
+			return fmt.Errorf("failed to marshal output: %w", err)
+		}
 
 		v, _ := cmd.Flags().GetString(generateCmdOutputFlag)
 		if v == "" {
 			return fmt.Errorf("no output file specified")
 		} else if v == "-" {
-			_, _ = fmt.Fprint(cmd.OutOrStdout(), string(raw))
-		} else if err := os.WriteFile(v+".temp", raw, 0644); err != nil {
+			_, _ = fmt.Fprint(cmd.OutOrStdout(), rawBuf.String())
+		} else if err := os.WriteFile(v+".temp", rawBuf.Bytes(), 0644); err != nil {
 			return fmt.Errorf("failed to write output file: %w", err)
 		} else if err := os.Rename(v+".temp", v); err != nil {
 			return fmt.Errorf("failed to complete writing output file: %w", err)
