@@ -75,6 +75,7 @@ resources: {}
 	initCmdProvisionerFlag           = "provisioners"
 	initCmdPatchTemplateFlag         = "patch-templates"
 	initCmdNoDefaultProvisionersFlag = "no-default-provisioners"
+	initCmdComposeVersionFlag        = "compose-version"
 )
 
 //go:embed default.provisioners.yaml
@@ -140,6 +141,7 @@ URI Retrieval:
 		initCmdScoreFile, _ := cmd.Flags().GetString(initCmdFileFlag)
 		initCmdComposeProject, _ := cmd.Flags().GetString(initCmdFileProjectFlag)
 		initCmdPatchingFiles, _ := cmd.Flags().GetStringArray(initCmdPatchTemplateFlag)
+		initCmdComposeVersion, _ := cmd.Flags().GetString(initCmdComposeVersionFlag)
 
 		// validate project
 		if initCmdComposeProject != "" {
@@ -171,6 +173,10 @@ URI Retrieval:
 				sd.State.Extras.ComposeProjectName = initCmdComposeProject
 				hasChanges = true
 			}
+			if initCmdComposeVersion != "" && sd.State.Extras.ComposeVersion != initCmdComposeVersion {
+				sd.State.Extras.ComposeVersion = initCmdComposeVersion
+				hasChanges = true
+			}
 			if len(templates) > 0 {
 				sd.State.Extras.PatchingTemplates = templates
 				hasChanges = true
@@ -199,6 +205,9 @@ URI Retrieval:
 			}
 			if initCmdComposeProject != "" {
 				sd.State.Extras.ComposeProjectName = initCmdComposeProject
+			}
+			if initCmdComposeVersion != "" {
+				sd.State.Extras.ComposeVersion = initCmdComposeVersion
 			}
 			if len(templates) > 0 {
 				sd.State.Extras.PatchingTemplates = templates
@@ -297,6 +306,7 @@ func init() {
 	initCmd.Flags().StringArray(initCmdProvisionerFlag, nil, "Provisioner files to install. May be specified multiple times. Supports URI retrieval.")
 	initCmd.Flags().StringArray(initCmdPatchTemplateFlag, nil, "Patching template files to include. May be specified multiple times. Supports URI retrieval.")
 	initCmd.Flags().Bool(initCmdNoDefaultProvisionersFlag, false, "Disable generation of the default provisioners file")
+	initCmd.Flags().String(initCmdComposeVersionFlag, "", "Set a compose file version string (e.g. \"3\") for compatibility with older tools such as Podman. When set, the top-level 'name' field is omitted and service annotations are converted to labels.")
 
 	rootCmd.AddCommand(initCmd)
 }

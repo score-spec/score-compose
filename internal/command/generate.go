@@ -376,7 +376,36 @@ arguments.
 			return fmt.Errorf("failed to persist updated state directory: %w", err)
 		}
 
+		// Apply legacy compose version transformations when a version string has been configured.
+		// Older tooling (e.g. Podman's docker-compose compatibility layer) rejects the versionless
+		// spec's top-level 'name' field and service-level 'annotations' field. Setting a version
+		// string (e.g. "3") enables a compatibility output: version: is added, name: is removed,
+		// and service annotations are merged into labels before being cleared.
+		if sd.State.Extras.ComposeVersion != "" {
+			for svcName, svc := range superProject.Services {
+				if len(svc.Annotations) > 0 {
+					if svc.Labels == nil {
+						svc.Labels = make(types.Labels)
+					}
+					for k, val := range svc.Annotations {
+						if _, exists := svc.Labels[k]; !exists {
+							svc.Labels[k] = val
+						}
+					}
+					svc.Annotations = nil
+					superProject.Services[svcName] = svc
+				}
+			}
+		}
+
 		raw, _ := yaml.Marshal(superProject)
+
+		// compose-go/v2 removed the Version field from types.Project since the modern
+		// Compose Specification is versionless. For legacy mode we post-process the
+		// marshalled YAML to inject version: and strip the name: field.
+		if v := sd.State.Extras.ComposeVersion; v != "" {
+			raw = injectLegacyComposeVersion(raw, v)
+		}
 
 		v, _ := cmd.Flags().GetString(generateCmdOutputFlag)
 		if v == "" {
@@ -498,6 +527,37 @@ func parseAndApplyOverrideProperty(entry string, flagName string, spec map[strin
 		}
 		return after, nil
 	}
+}
+
+// injectLegacyComposeVersion post-processes marshalled compose YAML to add a top-level
+// version: field and remove the name: field, for compatibility with older tooling such as
+// Podman's docker-compose layer. compose-go/v2 removed the Version field from types.Project
+// since the modern Compose Specification is versionless, so we manipulate the YAML AST directly.
+func injectLegacyComposeVersion(raw []byte, version string) []byte {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(raw, &doc); err != nil || len(doc.Content) == 0 {
+		return raw
+	}
+	root := doc.Content[0]
+	if root.Kind != yaml.MappingNode {
+		return raw
+	}
+	// Rebuild the mapping content without the 'name' key.
+	filtered := make([]*yaml.Node, 0, len(root.Content))
+	for i := 0; i+1 < len(root.Content); i += 2 {
+		if root.Content[i].Value != "name" {
+			filtered = append(filtered, root.Content[i], root.Content[i+1])
+		}
+	}
+	// Prepend version: "<version>" as the first key.
+	vKey := &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "version"}
+	vVal := &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: version, Style: yaml.DoubleQuotedStyle}
+	root.Content = append([]*yaml.Node{vKey, vVal}, filtered...)
+	out, err := yaml.Marshal(&doc)
+	if err != nil {
+		return raw
+	}
+	return out
 }
 
 // injectWaitService injects a service into the compose project which waits for all other services to be started,
