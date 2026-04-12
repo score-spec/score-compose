@@ -66,12 +66,36 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 
 	// When multiple containers are specified we need to identify one container as the "main" container which will own
 	// the network and use the native workload name. All other containers in this workload will have the container
-	// name appended as a suffix. We use the natural sort order of the container names and pick the first one
+	// name appended as a suffix. We use the natural sort order of the container names and pick the first one that
+	// is not expected to exit (i.e. does not have all before entries with ready: complete).
 	containerNames := make([]string, 0, len(spec.Containers))
 	for name := range spec.Containers {
 		containerNames = append(containerNames, name)
 	}
 	sort.Strings(containerNames)
+
+	// Determine which container should own the network. Skip containers that are expected to exit
+	// (all their before entries specify ready: complete) since their network namespace goes away.
+	primaryContainer := containerNames[0] // default to first alphabetically
+	for _, name := range containerNames {
+		cSpec := spec.Containers[name]
+		if len(cSpec.Before) == 0 {
+			// Container has no before entries, it stays running — good candidate
+			primaryContainer = name
+			break
+		}
+		allComplete := true
+		for _, entry := range cSpec.Before {
+			if entry.Ready == nil || *entry.Ready != score.ContainerBeforeElemReadyComplete {
+				allComplete = false
+				break
+			}
+		}
+		if !allComplete {
+			primaryContainer = name
+			break
+		}
+	}
 
 	variablesSubstitutor := framework.Substituter{
 		Replacer: deferredSubstitutionFunction,
@@ -80,7 +104,6 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 		},
 	}
 
-	var firstService string
 	for _, containerName := range containerNames {
 		cSpec := spec.Containers[containerName]
 
@@ -171,16 +194,17 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 			svc.Image = ""
 		}
 
-		// if we are not the "first" service, then inherit the network from the first service
-		if firstService == "" {
-			firstService = svc.Name
+		// if we are not the primary container, then inherit the network from the primary service.
+		// However, skip network_mode for containers that are expected to exit (all their before
+		// entries have ready: complete) to avoid circular dependencies.
+		if containerName == primaryContainer {
 			// We name the containers as (workload name)-(container name) but we want the name for the main network
 			// interface for be (workload name). So we set the hostname itself. This means that workloads cannot have
 			// the same name within the project. But that's already enforced elsewhere.
 			svc.Hostname = workloadName
-		} else {
+		} else if !isInitContainer(spec.Containers[containerName]) {
 			svc.Ports = nil
-			svc.NetworkMode = "service:" + firstService
+			svc.NetworkMode = "service:" + workloadName + "-" + primaryContainer
 		}
 		composeProject.Services[svc.Name] = svc
 	}
@@ -226,6 +250,20 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 	}
 
 	return &composeProject, nil
+}
+
+// isInitContainer returns true if the container is expected to exit. This is determined
+// by checking if all its before entries specify ready: complete.
+func isInitContainer(c score.Container) bool {
+	if len(c.Before) == 0 {
+		return false
+	}
+	for _, entry := range c.Before {
+		if entry.Ready == nil || *entry.Ready != score.ContainerBeforeElemReadyComplete {
+			return false
+		}
+	}
+	return true
 }
 
 // buildWorkloadAnnotations returns an annotation set for the workload service.
