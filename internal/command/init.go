@@ -69,6 +69,7 @@ service:
 
 resources: {}
 `
+	scoreFileDefault                 = "./score.yaml"
 	initCmdFileFlag                  = "file"
 	initCmdFileProjectFlag           = "project"
 	initCmdFileNoSampleFlag          = "no-sample"

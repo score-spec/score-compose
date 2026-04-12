@@ -184,8 +184,6 @@ Global Flags:
   -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
 ```
 
-**NOTE**: The `score-compose run` command still exists but is hidden and should be considered deprecated as it does not support resource provisioning.
-
 ### Using the `--publish` (`-p`) flag
 
 `score-compose` installs all workloads and resource services into the compose docker network but does not publish ports on the host by default. To access ports inside the network, the user must either exec into a target container, run a new `socat` container with published ports, use a `route` resource that publishes "public" ports, or modify the compose.yaml directly.

@@ -120,19 +120,17 @@ func TestInitNominal(t *testing.T) {
 	assert.Equal(t, "", stdout)
 	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 
-	stdout, stderr, err = executeAndResetCommand(context.Background(), rootCmd, []string{"run"})
+	stdout, stderr, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml", "--output", "-"})
 	assert.NoError(t, err)
-	assert.Equal(t, `services:
-  example-hello-world:
-    annotations:
-      compose.score.dev/workload-name: example
-    environment:
-      EXAMPLE_VARIABLE: example-value
-    hostname: example
-    image: nginx:latest
-    ports:
-      - target: 80
-        published: "8080"
+	assert.Equal(t, `name: "001"
+services:
+    example-hello-world:
+        annotations:
+            compose.score.dev/workload-name: example
+        environment:
+            EXAMPLE_VARIABLE: example-value
+        hostname: example
+        image: nginx:latest
 `, stdout)
 	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 
@@ -142,7 +140,7 @@ func TestInitNominal(t *testing.T) {
 		assert.Equal(t, project.DefaultRelativeStateDirectory, sd.Path)
 		assert.Equal(t, filepath.Base(td), sd.State.Extras.ComposeProjectName)
 		assert.Equal(t, filepath.Join(project.DefaultRelativeStateDirectory, "mounts"), sd.State.Extras.MountsDirectory)
-		assert.Equal(t, map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{}, sd.State.Workloads)
+		assert.Equal(t, 1, len(sd.State.Workloads))
 		assert.Equal(t, map[framework.ResourceUid]framework.ScoreResourceState[framework.NoExtras]{}, sd.State.Resources)
 		assert.Equal(t, map[string]interface{}{}, sd.State.SharedState)
 	}
