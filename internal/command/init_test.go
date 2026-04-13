@@ -124,13 +124,13 @@ func TestInitNominal(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, `name: "001"
 services:
-    example-hello-world:
-        annotations:
-            compose.score.dev/workload-name: example
-        environment:
-            EXAMPLE_VARIABLE: example-value
-        hostname: example
-        image: nginx:latest
+  example-hello-world:
+    annotations:
+      compose.score.dev/workload-name: example
+    environment:
+      EXAMPLE_VARIABLE: example-value
+    hostname: example
+    image: nginx:latest
 `, stdout)
 	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 
