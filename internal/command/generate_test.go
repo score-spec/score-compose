@@ -467,9 +467,8 @@ containers:
   init:
     image: busybox
     before:
-    - ready: complete
-      containers:
-      - main
+      main:
+        ready: complete
   main:
     image: nginx
 `), 0644))
@@ -511,13 +510,13 @@ containers:
   app:
     image: busybox
     before:
-    - containers:
-      - backend
+      backend:
+        ready: started
   backend:
     image: busybox
     before:
-    - containers:
-      - app
+      app:
+        ready: started
 `), 0644))
 	_, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
 	assert.Error(t, err)

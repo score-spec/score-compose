@@ -86,7 +86,7 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 		}
 		allComplete := true
 		for _, entry := range cSpec.Before {
-			if entry.Ready == nil || *entry.Ready != score.ContainerBeforeElemReadyComplete {
+			if entry.Ready != score.ContainerBeforeReadyComplete {
 				allComplete = false
 				break
 			}
@@ -209,43 +209,41 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 		composeProject.Services[svc.Name] = svc
 	}
 
-	// Invert before -> depends_on: if container A declares before [B], then service B depends_on A.
+	// Invert before -> depends_on: if container A declares before: {B: {ready: complete}},
+	// then service B depends_on A with the appropriate condition.
 	for _, containerName := range containerNames {
 		cSpec := spec.Containers[containerName]
-		for _, beforeElem := range cSpec.Before {
+		for targetContainerName, entry := range cSpec.Before {
 			// Determine the compose condition from the ready field
-			condition := "service_started" // default when ready is not specified
-			if beforeElem.Ready != nil {
-				switch *beforeElem.Ready {
-				case score.ContainerBeforeElemReadyComplete:
-					condition = "service_completed_successfully"
-				case score.ContainerBeforeElemReadyHealthy:
-					condition = "service_healthy"
-				case score.ContainerBeforeElemReadyStarted:
-					condition = "service_started"
-				}
+			var condition string
+			switch entry.Ready {
+			case score.ContainerBeforeReadyComplete:
+				condition = "service_completed_successfully"
+			case score.ContainerBeforeReadyHealthy:
+				condition = "service_healthy"
+			case score.ContainerBeforeReadyStarted:
+				condition = "service_started"
+			default:
+				condition = "service_started"
+			}
+
+			if condition == "service_healthy" && cSpec.ReadinessProbe == nil && cSpec.LivenessProbe == nil {
+				return nil, fmt.Errorf("containers.%s.before: ready 'healthy' requires a readiness or liveness probe to be defined", containerName)
 			}
 
 			sourceServiceName := workloadName + "-" + containerName
+			targetServiceName := workloadName + "-" + targetContainerName
 
-			for _, targetContainerName := range beforeElem.Containers {
-				targetServiceName := workloadName + "-" + targetContainerName
-
-				if condition == "service_healthy" && cSpec.ReadinessProbe == nil && cSpec.LivenessProbe == nil {
-					return nil, fmt.Errorf("containers.%s.before: ready 'healthy' requires a readiness or liveness probe to be defined", containerName)
-				}
-
-				// Add depends_on to the target service
-				svc := composeProject.Services[targetServiceName]
-				if svc.DependsOn == nil {
-					svc.DependsOn = make(compose.DependsOnConfig)
-				}
-				svc.DependsOn[sourceServiceName] = compose.ServiceDependency{
-					Condition: condition,
-					Required:  true,
-				}
-				composeProject.Services[targetServiceName] = svc
+			// Add depends_on to the target service
+			svc := composeProject.Services[targetServiceName]
+			if svc.DependsOn == nil {
+				svc.DependsOn = make(compose.DependsOnConfig)
 			}
+			svc.DependsOn[sourceServiceName] = compose.ServiceDependency{
+				Condition: condition,
+				Required:  true,
+			}
+			composeProject.Services[targetServiceName] = svc
 		}
 	}
 
@@ -259,7 +257,7 @@ func isInitContainer(c score.Container) bool {
 		return false
 	}
 	for _, entry := range c.Before {
-		if entry.Ready == nil || *entry.Ready != score.ContainerBeforeElemReadyComplete {
+		if entry.Ready != score.ContainerBeforeReadyComplete {
 			return false
 		}
 	}

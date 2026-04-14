@@ -480,10 +480,9 @@ func TestScoreConvert(t *testing.T) {
 				Containers: score.WorkloadContainers{
 					"init": score.Container{
 						Image: "busybox",
-						Before: []score.ContainerBeforeElem{
-							{
-								Containers: []string{"main"},
-								Ready:      util.Ref(score.ContainerBeforeElemReadyComplete),
+						Before: score.ContainerBefore{
+							"main": score.ContainerBeforeEntry{
+								Ready: score.ContainerBeforeReadyComplete,
 							},
 						},
 					},
@@ -526,17 +525,17 @@ func TestScoreConvert(t *testing.T) {
 				Containers: score.WorkloadContainers{
 					"init-one": score.Container{
 						Image: "busybox",
-						Before: []score.ContainerBeforeElem{
-							{
-								Containers: []string{"init-two"},
+						Before: score.ContainerBefore{
+							"init-two": score.ContainerBeforeEntry{
+								Ready: score.ContainerBeforeReadyStarted,
 							},
 						},
 					},
 					"init-two": score.Container{
 						Image: "busybox",
-						Before: []score.ContainerBeforeElem{
-							{
-								Containers: []string{"main"},
+						Before: score.ContainerBefore{
+							"main": score.ContainerBeforeEntry{
+								Ready: score.ContainerBeforeReadyStarted,
 							},
 						},
 					},
@@ -592,10 +591,9 @@ func TestScoreConvert(t *testing.T) {
 				Containers: score.WorkloadContainers{
 					"init": score.Container{
 						Image: "busybox",
-						Before: []score.ContainerBeforeElem{
-							{
-								Ready:      util.Ref(score.ContainerBeforeElemReadyComplete),
-								Containers: []string{"main"},
+						Before: score.ContainerBefore{
+							"main": score.ContainerBeforeEntry{
+								Ready: score.ContainerBeforeReadyComplete,
 							},
 						},
 					},
@@ -604,10 +602,9 @@ func TestScoreConvert(t *testing.T) {
 					},
 					"sidecar": score.Container{
 						Image: "envoy",
-						Before: []score.ContainerBeforeElem{
-							{
-								Containers: []string{"main"},
-								Ready:      util.Ref(score.ContainerBeforeElemReadyStarted),
+						Before: score.ContainerBefore{
+							"main": score.ContainerBeforeEntry{
+								Ready: score.ContainerBeforeReadyStarted,
 							},
 						},
 					},
@@ -657,10 +654,9 @@ func TestScoreConvert(t *testing.T) {
 				Containers: score.WorkloadContainers{
 					"init": score.Container{
 						Image: "busybox",
-						Before: []score.ContainerBeforeElem{
-							{
-								Containers: []string{"main"},
-								Ready:      util.Ref(score.ContainerBeforeElemReadyHealthy),
+						Before: score.ContainerBefore{
+							"main": score.ContainerBeforeEntry{
+								Ready: score.ContainerBeforeReadyHealthy,
 							},
 						},
 					},
