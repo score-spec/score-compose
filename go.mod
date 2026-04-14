@@ -9,7 +9,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/compose-spec/compose-go/v2 v2.10.2
 	github.com/go-viper/mapstructure/v2 v2.5.0
-	github.com/score-spec/score-go v1.13.0
+	github.com/score-spec/score-go v1.15.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
