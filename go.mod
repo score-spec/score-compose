@@ -62,3 +62,5 @@ require (
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	oras.land/oras-go/v2 v2.6.0 // indirect
 )
+
+replace github.com/score-spec/score-go => github.com/Abhishek9639/score-go v0.0.0-20260415094058-8a2615c996fb
