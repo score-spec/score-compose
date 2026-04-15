@@ -9,6 +9,8 @@ builds:
     main: ./cmd/score-compose
     ldflags:
       - -X github.com/score-spec/score-compose/internal/version.Version={{ .Version }}
+      - -X github.com/score-spec/score-compose/internal/version.GitCommit={{ .Commit }}
+      - -X github.com/score-spec/score-compose/internal/version.BuildDate={{ .Date }}
     env:
       - CGO_ENABLED=0
     targets:
