@@ -24,9 +24,11 @@ import (
 	"github.com/score-spec/score-compose/internal/version"
 )
 
+var ScoreImplementationName = "score-compose"
+
 var (
 	rootCmd = &cobra.Command{
-		Use:   "score-compose",
+		Use:   ScoreImplementationName,
 		Short: "SCORE to docker-compose translator",
 		Long: `SCORE is a specification for defining environment agnostic configuration for cloud based workloads.
 This tool produces a docker-compose configuration file from the SCORE specification.
