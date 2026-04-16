@@ -153,13 +153,16 @@ URI Retrieval:
 		var templates []string
 		for _, u := range initCmdPatchingFiles {
 			slog.Info(fmt.Sprintf("Fetching patch template from %s", u))
-			content, err := uriget.GetFile(cmd.Context(), u)
+			files, err := uriget.GetFiles(cmd.Context(), u)
 			if err != nil {
 				return fmt.Errorf("error fetching patch template from %s: %w", u, err)
-			} else if err = patching.ValidatePatchTemplate(string(content)); err != nil {
-				return fmt.Errorf("error parsing patch template from %s: %w", u, err)
 			}
-			templates = append(templates, string(content))
+			for _, f := range files {
+				if err = patching.ValidatePatchTemplate(string(f.Content)); err != nil {
+					return fmt.Errorf("error parsing patch template from %s: %w", f.URI, err)
+				}
+				templates = append(templates, string(f.Content))
+			}
 		}
 
 		sd, ok, err := project.LoadStateDirectory(".")
