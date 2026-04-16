@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
         with:
           egress-policy: audit
       - name: checkout code in current PR branch
@@ -44,7 +44,7 @@ jobs:
       - name: Check licenses
         run: addlicense -l apache -check -v -ignore '**/*.yaml' -c 'The Score Authors' ./cmd ./internal/
   test-multi-arch-build:
-    uses: docker/github-builder/.github/workflows/build.yml@2497a7d1e7d8683af4949c9d6d62012bc16ed59c # v1.5.0
+    uses: docker/github-builder/.github/workflows/build.yml@7d2a02426d4b989616ba5aaee4e879afd4134b0d # v1.6.0
     if: ${{ !github.event.pull_request.head.repo.fork }}
     with:
       output: image
@@ -70,7 +70,7 @@ jobs:
     if: ${{ !github.event.pull_request.head.repo.fork }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
+        uses: step-security/harden-runner@6c3c2f2c1c457b00c10c4848d6f5491db3b629df # v2.18.0
         with:
           egress-policy: audit
       - name: checkout code in current PR branch
