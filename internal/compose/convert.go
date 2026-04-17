@@ -74,24 +74,12 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 	}
 	sort.Strings(containerNames)
 
-	// Determine which container should own the network. Skip containers that are expected to exit
-	// (all their before entries specify ready: complete) since their network namespace goes away.
-	primaryContainer := containerNames[0] // default to first alphabetically
+	// Determine which container should own the network namespace.
+	// By definition (enforced by validation), there must be at least one container with no
+	// 'before' entries — otherwise the before relationships would form a cycle.
+	primaryContainer := containerNames[0]
 	for _, name := range containerNames {
-		cSpec := spec.Containers[name]
-		if len(cSpec.Before) == 0 {
-			// Container has no before entries, it stays running — good candidate
-			primaryContainer = name
-			break
-		}
-		allComplete := true
-		for _, entry := range cSpec.Before {
-			if entry.Ready != score.ContainerBeforeReadyComplete {
-				allComplete = false
-				break
-			}
-		}
-		if !allComplete {
+		if len(spec.Containers[name].Before) == 0 {
 			primaryContainer = name
 			break
 		}
@@ -224,11 +212,11 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 			case score.ContainerBeforeReadyStarted:
 				condition = "service_started"
 			default:
-				condition = "service_started"
+				return nil, fmt.Errorf("containers.%s.before.%s: unknown ready condition %q", containerName, targetContainerName, entry.Ready)
 			}
 
-			if condition == "service_healthy" && cSpec.ReadinessProbe == nil && cSpec.LivenessProbe == nil {
-				return nil, fmt.Errorf("containers.%s.before: ready 'healthy' requires a readiness or liveness probe to be defined", containerName)
+			if entry.Ready == score.ContainerBeforeReadyHealthy && cSpec.ReadinessProbe == nil && cSpec.LivenessProbe == nil {
+				return nil, fmt.Errorf("containers.%s.before: ready '%s' requires a readiness or liveness probe to be defined", containerName, score.ContainerBeforeReadyHealthy)
 			}
 
 			sourceServiceName := workloadName + "-" + containerName

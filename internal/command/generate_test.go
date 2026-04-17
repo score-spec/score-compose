@@ -914,12 +914,12 @@ apiVersion: score.dev/v1b1
 metadata:
   name: example
   annotations:
-    key.com/foo-bar: thing
+    foo-bar: thing
 containers:
   example:
     image: foo
     variables:
-      REF: ${metadata.annotations.key\.com/foo-bar}
+      REF: ${metadata.annotations.foo-bar}
 `), 0644))
 	// generate
 	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
@@ -932,7 +932,7 @@ services:
   example-example:
     annotations:
       compose.score.dev/workload-name: example
-      key.com/foo-bar: thing
+      foo-bar: thing
     environment:
       REF: thing
     hostname: example

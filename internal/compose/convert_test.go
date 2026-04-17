@@ -551,8 +551,8 @@ func TestScoreConvert(t *testing.T) {
 						Annotations: map[string]string{
 							"compose.score.dev/workload-name": "test",
 						},
-						Hostname:    "test",
 						Image:       "busybox",
+						NetworkMode: "service:test-main",
 						Environment: compose.MappingWithEquals{},
 					},
 					"test-init-two": {
@@ -561,7 +561,7 @@ func TestScoreConvert(t *testing.T) {
 							"compose.score.dev/workload-name": "test",
 						},
 						Image:       "busybox",
-						NetworkMode: "service:test-init-one",
+						NetworkMode: "service:test-main",
 						Environment: compose.MappingWithEquals{},
 						DependsOn: compose.DependsOnConfig{
 							"test-init-one": {Condition: "service_started", Required: true},
@@ -572,8 +572,8 @@ func TestScoreConvert(t *testing.T) {
 						Annotations: map[string]string{
 							"compose.score.dev/workload-name": "test",
 						},
+						Hostname:    "test",
 						Image:       "nginx",
-						NetworkMode: "service:test-init-one",
 						Environment: compose.MappingWithEquals{},
 						DependsOn: compose.DependsOnConfig{
 							"test-init-two": {Condition: "service_started", Required: true},
