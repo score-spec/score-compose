@@ -79,6 +79,7 @@ Available Commands:
   init          Initialise a new score-compose project with local state directory and score file
   provisioners  Subcommands related to provisioners
   resources     Subcommands related to provisioned resources
+  version       Show the version for score-compose and new version to update if available.
 
 Flags:
   -h, --help            help for score-compose
@@ -94,7 +95,7 @@ Use "score-compose [command] --help" for more information about a command.
 func TestRootVersion(t *testing.T) {
 	stdout, stderr, err := executeAndResetCommand(context.Background(), rootCmd, []string{"--version"})
 	assert.NoError(t, err)
-	pattern := regexp.MustCompile(`^score-compose 0.0.0 \(build: \S+, sha: \S+\)\n$`)
+	pattern := regexp.MustCompile(`^score-compose 0\.0\.0 \(go\S+ - \S+/\S+\)\ngit commit: \S+\nbuild date: \S+\n$`)
 	assert.Truef(t, pattern.MatchString(stdout), "%s does not match: '%s'", pattern.String(), stdout)
 	assert.Equal(t, "", stderr)
 }
