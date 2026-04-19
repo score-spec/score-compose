@@ -453,6 +453,76 @@ resources:
 	})
 }
 
+func TestInitAndGenerate_with_before_ordering(t *testing.T) {
+	td := changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	assert.NoError(t, os.WriteFile("score.yaml", []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  init:
+    image: busybox
+    before:
+      main:
+        ready: complete
+  main:
+    image: nginx
+`), 0644))
+	// generate
+	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+	raw, err := os.ReadFile(filepath.Join(td, "compose.yaml"))
+	assert.NoError(t, err)
+	assert.Contains(t, string(raw), "depends_on")
+	assert.Contains(t, string(raw), "service_completed_successfully")
+
+	t.Run("validate compose spec", func(t *testing.T) {
+		if os.Getenv("NO_DOCKER") != "" {
+			t.Skip("NO_DOCKER is set")
+			return
+		}
+		dockerCmd, err := exec.LookPath("docker")
+		require.NoError(t, err)
+		cmd := exec.Command(dockerCmd, "compose", "-f", "compose.yaml", "config", "--quiet", "--dry-run")
+		cmd.Dir = td
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		assert.NoError(t, cmd.Run())
+	})
+}
+
+func TestInitAndGenerate_with_before_cycle(t *testing.T) {
+	_ = changeToTempDir(t)
+	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
+	assert.NoError(t, err)
+	assert.Equal(t, "", stdout)
+
+	assert.NoError(t, os.WriteFile("score.yaml", []byte(`
+apiVersion: score.dev/v1b1
+metadata:
+  name: example
+containers:
+  app:
+    image: busybox
+    before:
+      backend:
+        ready: started
+  backend:
+    image: busybox
+    before:
+      app:
+        ready: started
+`), 0644))
+	_, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cycle")
+}
+
 func TestGeneratePostgresResource(t *testing.T) {
 	td := changeToTempDir(t)
 	stdout, _, err := executeAndResetCommand(context.Background(), rootCmd, []string{"init"})
@@ -844,12 +914,12 @@ apiVersion: score.dev/v1b1
 metadata:
   name: example
   annotations:
-    key.com/foo-bar: thing
+    foo-bar: thing
 containers:
   example:
     image: foo
     variables:
-      REF: ${metadata.annotations.key\.com/foo-bar}
+      REF: ${metadata.annotations.foo-bar}
 `), 0644))
 	// generate
 	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
@@ -862,7 +932,7 @@ services:
   example-example:
     annotations:
       compose.score.dev/workload-name: example
-      key.com/foo-bar: thing
+      foo-bar: thing
     environment:
       REF: thing
     hostname: example

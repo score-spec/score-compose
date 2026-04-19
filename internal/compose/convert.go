@@ -66,12 +66,24 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 
 	// When multiple containers are specified we need to identify one container as the "main" container which will own
 	// the network and use the native workload name. All other containers in this workload will have the container
-	// name appended as a suffix. We use the natural sort order of the container names and pick the first one
+	// name appended as a suffix. We use the natural sort order of the container names and pick the first one that
+	// is not expected to exit (i.e. does not have all before entries with ready: complete).
 	containerNames := make([]string, 0, len(spec.Containers))
 	for name := range spec.Containers {
 		containerNames = append(containerNames, name)
 	}
 	sort.Strings(containerNames)
+
+	// Determine which container should own the network namespace.
+	// By definition (enforced by validation), there must be at least one container with no
+	// 'before' entries — otherwise the before relationships would form a cycle.
+	primaryContainer := containerNames[0]
+	for _, name := range containerNames {
+		if len(spec.Containers[name].Before) == 0 {
+			primaryContainer = name
+			break
+		}
+	}
 
 	variablesSubstitutor := framework.Substituter{
 		Replacer: deferredSubstitutionFunction,
@@ -80,7 +92,6 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 		},
 	}
 
-	var firstService string
 	for _, containerName := range containerNames {
 		cSpec := spec.Containers[containerName]
 
@@ -171,20 +182,74 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 			svc.Image = ""
 		}
 
-		// if we are not the "first" service, then inherit the network from the first service
-		if firstService == "" {
-			firstService = svc.Name
+		// if we are not the primary container, then inherit the network from the primary service.
+		// However, skip network_mode for containers that are expected to exit (all their before
+		// entries have ready: complete) to avoid circular dependencies.
+		if containerName == primaryContainer {
 			// We name the containers as (workload name)-(container name) but we want the name for the main network
 			// interface for be (workload name). So we set the hostname itself. This means that workloads cannot have
 			// the same name within the project. But that's already enforced elsewhere.
 			svc.Hostname = workloadName
-		} else {
+		} else if !isInitContainer(spec.Containers[containerName]) {
 			svc.Ports = nil
-			svc.NetworkMode = "service:" + firstService
+			svc.NetworkMode = "service:" + workloadName + "-" + primaryContainer
 		}
 		composeProject.Services[svc.Name] = svc
 	}
+
+	// Invert before -> depends_on: if container A declares before: {B: {ready: complete}},
+	// then service B depends_on A with the appropriate condition.
+	for _, containerName := range containerNames {
+		cSpec := spec.Containers[containerName]
+		for targetContainerName, entry := range cSpec.Before {
+			// Determine the compose condition from the ready field
+			var condition string
+			switch entry.Ready {
+			case score.ContainerBeforeReadyComplete:
+				condition = "service_completed_successfully"
+			case score.ContainerBeforeReadyHealthy:
+				condition = "service_healthy"
+			case score.ContainerBeforeReadyStarted:
+				condition = "service_started"
+			default:
+				return nil, fmt.Errorf("containers.%s.before.%s: unknown ready condition %q", containerName, targetContainerName, entry.Ready)
+			}
+
+			if entry.Ready == score.ContainerBeforeReadyHealthy && cSpec.ReadinessProbe == nil && cSpec.LivenessProbe == nil {
+				return nil, fmt.Errorf("containers.%s.before: ready '%s' requires a readiness or liveness probe to be defined", containerName, score.ContainerBeforeReadyHealthy)
+			}
+
+			sourceServiceName := workloadName + "-" + containerName
+			targetServiceName := workloadName + "-" + targetContainerName
+
+			// Add depends_on to the target service
+			svc := composeProject.Services[targetServiceName]
+			if svc.DependsOn == nil {
+				svc.DependsOn = make(compose.DependsOnConfig)
+			}
+			svc.DependsOn[sourceServiceName] = compose.ServiceDependency{
+				Condition: condition,
+				Required:  true,
+			}
+			composeProject.Services[targetServiceName] = svc
+		}
+	}
+
 	return &composeProject, nil
+}
+
+// isInitContainer returns true if the container is expected to exit. This is determined
+// by checking if all its before entries specify ready: complete.
+func isInitContainer(c score.Container) bool {
+	if len(c.Before) == 0 {
+		return false
+	}
+	for _, entry := range c.Before {
+		if entry.Ready != score.ContainerBeforeReadyComplete {
+			return false
+		}
+	}
+	return true
 }
 
 // buildWorkloadAnnotations returns an annotation set for the workload service.

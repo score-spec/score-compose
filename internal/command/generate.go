@@ -166,6 +166,10 @@ arguments.
 				return fmt.Errorf("failed to convert '%s' to structure: %w", workloadName, err)
 			}
 
+			if err := loader.Validate(&out); err != nil {
+				return fmt.Errorf("validation errors in workload '%s': %w", workloadName, err)
+			}
+
 			// Gather container build contexts, these will be stored and added to the generated compose output later
 			containerBuildContexts := make(map[string]types.BuildConfig)
 			if v, _ := cmd.Flags().GetStringArray(generateCmdBuildFlag); len(v) > 0 {
@@ -537,3 +541,4 @@ func injectWaitService(p *types.Project) (string, bool) {
 	p.Services[newService.Name] = newService
 	return newService.Name, true
 }
+
