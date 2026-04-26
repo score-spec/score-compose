@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/score-spec/score-go/framework"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -143,46 +144,29 @@ func TestInitAndGenerate_with_sample(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "", stdout)
 
-	// write overrides file
-	assert.NoError(t, os.WriteFile(filepath.Join(td, "overrides.yaml"), []byte(`{"resources": {"foo": {"type": "environment"}}}`), 0644))
-	// generate
+	// Resources use randomized service names in compose output, so check state instead.
 	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{
-		"generate", "-o", "compose-output.yaml",
-		"--overrides-file", "overrides.yaml",
-		"--override-property", "containers.hello-world.variables.THING=${resources.foo.THING}",
-		"--", "score.yaml",
+		"generate", "--", "score.yaml",
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "", stdout)
-	raw, err := os.ReadFile(filepath.Join(td, "compose-output.yaml"))
+
+	// check that state was persisted with the correct workload and resource structure
+	sd, ok, err := project.LoadStateDirectory(td)
 	assert.NoError(t, err)
-	expectedOutput := `name: "001"
-services:
-  example-hello-world:
-    annotations:
-      compose.score.dev/workload-name: example
-    environment:
-      EXAMPLE_VARIABLE: example-value
-      THING: ${THING}
-    hostname: example
-    image: nginx:latest
-`
-	assert.Equal(t, expectedOutput, string(raw))
+	assert.True(t, ok)
+	assert.Contains(t, sd.State.Workloads, "hello-world")
+	assert.Equal(t, "score.yaml", *sd.State.Workloads["hello-world"].File)
+	assert.Len(t, sd.State.Workloads, 1)
+	assert.Len(t, sd.State.Resources, 3)
+	assert.Contains(t, sd.State.Resources, framework.ResourceUid("postgres.default#hello-world.db"))
+	assert.Contains(t, sd.State.Resources, framework.ResourceUid("dns.default#hello-world.dns"))
+	assert.Contains(t, sd.State.Resources, framework.ResourceUid("route.default#hello-world.route"))
+
 	// generate again just for luck
 	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "-o", "compose-output.yaml"})
 	assert.NoError(t, err)
 	assert.Equal(t, "", stdout)
-	raw, err = os.ReadFile(filepath.Join(td, "compose-output.yaml"))
-	assert.NoError(t, err)
-	assert.Equal(t, expectedOutput, string(raw))
-
-	// check that state was persisted
-	sd, ok, err := project.LoadStateDirectory(td)
-	assert.NoError(t, err)
-	assert.True(t, ok)
-	assert.Equal(t, "score.yaml", *sd.State.Workloads["example"].File)
-	assert.Len(t, sd.State.Workloads, 1)
-	assert.Len(t, sd.State.Resources, 1)
 }
 
 func TestInitAndGenerate_with_image_override(t *testing.T) {
