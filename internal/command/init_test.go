@@ -120,18 +120,9 @@ func TestInitNominal(t *testing.T) {
 	assert.Equal(t, "", stdout)
 	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 
-	stdout, stderr, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml", "--output", "-"})
+	// Resources use randomized service names in compose output, so check state instead.
+	_, stderr, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "score.yaml"})
 	assert.NoError(t, err)
-	assert.Equal(t, `name: "001"
-services:
-  example-hello-world:
-    annotations:
-      compose.score.dev/workload-name: example
-    environment:
-      EXAMPLE_VARIABLE: example-value
-    hostname: example
-    image: nginx:latest
-`, stdout)
 	assert.NotEqual(t, "", strings.TrimSpace(stderr))
 
 	sd, ok, err := project.LoadStateDirectory(".")
@@ -140,9 +131,12 @@ services:
 		assert.Equal(t, project.DefaultRelativeStateDirectory, sd.Path)
 		assert.Equal(t, filepath.Base(td), sd.State.Extras.ComposeProjectName)
 		assert.Equal(t, filepath.Join(project.DefaultRelativeStateDirectory, "mounts"), sd.State.Extras.MountsDirectory)
-		assert.Equal(t, 1, len(sd.State.Workloads))
-		assert.Equal(t, map[framework.ResourceUid]framework.ScoreResourceState[framework.NoExtras]{}, sd.State.Resources)
-		assert.Equal(t, map[string]interface{}{}, sd.State.SharedState)
+		assert.Len(t, sd.State.Workloads, 1)
+		assert.Contains(t, sd.State.Workloads, "hello-world")
+		assert.Len(t, sd.State.Resources, 3)
+		assert.Contains(t, sd.State.Resources, framework.ResourceUid("postgres.default#hello-world.db"))
+		assert.Contains(t, sd.State.Resources, framework.ResourceUid("dns.default#hello-world.dns"))
+		assert.Contains(t, sd.State.Resources, framework.ResourceUid("route.default#hello-world.route"))
 	}
 }
 

@@ -33,41 +33,44 @@ import (
 )
 
 const (
-	DefaultScoreFileContent = `# Score provides a developer-centric and platform-agnostic 
-# Workload specification to improve developer productivity and experience. 
+	DefaultScoreFileContent = `# Score provides a developer-centric and platform-agnostic
+# Workload specification to improve developer productivity and experience.
 # Score eliminates configuration management between local and remote environments.
 #
-# Specification reference: https://docs.score.dev/docs/reference/score-spec-reference/
+# Get started with Score: https://docs.score.dev/docs/get-started/.
 ---
-
-# Score specification version
 apiVersion: score.dev/v1b1
-
 metadata:
-  name: example
-
+  name: hello-world
+  annotations:
+    tags: "nodejs,http,website,javascript,postgres"
 containers:
   hello-world:
-    image: nginx:latest
-
-    # Uncomment the following for a custom entrypoint command
-    # command: []
-
-    # Uncomment the following for custom arguments
-    # args: []
-
-    # Environment variables to inject into the container
+    image: scorespec/sample-score-app:latest
     variables:
-      EXAMPLE_VARIABLE: "example-value"
-
+      PORT: "3000"
+      MESSAGE: "Hello, World!"
+      DB_DATABASE: ${resources.db.name}
+      DB_USER: ${resources.db.username}
+      DB_PASSWORD: ${resources.db.password}
+      DB_HOST: ${resources.db.host}
+      DB_PORT: ${resources.db.port}
+resources:
+  db:
+    type: postgres
+  dns:
+    type: dns
+  route:
+    type: route
+    params:
+      host: ${resources.dns.host}
+      path: /
+      port: 8080
 service:
   ports:
-    # Expose the http port from nginx on port 8080
     www:
       port: 8080
-      targetPort: 80
-
-resources: {}
+      targetPort: 3000
 `
 	scoreFileDefault                 = "./score.yaml"
 	initCmdFileFlag                  = "file"
