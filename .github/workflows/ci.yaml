@@ -44,7 +44,7 @@ jobs:
       - name: Check licenses
         run: addlicense -l apache -check -v -ignore '**/*.yaml' -c 'The Score Authors' ./cmd ./internal/
   test-multi-arch-build:
-    uses: docker/github-builder/.github/workflows/build.yml@7d2a02426d4b989616ba5aaee4e879afd4134b0d # v1.6.0
+    uses: docker/github-builder/.github/workflows/build.yml@d4bb88e5e4420d56d283d658b6b5992c1dce04da # v1.7.0
     if: ${{ !github.event.pull_request.head.repo.fork }}
     with:
       output: image
