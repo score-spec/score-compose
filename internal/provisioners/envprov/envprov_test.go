@@ -27,6 +27,18 @@ import (
 func TestProvisioner(t *testing.T) {
 	p := new(Provisioner)
 
+	t.Run("class returns default", func(t *testing.T) {
+		assert.Equal(t, "default", p.Class())
+	})
+
+	t.Run("type returns environment", func(t *testing.T) {
+		assert.Equal(t, "environment", p.Type())
+	})
+
+	t.Run("description returns empty string", func(t *testing.T) {
+		assert.Equal(t, "", p.Description())
+	})
+
 	t.Run("test match", func(t *testing.T) {
 		assert.True(t, p.Match("environment.default#w.r"))
 		assert.False(t, p.Match("environment.default#thing"))
