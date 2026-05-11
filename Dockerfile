@@ -1,4 +1,4 @@
-FROM dhi.io/golang:1.26.2-alpine3.23-dev@sha256:478ffa216735b5e2b1da36e22b508dff38e7bcc14122e94fb16bf2b1bf1f6c59 AS builder
+FROM dhi.io/golang:1.26.3-alpine3.23-dev@sha256:ebe8be20382bd429303c52c58512145984b30e5ee0cca8f8861ada519c49afb1 AS builder
 
 ARG VERSION=0.0.0
 ARG GIT_COMMIT=unknown
@@ -21,7 +21,7 @@ RUN CGO_ENABLED=0 GOOS=linux \
     -o /usr/local/bin/score-compose ./cmd/score-compose
 
 # We can use static since we don't rely on any linux libs or state, but we need ca-certificates to connect to https/oci with the init command.
-FROM dhi.io/static:20260413-alpine3.23@sha256:33a44e9862f4aa8555e544d2c6100b340611c7b905cc939acc585d55a3d13361
+FROM dhi.io/static:20260413-alpine3.23@sha256:eeea5b5f4dc394069d2afb9e83af0b4af640709fda0c2cfbdbdbbb3a4b8ecf6f
 
 # Set the current working directory inside the container.
 WORKDIR /score-compose
