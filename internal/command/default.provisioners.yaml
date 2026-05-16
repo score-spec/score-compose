@@ -994,3 +994,9 @@
     - database
     - username
     - password
+
+# The default environment provisioner resolves environment resource references by looking up OS environment
+# variables at generate time. The accessed variables are tracked and can be written to a skeleton .env file.
+- uri: local-env://default-provisioners/environment
+  type: environment
+  description: Pulls values out of the local environment as outputs to an environment resource

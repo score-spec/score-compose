@@ -15,14 +15,17 @@
 package envprov
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"maps"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/score-spec/score-go/framework"
+	"gopkg.in/yaml.v3"
 
 	"github.com/score-spec/score-compose/internal/provisioners"
 	"github.com/score-spec/score-compose/internal/util"
@@ -31,19 +34,61 @@ import (
 // The Provisioner is an environment provision which returns a suitable expression for accessing an environment variable
 // within the compose project at deploy time. This provisioner also tracks what env vars are accessed so that they can
 // be added to the .env file later.
+//
+// It can be used in two modes:
+//   - Legacy mode: created via new(Provisioner), all fields are zero-valued, methods use hardcoded defaults.
+//   - YAML-loaded mode: created via Parse(), fields are populated from the provisioners YAML file.
 type Provisioner struct {
+	ProvisionerUri  string   `yaml:"uri"`
+	ResType         string   `yaml:"type"`
+	ResClass        *string  `yaml:"class,omitempty"`
+	ResDescription  string   `yaml:"description,omitempty"`
+	SupportedParams []string `yaml:"supported_params,omitempty"`
+	ExpectedOutputs []string `yaml:"expected_outputs,omitempty"`
 	// LookupFunc is an environment variable LookupFunc function, if nil this will be defaulted to os.LookupEnv
-	LookupFunc func(key string) (string, bool)
+	LookupFunc func(key string) (string, bool) `yaml:"-"`
 	// accessed is the map of accessed environment variables and the value they had at access time
 	accessed map[string]string
 }
 
+// Parse loads a Provisioner from raw YAML map data, following the same pattern as cmdprov.Parse and templateprov.Parse.
+func Parse(raw map[string]interface{}) (*Provisioner, error) {
+	p := new(Provisioner)
+	intermediate, _ := yaml.Marshal(raw)
+	dec := yaml.NewDecoder(bytes.NewReader(intermediate))
+	dec.KnownFields(true)
+	if err := dec.Decode(&p); err != nil {
+		return nil, err
+	}
+	if p.ProvisionerUri == "" {
+		return nil, fmt.Errorf("uri not set")
+	}
+	if p.ResType == "" {
+		p.ResType = "environment"
+	}
+	return p, nil
+}
+
 func (e *Provisioner) Uri() string {
+	if e.ProvisionerUri != "" {
+		return e.ProvisionerUri
+	}
 	return "builtin://environment"
 }
 
 func (e *Provisioner) Match(resUid framework.ResourceUid) bool {
-	return resUid.Type() == "environment" && resUid.Class() == "default" && strings.Contains(resUid.Id(), ".")
+	if e.ProvisionerUri == "" {
+		// Legacy mode: preserve original matching behavior
+		return resUid.Type() == "environment" && resUid.Class() == "default" && strings.Contains(resUid.Id(), ".")
+	}
+	// YAML-loaded mode: standard type/class matching (same as cmdprov/templateprov)
+	if resUid.Type() != e.ResType {
+		return false
+	}
+	if e.ResClass != nil && resUid.Class() != *e.ResClass {
+		return false
+	}
+	return true
 }
 
 func (e *Provisioner) Provision(ctx context.Context, input *provisioners.Input) (*provisioners.ProvisionOutput, error) {
@@ -154,19 +199,40 @@ func (e *envVarResourceTracker) Type() string {
 }
 
 func (p *Provisioner) Class() string {
+	if p.ProvisionerUri != "" && p.ResClass == nil {
+		return "(any)"
+	}
+	if p.ResClass != nil {
+		return *p.ResClass
+	}
 	return "default"
 }
 
 func (p *Provisioner) Type() string {
+	if p.ResType != "" {
+		return p.ResType
+	}
 	return "environment"
 }
 
 func (p *Provisioner) Outputs() []string {
-	return nil
+	if p.ExpectedOutputs == nil {
+		return nil
+	}
+	outputs := make([]string, len(p.ExpectedOutputs))
+	copy(outputs, p.ExpectedOutputs)
+	slices.Sort(outputs)
+	return outputs
 }
 
 func (p *Provisioner) Params() []string {
-	return nil
+	if p.SupportedParams == nil {
+		return nil
+	}
+	params := make([]string, len(p.SupportedParams))
+	copy(params, p.SupportedParams)
+	slices.Sort(params)
+	return params
 }
 
 func (e *envVarResourceTracker) Outputs() []string {
@@ -178,7 +244,7 @@ func (e *envVarResourceTracker) Params() []string {
 }
 
 func (p *Provisioner) Description() string {
-	return ""
+	return p.ResDescription
 }
 
 var _ provisioners.Provisioner = (*Provisioner)(nil)

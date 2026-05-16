@@ -226,9 +226,19 @@ arguments.
 			slog.Info(fmt.Sprintf("Successfully loaded %d resource provisioners", len(loadedProvisioners)))
 		}
 
-		// append the env var provisioner
-		environmentProvisioner := new(envprov.Provisioner)
-		loadedProvisioners = append(loadedProvisioners, environmentProvisioner)
+		// Find the environment provisioner from loaded provisioners (loaded via local-env:// URI),
+		// or create a fallback for backward compatibility with projects initialized before this entry existed.
+		var environmentProvisioner *envprov.Provisioner
+		for _, p := range loadedProvisioners {
+			if ep, ok := p.(*envprov.Provisioner); ok {
+				environmentProvisioner = ep
+				break
+			}
+		}
+		if environmentProvisioner == nil {
+			environmentProvisioner = new(envprov.Provisioner)
+			loadedProvisioners = append(loadedProvisioners, environmentProvisioner)
+		}
 
 		currentState, err = currentState.WithPrimedResources()
 		if err != nil {
