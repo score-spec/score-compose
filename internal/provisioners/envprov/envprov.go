@@ -154,11 +154,11 @@ func (e *envVarResourceTracker) Type() string {
 }
 
 func (p *Provisioner) Class() string {
-	return p.Class()
+	return "default"
 }
 
 func (p *Provisioner) Type() string {
-	return p.Type()
+	return "environment"
 }
 
 func (p *Provisioner) Outputs() []string {
@@ -178,7 +178,7 @@ func (e *envVarResourceTracker) Params() []string {
 }
 
 func (p *Provisioner) Description() string {
-	return p.Description()
+	return ""
 }
 
 var _ provisioners.Provisioner = (*Provisioner)(nil)
