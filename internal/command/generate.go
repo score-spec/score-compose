@@ -226,16 +226,22 @@ arguments.
 			slog.Info(fmt.Sprintf("Successfully loaded %d resource provisioners", len(loadedProvisioners)))
 		}
 
-		// Find the environment provisioner from loaded provisioners (loaded via local-env:// URI),
-		// or create a fallback for backward compatibility with projects initialized before this entry existed.
+		// Find the provisioner responsible for the "environment" resource type. A project may supply
+		// its own (via any provisioner kind declared with type: environment), in which case it is used
+		// as-is. Only when no provisioner handles the environment type do we fall back to the built-in
+		// envprov.Provisioner, for backward compatibility with projects initialized before the default
+		// environment provisioner entry existed.
 		var environmentProvisioner *envprov.Provisioner
+		hasEnvironmentProvisioner := false
 		for _, p := range loadedProvisioners {
-			if ep, ok := p.(*envprov.Provisioner); ok {
-				environmentProvisioner = ep
+			if p.Type() == "environment" {
+				hasEnvironmentProvisioner = true
+				// Only the built-in implementation exposes Accessed(), used below to write the env file.
+				environmentProvisioner, _ = p.(*envprov.Provisioner)
 				break
 			}
 		}
-		if environmentProvisioner == nil {
+		if !hasEnvironmentProvisioner {
 			environmentProvisioner = new(envprov.Provisioner)
 			loadedProvisioners = append(loadedProvisioners, environmentProvisioner)
 		}
@@ -409,10 +415,14 @@ arguments.
 
 		if v, _ := cmd.Flags().GetString(generateCmdEnvFileFlag); v != "" {
 			content := new(strings.Builder)
-			for k := range environmentProvisioner.Accessed() {
-				_, _ = content.WriteString(k)
-				_, _ = content.WriteRune('=')
-				_, _ = content.WriteRune('\n')
+			// environmentProvisioner is nil when a custom provisioner handles the environment type;
+			// only the built-in envprov.Provisioner tracks accessed variables for the env file.
+			if environmentProvisioner != nil {
+				for k := range environmentProvisioner.Accessed() {
+					_, _ = content.WriteString(k)
+					_, _ = content.WriteRune('=')
+					_, _ = content.WriteRune('\n')
+				}
 			}
 			slog.Info(fmt.Sprintf("Writing env var file to '%s'", v))
 			if err := os.WriteFile(v, []byte(content.String()), 0644); err != nil {
