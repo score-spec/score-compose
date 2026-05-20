@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/score-spec/score-compose/internal/provisioners"
 )
@@ -106,4 +107,74 @@ func TestProvisioner(t *testing.T) {
 
 	})
 
+}
+
+func TestParse_success(t *testing.T) {
+	t.Run("fully populated", func(t *testing.T) {
+		p, err := Parse(map[string]interface{}{
+			"uri":              "local-env://example",
+			"type":             "environment",
+			"class":            "custom",
+			"description":      "pulls env vars",
+			"supported_params": []string{"p1"},
+			"expected_outputs": []string{"o2", "o1"},
+		})
+		require.NoError(t, err)
+		assert.Equal(t, "local-env://example", p.Uri())
+		assert.Equal(t, "environment", p.Type())
+		assert.Equal(t, "custom", p.Class())
+		assert.Equal(t, "pulls env vars", p.Description())
+		assert.Equal(t, []string{"p1"}, p.Params())
+		assert.Equal(t, []string{"o1", "o2"}, p.Outputs())
+	})
+
+	t.Run("optional fields default", func(t *testing.T) {
+		p, err := Parse(map[string]interface{}{"uri": "local-env://x"})
+		require.NoError(t, err)
+		assert.Equal(t, "environment", p.Type())
+		assert.Equal(t, "(any)", p.Class())
+		assert.Empty(t, p.Description())
+		assert.Nil(t, p.Outputs())
+		assert.Nil(t, p.Params())
+	})
+
+	t.Run("non-environment type", func(t *testing.T) {
+		p, err := Parse(map[string]interface{}{"uri": "local-env://x", "type": "secret"})
+		require.NoError(t, err)
+		assert.Equal(t, "secret", p.Type())
+	})
+}
+
+func TestParse_fail(t *testing.T) {
+	for name, tc := range map[string]struct {
+		in  map[string]interface{}
+		msg string
+	}{
+		"missing uri":   {map[string]interface{}{"type": "environment"}, "uri not set"},
+		"empty uri":     {map[string]interface{}{"uri": "", "type": "environment"}, "uri not set"},
+		"unknown field": {map[string]interface{}{"uri": "local-env://x", "bogus": true}, "field bogus not found"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := Parse(tc.in)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.msg)
+		})
+	}
+}
+
+func TestParsedProvisioner_match(t *testing.T) {
+	t.Run("any class", func(t *testing.T) {
+		p, err := Parse(map[string]interface{}{"uri": "local-env://x", "type": "environment"})
+		require.NoError(t, err)
+		assert.True(t, p.Match("environment.default#w.r"))
+		assert.True(t, p.Match("environment.custom#w.r"))
+		assert.False(t, p.Match("postgres.default#w.r"))
+	})
+
+	t.Run("fixed class", func(t *testing.T) {
+		p, err := Parse(map[string]interface{}{"uri": "local-env://x", "type": "environment", "class": "special"})
+		require.NoError(t, err)
+		assert.True(t, p.Match("environment.special#w.r"))
+		assert.False(t, p.Match("environment.default#w.r"))
+	})
 }
