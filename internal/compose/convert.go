@@ -312,7 +312,10 @@ func convertFilesIntoVolumes(state *project.State, workloadName string, containe
 			content = []byte(*file.Content)
 		} else if file.Source != nil {
 			sourcePath := *file.Source
-			if !filepath.IsAbs(sourcePath) && state.Workloads[workloadName].File != nil {
+			if !filepath.IsLocal(sourcePath) {
+				return nil, fmt.Errorf("containers.%s.files[%s].source: must be a relative path within the Score file's directory", containerName, target)
+			}
+			if state.Workloads[workloadName].File != nil {
 				sourcePath = filepath.Join(filepath.Dir(*state.Workloads[workloadName].File), sourcePath)
 			}
 			content, err = os.ReadFile(sourcePath)

@@ -782,7 +782,7 @@ func TestConvertFilesIntoVolumes_file_missing(t *testing.T) {
 				Containers: map[string]score.Container{
 					"my-container": {
 						Files: map[string]score.ContainerFile{
-							"/ant.txt": {Source: util.Ref(filepath.Join(td, "original.txt"))},
+							"/ant.txt": {Source: util.Ref("original.txt")},
 						},
 					},
 				},
@@ -800,6 +800,42 @@ func TestConvertFilesIntoVolumes_file_missing(t *testing.T) {
 		},
 	)
 	assert.EqualError(t, err, fmt.Sprintf("containers.my-container.files[/ant.txt].source: failed to read: open %s/original.txt: no such file or directory", td))
+}
+
+func TestConvertFilesIntoVolumes_source_outside_score_dir(t *testing.T) {
+	td := t.TempDir()
+	for name, source := range map[string]string{
+		"absolute path": filepath.Join(td, "leak.txt"),
+		"parent escape": "../leak.txt",
+		"nested escape": "subdir/../../leak.txt",
+	} {
+		t.Run(name, func(t *testing.T) {
+			state := &project.State{
+				Workloads: map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{"my-workload": {
+					Spec: score.Workload{
+						Containers: map[string]score.Container{
+							"my-container": {
+								Files: map[string]score.ContainerFile{
+									"/ant.txt": {Source: util.Ref(source)},
+								},
+							},
+						},
+					},
+					File: util.Ref(filepath.Join(td, "score.yaml")),
+				}},
+				Extras: project.StateExtras{
+					MountsDirectory: td,
+				},
+			}
+			_, err := convertFilesIntoVolumes(
+				state, "my-workload", "my-container",
+				func(s string) (string, error) {
+					return "", fmt.Errorf("unknown key")
+				},
+			)
+			assert.EqualError(t, err, "containers.my-container.files[/ant.txt].source: must be a relative path within the Score file's directory")
+		})
+	}
 }
 
 func TestConvertFilesIntoVolumes_source_missing(t *testing.T) {
