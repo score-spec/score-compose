@@ -453,6 +453,7 @@ func parseResourceUid(raw string) framework.ResourceUid {
 func loadRawScoreFiles(fileNames []string) ([]string, map[string]map[string]interface{}, error) {
 	workloadNames := make([]string, 0, len(fileNames))
 	workloadToRawScore := make(map[string]map[string]interface{}, len(fileNames))
+	var validationErrors []string
 
 	for _, fileName := range fileNames {
 		var out map[string]interface{}
@@ -464,15 +465,28 @@ func loadRawScoreFiles(fileNames []string) ([]string, map[string]map[string]inte
 		}
 
 		var workloadName string
-		if meta, ok := out["metadata"].(map[string]interface{}); ok {
-			workloadName, _ = meta["name"].(string)
-			if _, ok := workloadToRawScore[workloadName]; ok {
-				return nil, nil, fmt.Errorf("workload name '%s' in file '%s' is used more than once", workloadName, fileName)
-			}
+		meta, ok := out["metadata"].(map[string]interface{})
+		if !ok {
+			validationErrors = append(validationErrors, fmt.Sprintf("workload in file '%s' is missing required metadata", fileName))
+			continue
+		}
+		workloadName, _ = meta["name"].(string)
+		if len(workloadName) == 0 {
+			validationErrors = append(validationErrors, fmt.Sprintf("workload in file '%s' has empty metadata.name", fileName))
+			continue
+		}
+		if _, ok := workloadToRawScore[workloadName]; ok {
+			validationErrors = append(validationErrors, fmt.Sprintf("workload name '%s' in file '%s' is used more than once", workloadName, fileName))
+			continue
 		}
 		workloadNames = append(workloadNames, workloadName)
 		workloadToRawScore[workloadName] = out
 	}
+
+	if len(validationErrors) > 0 {
+		return nil, nil, fmt.Errorf("validation failed:\n  - %s", strings.Join(validationErrors, "\n  - "))
+	}
+
 	return workloadNames, workloadToRawScore, nil
 }
 
@@ -561,4 +575,3 @@ func injectWaitService(p *types.Project) (string, bool) {
 	p.Services[newService.Name] = newService
 	return newService.Name, true
 }
-
