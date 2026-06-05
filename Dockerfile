@@ -1,4 +1,4 @@
-FROM dhi.io/golang:1.26.3-alpine3.23-dev@sha256:dd699a69f42fb6d232b420bd256b824219093bb135cc3158b765844f52126c71 AS builder
+FROM dhi.io/golang:1.26.4-alpine3.23-dev@sha256:e5fdaf8c202914575667f343c52703d28d579454066138c682f5bb6f9d259854 AS builder
 
 ARG VERSION=0.0.0
 ARG GIT_COMMIT=unknown
