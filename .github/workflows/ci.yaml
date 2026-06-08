@@ -20,7 +20,7 @@ jobs:
         with:
           egress-policy: audit
       - name: checkout code in current PR branch
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
       - name: Fetch all tags
@@ -44,7 +44,7 @@ jobs:
       - name: Check licenses
         run: addlicense -l apache -check -v -ignore '**/*.yaml' -c 'The Score Authors' ./cmd ./internal/
   test-multi-arch-build:
-    uses: docker/github-builder/.github/workflows/build.yml@17bd7d64200cae4ba58ffc099934e8012ae320f2 # v1.10.0
+    uses: docker/github-builder/.github/workflows/build.yml@70ac3fc303efa83d2b94905e6ab78bb83cbdc2ae # v1.11.0
     if: ${{ !github.event.pull_request.head.repo.fork }}
     with:
       output: image
@@ -74,7 +74,7 @@ jobs:
         with:
           egress-policy: audit
       - name: checkout code in current PR branch
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
       - name: Set up Docker
@@ -117,7 +117,7 @@ jobs:
         run: |
           docker images
       - name: checkout code in main branch
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: main
       - name: Build container image from main branch
