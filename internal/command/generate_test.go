@@ -134,7 +134,7 @@ func TestInitAndGenerateWithBadScore(t *testing.T) {
 	assert.NoError(t, os.WriteFile(filepath.Join(td, "thing"), []byte(`{}`), 0644))
 
 	stdout, _, err = executeAndResetCommand(context.Background(), rootCmd, []string{"generate", "thing"})
-	assert.EqualError(t, err, "validation errors in workload '': jsonschema: '' does not validate with https://score.dev/schemas/score#/required: missing properties: 'apiVersion', 'metadata', 'containers'")
+	assert.EqualError(t, err, "validation failed:\n  - workload in file 'thing' is missing required metadata")
 	assert.Equal(t, "", stdout)
 }
 
