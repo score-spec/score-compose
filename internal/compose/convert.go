@@ -16,6 +16,7 @@ package compose
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -337,7 +338,8 @@ func convertFilesIntoVolumes(state *project.State, workloadName string, containe
 			}
 			content = []byte(stringContent)
 		}
-		newName := fmt.Sprintf("%s-files-%s", workloadName, strings.Trim(filepath.Base(target), string(filepath.Separator)))
+		hash := fmt.Sprintf("%x", sha256.Sum256([]byte(target)))
+		newName := fmt.Sprintf("%s-files-%s-%s", workloadName, hash[:8], strings.Trim(filepath.Base(target), string(filepath.Separator)))
 		slog.Debug(fmt.Sprintf("Writing %d bytes of content for %s containers.%s.files[%s] to %s", len(content), workloadName, containerName, target, filepath.Join(filesDir, newName)))
 
 		// Parse and correct the file mode of the mount. If the user permissions do not allow write, then we enable the read only flag
