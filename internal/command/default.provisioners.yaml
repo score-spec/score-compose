@@ -752,16 +752,20 @@
     shared_kafka_instance_name: {{ dig "shared_kafka_instance_name" (print "kafka-" (randAlphaNum 6)) .Shared | quote }}
   services: |
     {{ .Shared.shared_kafka_instance_name }}:
-      image: bitnami/kafka:latest
+      image: apache/kafka:latest
       restart: always
       environment:
-        KAFKA_CFG_NODE_ID: "0"
-        KAFKA_CFG_PROCESS_ROLES: controller,broker
-        KAFKA_CFG_LISTENERS: "PLAINTEXT://:{{ .Init.brokerPort }},CONTROLLER://:{{ .Init.ctrlPort }}"
-        KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
-        KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "0@{{ .Shared.shared_kafka_instance_name }}:{{ .Init.ctrlPort }}"
-        KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-        KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "false"
+        KAFKA_NODE_ID: "1"
+        KAFKA_PROCESS_ROLES: broker,controller
+        KAFKA_LISTENERS: "PLAINTEXT://:{{ .Init.brokerPort }},CONTROLLER://:{{ .Init.ctrlPort }}"
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+        KAFKA_CONTROLLER_QUORUM_VOTERS: "1@{{ .Shared.shared_kafka_instance_name }}:{{ .Init.ctrlPort }}"
+        KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+        KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+        KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+        KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+        KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
       healthcheck:
         test: ["CMD", "kafka-topics.sh", "--list", "--bootstrap-server=localhost:{{ .Init.brokerPort }}"]
         interval: 2s
@@ -776,11 +780,11 @@
       volumes:
       - type: volume
         source: {{ .Shared.shared_kafka_instance_name }}-data
-        target: /bitnami/kafka
+        target: /var/lib/kafka/data
     {{ .State.topic }}-init:
-      image: bitnami/kafka:latest
+      image: apache/kafka:latest
       entrypoint: ["/bin/sh"]
-      command: ["-c", "kafka-topics.sh --topic={{.State.topic}} --bootstrap-server=localhost:{{ .Init.brokerPort }} --describe || kafka-topics.sh --topic={{.State.topic}} --bootstrap-server=localhost:{{ .Init.brokerPort }} --create --partitions=3"]
+      command: ["-c", "kafka-topics.sh --topic={{.State.topic}} --bootstrap-server=localhost:{{ .Init.brokerPort }} --describe || kafka-topics.sh --topic={{.State.topic}} --bootstrap-server=localhost:{{ .Init.brokerPort }} --create --partitions=3 --replication-factor=1"]
       network_mode: "service:{{ .Shared.shared_kafka_instance_name }}"
       labels:
         dev.score.compose.labels.is-init-container: "true"
