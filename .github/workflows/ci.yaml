@@ -67,6 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
+      id-token: write # required to request the GitHub OIDC token
     if: ${{ !github.event.pull_request.head.repo.fork }}
     steps:
       - name: Harden Runner
