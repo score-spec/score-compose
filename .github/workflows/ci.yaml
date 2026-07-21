@@ -91,17 +91,22 @@ jobs:
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
         with:
           version: latest
+      - name: Get Docker token
+        id: docker_oidc
+        uses: docker/oidc-action@3f002d200df5620744c973221788e401898c6f86 # v1.0.0
+        with:
+          connection_id: ${{ secrets.DOCKER_HUB_CI_OIDC_CONNECTION_ID }}
       - name: docker login docker.io
         uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+          password: ${{ steps.docker_oidc.outputs.token }}
       - name: docker login dhi.io
         uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: dhi.io
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+          password: ${{ steps.docker_oidc.outputs.token }}
       - name: Build container image from PR branch
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
@@ -151,6 +156,3 @@ jobs:
           docker run --rm score-compose:pr-${{ github.event.number }} --version
           docker run -v .:/score-compose --rm score-compose:pr-${{ github.event.number }} init
           cat score.yaml
-
-
-
