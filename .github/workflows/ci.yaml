@@ -44,7 +44,7 @@ jobs:
       - name: Check licenses
         run: addlicense -l apache -check -v -ignore '**/*.yaml' -c 'The Score Authors' ./cmd ./internal/
   test-multi-arch-build:
-    uses: docker/github-builder/.github/workflows/build.yml@3415a188caae9a0da7fba83bc06985776e0b1790 # v1.14.0
+    uses: docker/github-builder/.github/workflows/build.yml@27ade872c1e2296e62ef15ab3b10d37665e57cf7 # main
     if: ${{ !github.event.pull_request.head.repo.fork }}
     with:
       output: image
@@ -62,7 +62,7 @@ jobs:
     secrets:
       registry-auths: |
         - username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+          connection_id: ${{ secrets.DOCKER_HUB_OIDC_CONNECTION_ID }}
   test-container:
     runs-on: ubuntu-latest
     permissions:
