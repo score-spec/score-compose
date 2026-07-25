@@ -53,7 +53,7 @@ jobs:
         "GIT_COMMIT=${{ github.sha }}"
         "BUILD_DATE=${{ github.event.head_commit.timestamp }}"
       meta-images: |
-        ghcr.io/score-spec/score-compose
+        ghcr.io/${{ github.repository }}
         ${{ vars.DOCKER_HUB_ORG }}/score-compose
       meta-tags: |
         type=ref,event=tag
