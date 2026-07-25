@@ -59,9 +59,10 @@ jobs:
         score-compose
       meta-tags: |
         type=ref,event=pr
-    secrets:
-      registry-auths: |
-        - username: ${{ secrets.DOCKER_HUB_USERNAME }}
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
           connection_id: ${{ secrets.DOCKER_HUB_OIDC_CONNECTION_ID }}
   test-container:
     runs-on: ubuntu-latest
