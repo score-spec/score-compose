@@ -53,15 +53,18 @@ jobs:
         "GIT_COMMIT=${{ github.sha }}"
         "BUILD_DATE=${{ github.event.head_commit.timestamp }}"
       meta-images: |
-        ghcr.io/score-spec/score-compose
-        scorespec/score-compose
+        ghcr.io/${{ github.repository }}
+        ${{ vars.DOCKER_HUB_ORG }}/score-compose
       meta-tags: |
         type=ref,event=tag
         latest
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ vars.DOCKER_HUB_ORG }}
+          connection_id: ${{ vars.DOCKER_HUB_OIDC_CONNECTION_ID }}
     secrets:
       registry-auths: |
         - registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        - username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          connection_id: ${{ secrets.DOCKER_HUB_OIDC_CONNECTION_ID }}
