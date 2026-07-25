@@ -46,6 +46,8 @@ jobs:
   test-multi-arch-build:
     uses: docker/github-builder/.github/workflows/build.yml@27ade872c1e2296e62ef15ab3b10d37665e57cf7 # main
     if: ${{ !github.event.pull_request.head.repo.fork }}
+    permissions:
+      id-token: write # required to request the GitHub OIDC token
     with:
       output: image
       push: false
