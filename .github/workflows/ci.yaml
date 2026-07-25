@@ -62,8 +62,8 @@ jobs:
       registry-identities: |
         - type: dockerhub
           registry: docker.io
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          connection_id: ${{ secrets.DOCKER_HUB_OIDC_CONNECTION_ID }}
+          username: ${{ vars.DOCKER_HUB_ORG }}
+          connection_id: ${{ vars.DOCKER_HUB_OIDC_CONNECTION_ID }}
   test-container:
     runs-on: ubuntu-latest
     permissions:
@@ -96,12 +96,12 @@ jobs:
       - name: docker login
         uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
         env:
-          DOCKERHUB_OIDC_CONNECTIONID: ${{ secrets.DOCKER_HUB_OIDC_CONNECTION_ID }}
+          DOCKERHUB_OIDC_CONNECTIONID: ${{ vars.DOCKER_HUB_OIDC_CONNECTION_ID }}
         with:
           registry-auth: |
-            - username: ${{ secrets.DOCKER_HUB_USERNAME }}
+            - username: ${{ vars.DOCKER_HUB_ORG }}
             - registry: dhi.io
-              username: ${{ secrets.DOCKER_HUB_USERNAME }}
+              username: ${{ vars.DOCKER_HUB_ORG }}
       - name: Build container image from PR branch
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
