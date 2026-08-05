@@ -47,7 +47,69 @@ These can be found in the default provisioners file. You are encouraged to write
 
 ## Installation
 
-To install `score-compose`, follow the instructions as described in our [installation guide](https://docs.score.dev/docs/score-implementation/score-compose/#installation). You will also need a recent version of Docker and the Compose plugin installed. Read more [here](https://docs.docker.com/compose/install/).
+To install `score-compose`, follow the instructions as described in our [installation guide](https://docs.score.dev/docs/score-implementation/score-compose/#installation). You will also need a recent version of Docker and the Compose plugin installed. Read more [here](https://docs.docker.com/compose/install/). Alternatively, the generated files can be run with Podman, see [Podman support](#podman-support).
+
+## Podman support
+
+`score-compose` never talks to a container engine itself: `score-compose generate` only writes a [Compose specification](https://compose-spec.io/) compliant `compose.yaml`. This means the generated file can also be run with [Podman](https://podman.io/) instead of Docker, as long as the compose implementation used supports the constructs described below. There are three common ways to do this:
+
+1. **`podman compose`** - a thin wrapper that runs an external compose provider against the Podman socket. When both providers are installed it prefers `docker-compose`, the compose specification reference implementation, which supports everything `score-compose` generates (recommended):
+
+   ```console
+   $ systemctl --user enable --now podman.socket   # enable the rootless Podman API socket
+   $ score-compose init
+   $ score-compose generate score.yaml
+   $ podman compose up -d
+   ```
+
+2. **`docker compose` (or `docker-compose`) pointed at the Podman socket** - the same engine as above, without the wrapper:
+
+   ```console
+   $ export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock
+   $ docker compose up -d
+   ```
+
+3. **`podman-compose`** - the native Python implementation. Basic Workloads work, but check the notes on `depends_on` below before relying on it for provisioned database resources.
+
+### Compose features the generated file relies on
+
+`score-compose` emits some newer compose specification constructs, which set a minimum version for the compose implementation used to run the output:
+
+| Construct                                                                                                       | Used for                                                                          | Podman notes                                                                                                                                                                                                              |
+|-----------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `annotations` on services                                                                                       | every Workload service                                                            | requires `docker-compose` >= v2.20; older compose implementations may reject the file (see [#442](https://github.com/score-spec/score-compose/pull/442) for legacy compose support)                                        |
+| long-form `depends_on` with `condition: service_healthy` / `service_completed_successfully` and `required: true` | the `wait-for-resources` service that delays Workloads until resources are ready | `docker-compose` >= v2.20; `podman-compose` >= 1.3.0 with Podman >= 4.6. Older `podman-compose` releases ignore the conditions **silently**, so Workloads can start before their databases are healthy                     |
+| `network_mode: "service:..."`                                                                                   | multi-container Workloads sharing one network namespace                           | works through the Docker-compatible socket; support in `podman-compose` varies by version                                                                                                                                  |
+| `healthcheck` on resource services                                                                              | database readiness checks                                                         | needs Podman >= 4.6 for health-condition waits                                                                                                                                                                              |
+| relative bind mounts under `.score-compose/mounts/`                                                             | Workload files and provisioner-generated configuration                            | see the SELinux and rootless notes below                                                                                                                                                                                    |
+| named volumes with `driver: local`                                                                              | database and resource storage                                                     | fully supported                                                                                                                                                                                                             |
+
+### Known differences and gotchas
+
+- **Rootless networking and service DNS**: `score-compose` injects compose service names as hostnames into resource outputs (for example `mysql://user:password@mysql-xxxxxx:3306/db`), so container-to-container DNS must work on the compose project network. Rootless Podman provides this via `aardvark-dns` on the `netavark` network backend (the default since Podman 4.x); `slirp4netns`/`pasta` only provide outbound connectivity and play no role in service-to-service DNS. If Workloads cannot resolve each other, check that `podman info --format '{{.Host.NetworkBackend}}'` reports `netavark` and that the `aardvark-dns` package is installed. Legacy CNI-based setups need the `dnsname` plugin instead.
+- **Rootless UID remapping on bind mounts**: rootless Podman maps container users through the ranges in `/etc/subuid` and `/etc/subgid`. Files under `.score-compose/mounts/` are bind mounted into resource containers, so anything a container user writes into such a mount shows up on the host owned by a high subordinate UID (`ls -ln .score-compose/mounts` shows the numeric owners). Use `podman unshare` to inspect or `chown` those files from inside the user namespace. Database data is not affected since it is stored in named volumes.
+- **SELinux labels (Fedora/RHEL/CentOS and other enforcing hosts)**: bind mounts need `:z`/`:Z` relabeling when SELinux is enforcing. `score-compose` does not emit these labels, and `docker-compose` pointed at the Podman socket will not add them either (`podman-compose` sometimes does). The symptom is resource containers failing with `permission denied` while reading files under `.score-compose/mounts/` - it looks like a `score-compose` bug but is an SELinux labeling gap. The clean fix is a [patching template](examples/16-patching-templates) that labels all generated bind mounts:
+
+  ```
+  {{ range $name, $svc := .Compose.services }}
+  {{ range $i, $vol := $svc.volumes }}
+  {{ if eq (dig "type" "" $vol) "bind" }}
+  - op: set
+    path: services.{{ $name }}.volumes.{{ $i }}.bind.selinux
+    value: z
+    description: label bind mount for SELinux ({{ $name }})
+  {{ end }}
+  {{ end }}
+  {{ end }}
+  ```
+
+  Install it once with `score-compose init --patch-templates ./selinux-bind-mounts.tpl` and every subsequent `generate` adds `bind.selinux: z` to each bind mount. Alternatively, disabling label separation per service with `security_opt: ["label=disable"]` also works but is coarser. Findings from SELinux-enforcing hosts are being collected in [#129](https://github.com/score-spec/score-compose/issues/129) - reports welcome.
+- **macOS and Windows**: Podman runs containers inside a Linux VM (`podman machine`, with port forwarding handled by `gvproxy`). Published ports are forwarded from the host through the VM, and bind mounts cross a file share, so the `.score-compose/` directory must live under a path that is shared with the machine (on macOS the home directory is shared by default) and file ownership and mount performance behave differently than on native Linux.
+- **Short image names**: Score files that use short image names such as `image: nginx` rely on Podman's short-name resolution rules (`registries.conf`) when run with `podman-compose`, which may prompt or fail depending on the host configuration; through the Docker-compatible socket they default to `docker.io`. Prefer fully qualified references such as `docker.io/library/nginx:latest` in Score files. The built-in provisioners already use fully qualified images.
+- **Privileged ports**: rootless Podman cannot publish host ports below 1024 by default, so `--publish 80:workload:8080` or a `route` resource published on port 80 fails with a permission error. Use a port >= 1024 or raise the limit with `sysctl net.ipv4.ip_unprivileged_port_start`.
+- **`restart: always`**: resource services use restart policies, but without a daemon these only apply while Podman (or the Podman machine) is running. Containers are not restarted at boot unless you manage them with systemd units or [Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html).
+
+The [examples](./examples) in this repository can be used as a test bed for all of the above; testing notes and findings are tracked in [#129](https://github.com/score-spec/score-compose/issues/129).
 
 ## Get started
 
