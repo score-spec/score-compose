@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
         with:
           egress-policy: audit
       - name: checkout code in current PR branch
@@ -44,7 +44,7 @@ jobs:
       - name: Check licenses
         run: addlicense -l apache -check -v -ignore '**/*.yaml' -c 'The Score Authors' ./cmd ./internal/
   test-multi-arch-build:
-    uses: docker/github-builder/.github/workflows/build.yml@27ade872c1e2296e62ef15ab3b10d37665e57cf7 # main
+    uses: docker/github-builder/.github/workflows/build.yml@a492c6d04fd3315f67230809b44d60cc0acd50b3 # main
     if: ${{ !github.event.pull_request.head.repo.fork }}
     permissions:
       id-token: write # required to request the GitHub OIDC token
@@ -74,7 +74,7 @@ jobs:
     if: ${{ !github.event.pull_request.head.repo.fork }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
         with:
           egress-policy: audit
       - name: checkout code in current PR branch
@@ -96,7 +96,7 @@ jobs:
         with:
           version: latest
       - name: docker login
-        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         env:
           DOCKERHUB_OIDC_CONNECTIONID: ${{ vars.DOCKER_HUB_OIDC_CONNECTION_ID }}
         with:
@@ -137,7 +137,7 @@ jobs:
         run: |
           docker images
       - name: Docker Scout Comparison between main branch and current PR branch
-        uses: docker/scout-action@2688993af7bafd6ba8c6a74ec652442be91dd82b # v1.23.1
+        uses: docker/scout-action@7c6b6c3f7844478ace1ffd4e7aef649053d1f87d # v1.24.0
         with:
           command: compare
           image: local://score-compose:pr-${{ github.event.number }}
