@@ -940,3 +940,95 @@ func TestConvertFiles_with_mode(t *testing.T) {
 	assert.Equal(t, 0644, int(st.Mode()))
 	assert.True(t, out[3].ReadOnly)
 }
+
+func TestConvertSpec_image_placeholders(t *testing.T) {
+	buildWorkload := func(image string) *score.Workload {
+		return &score.Workload{
+			Metadata: score.WorkloadMetadata{
+				"name": "test",
+				"annotations": map[string]interface{}{
+					"devbox.io/revision": "abc123",
+				},
+			},
+			Containers: score.WorkloadContainers{
+				"backend": score.Container{Image: image},
+			},
+			Resources: score.WorkloadResources{
+				"img": score.Resource{Type: "image-ref"},
+				"env": score.Resource{Type: "environment"},
+			},
+		}
+	}
+
+	for _, tt := range []struct {
+		Name     string
+		Image    string
+		Expected string
+		Error    string
+	}{
+		{Name: "no placeholder", Image: "busybox", Expected: "busybox"},
+		{
+			Name:     "metadata ref",
+			Image:    "registry.example.com/${metadata.name}:latest",
+			Expected: "registry.example.com/test:latest",
+		},
+		{
+			Name:     "annotation ref",
+			Image:    `registry.example.com/${metadata.name}:${metadata.annotations.devbox\.io/revision}`,
+			Expected: "registry.example.com/test:abc123",
+		},
+		{
+			Name:     "resource output ref",
+			Image:    "${resources.img.image}",
+			Expected: "registry.example.com/ledger:deadbeef",
+		},
+		{
+			// Deferred to compose, which interpolates the image field at "compose up" time.
+			Name:     "deferred environment ref",
+			Image:    "registry.example.com/thing:${resources.env.TAG}",
+			Expected: "registry.example.com/thing:${TAG}",
+		},
+		{
+			// $$ is left intact so that compose unescapes it into a literal $.
+			Name:     "escaped dollar left for compose",
+			Image:    "registry.example.com/thing:$${TAG}",
+			Expected: "registry.example.com/thing:$${TAG}",
+		},
+		{
+			Name:  "unknown resource",
+			Image: "${resources.nope.image}",
+			Error: "containers.backend.image: invalid ref 'resources.nope.image': no known resource 'nope'",
+		},
+		{
+			Name:  "unknown reference root",
+			Image: "registry.example.com/thing:${TAG}",
+			Error: "containers.backend.image: invalid ref 'TAG': unknown reference root, use $$ to escape the substitution",
+		},
+	} {
+		t.Run(tt.Name, func(t *testing.T) {
+			workload := buildWorkload(tt.Image)
+			state := &project.State{
+				Workloads: map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{},
+				Resources: map[framework.ResourceUid]framework.ScoreResourceState[framework.NoExtras]{},
+			}
+			state, _ = state.WithWorkload(workload, nil, project.WorkloadExtras{})
+			state, _ = state.WithPrimedResources()
+			state.Resources["image-ref.default#test.img"] = framework.ScoreResourceState[framework.NoExtras]{
+				Outputs: map[string]interface{}{"image": "registry.example.com/ledger:deadbeef"},
+			}
+			evt := new(envprov.Provisioner)
+			state.Resources["environment.default#test.env"] = framework.ScoreResourceState[framework.NoExtras]{
+				OutputLookupFunc: evt.LookupOutput,
+			}
+
+			proj, err := ConvertSpec(state, workload)
+			if tt.Error != "" {
+				assert.ErrorContains(t, err, tt.Error)
+				return
+			}
+			if assert.NoError(t, err) {
+				assert.Equal(t, tt.Expected, proj.Services["test-backend"].Image)
+			}
+		})
+	}
+}
