@@ -47,7 +47,28 @@ These can be found in the default provisioners file. You are encouraged to write
 
 ## Installation
 
+### macOS / Linux
+
 To install `score-compose`, follow the instructions as described in our [installation guide](https://docs.score.dev/docs/score-implementation/score-compose/#installation). You will also need a recent version of Docker and the Compose plugin installed. Read more [here](https://docs.docker.com/compose/install/).
+
+### Windows
+
+**[Scoop](https://scoop.sh/) (recommended):**
+
+```powershell
+scoop bucket add score-spec https://github.com/score-spec/scoop-bucket
+scoop install score-compose
+```
+
+**[WinGet](https://learn.microsoft.com/en-us/windows/package-manager/winget/) (Windows 10/11 built-in):**
+
+```powershell
+winget install score-spec.score-compose
+```
+
+**Manual:**
+
+Download the latest Windows `.zip` from the [GitHub Releases page](https://github.com/score-spec/score-compose/releases) and add `score-compose.exe` to your `PATH`.
 
 ## Get started
 
