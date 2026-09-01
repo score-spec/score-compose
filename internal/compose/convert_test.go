@@ -940,3 +940,190 @@ func TestConvertFiles_with_mode(t *testing.T) {
 	assert.Equal(t, 0644, int(st.Mode()))
 	assert.True(t, out[3].ReadOnly)
 }
+
+// buildPlaceholderState returns a project.State configured with the given files and annotations.
+// It exists to keep the custom-delimiter test bodies short.
+func buildPlaceholderState(t *testing.T, td string, annotations map[string]interface{}, files map[string]score.ContainerFile) *project.State {
+	t.Helper()
+	metadata := score.WorkloadMetadata{"name": "my-workload"}
+	if annotations != nil {
+		metadata["annotations"] = annotations
+	}
+	return &project.State{
+		Workloads: map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{"my-workload": {
+			Spec: score.Workload{
+				Metadata: metadata,
+				Containers: map[string]score.Container{
+					"my-container": {Files: files},
+				},
+			},
+			File: util.Ref(filepath.Join(td, "score.yaml")),
+		}},
+		Extras: project.StateExtras{MountsDirectory: td},
+	}
+}
+
+// TestConvertFilesIntoVolumes_customDelimiters_happyPath exercises the experiment annotations:
+// files use the custom delimiter pair for substitution and literal ${...} is preserved verbatim.
+func TestConvertFilesIntoVolumes_customDelimiters_happyPath(t *testing.T) {
+	td := t.TempDir()
+	state := buildPlaceholderState(t, td,
+		map[string]interface{}{
+			"compose.score.dev/experiment-placeholder-start": "%{",
+			"compose.score.dev/experiment-placeholder-end":   "}",
+		},
+		map[string]score.ContainerFile{
+			"/app.properties": {Content: util.Ref("name=%{metadata.name}\nliteral=${DB_HOST}")},
+		},
+	)
+	out, err := convertFilesIntoVolumes(
+		state, "my-workload", "my-container",
+		func(s string) (string, error) {
+			if s == "metadata.name" {
+				return "blah", nil
+			}
+			return "", fmt.Errorf("unknown key: %s", s)
+		},
+	)
+	assert.NoError(t, err)
+	assert.Len(t, out, 1)
+	raw, err := os.ReadFile(filepath.Join(td, "files", "my-workload-files-app.properties"))
+	assert.NoError(t, err)
+	assert.Equal(t, "name=blah\nliteral=${DB_HOST}", string(raw))
+}
+
+// TestConvertFilesIntoVolumes_customDelimiters_asymmetric covers a delimiter pair with different
+// start/end strings, e.g. Spring Boot-friendly <%{ ... }%>.
+func TestConvertFilesIntoVolumes_customDelimiters_asymmetric(t *testing.T) {
+	td := t.TempDir()
+	state := buildPlaceholderState(t, td,
+		map[string]interface{}{
+			"compose.score.dev/experiment-placeholder-start": "<%{",
+			"compose.score.dev/experiment-placeholder-end":   "}%>",
+		},
+		map[string]score.ContainerFile{
+			"/app.properties": {Content: util.Ref("host=<%{metadata.name}%>")},
+		},
+	)
+	_, err := convertFilesIntoVolumes(
+		state, "my-workload", "my-container",
+		func(s string) (string, error) {
+			if s == "metadata.name" {
+				return "spring-app", nil
+			}
+			return "", fmt.Errorf("unknown key: %s", s)
+		},
+	)
+	assert.NoError(t, err)
+	raw, err := os.ReadFile(filepath.Join(td, "files", "my-workload-files-app.properties"))
+	assert.NoError(t, err)
+	assert.Equal(t, "host=spring-app", string(raw))
+}
+
+// TestConvertFilesIntoVolumes_customDelimiters_unset confirms that the default ${...} behavior is
+// fully preserved when neither annotation is present (backward compatibility).
+func TestConvertFilesIntoVolumes_customDelimiters_unset(t *testing.T) {
+	td := t.TempDir()
+	state := buildPlaceholderState(t, td,
+		nil,
+		map[string]score.ContainerFile{
+			"/app.properties": {Content: util.Ref("name=${metadata.name}")},
+		},
+	)
+	_, err := convertFilesIntoVolumes(
+		state, "my-workload", "my-container",
+		func(s string) (string, error) {
+			if s == "metadata.name" {
+				return "blah", nil
+			}
+			return "", fmt.Errorf("unknown key: %s", s)
+		},
+	)
+	assert.NoError(t, err)
+	raw, err := os.ReadFile(filepath.Join(td, "files", "my-workload-files-app.properties"))
+	assert.NoError(t, err)
+	assert.Equal(t, "name=blah", string(raw))
+}
+
+// TestConvertFilesIntoVolumes_customDelimiters_noExpandWins: noExpand: true wins over custom
+// delimiters, so the file content is written through verbatim.
+func TestConvertFilesIntoVolumes_customDelimiters_noExpandWins(t *testing.T) {
+	td := t.TempDir()
+	state := buildPlaceholderState(t, td,
+		map[string]interface{}{
+			"compose.score.dev/experiment-placeholder-start": "%{",
+			"compose.score.dev/experiment-placeholder-end":   "}",
+		},
+		map[string]score.ContainerFile{
+			"/raw.txt": {Content: util.Ref("verbatim %{metadata.name}"), NoExpand: util.Ref(true)},
+		},
+	)
+	_, err := convertFilesIntoVolumes(
+		state, "my-workload", "my-container",
+		func(s string) (string, error) { return "", fmt.Errorf("should not be called") },
+	)
+	assert.NoError(t, err)
+	raw, err := os.ReadFile(filepath.Join(td, "files", "my-workload-files-raw.txt"))
+	assert.NoError(t, err)
+	assert.Equal(t, "verbatim %{metadata.name}", string(raw))
+}
+
+// TestConvertFilesIntoVolumes_customDelimiters_onlyStart: setting just the start annotation
+// without the end is rejected.
+func TestConvertFilesIntoVolumes_customDelimiters_onlyStart(t *testing.T) {
+	td := t.TempDir()
+	state := buildPlaceholderState(t, td,
+		map[string]interface{}{
+			"compose.score.dev/experiment-placeholder-start": "%{",
+		},
+		map[string]score.ContainerFile{
+			"/a.txt": {Content: util.Ref("anything")},
+		},
+	)
+	_, err := convertFilesIntoVolumes(
+		state, "my-workload", "my-container",
+		func(s string) (string, error) { return "", nil },
+	)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "must be set together")
+}
+
+// TestConvertFilesIntoVolumes_customDelimiters_onlyEnd: mirror of the start-only case.
+func TestConvertFilesIntoVolumes_customDelimiters_onlyEnd(t *testing.T) {
+	td := t.TempDir()
+	state := buildPlaceholderState(t, td,
+		map[string]interface{}{
+			"compose.score.dev/experiment-placeholder-end": "}",
+		},
+		map[string]score.ContainerFile{
+			"/a.txt": {Content: util.Ref("anything")},
+		},
+	)
+	_, err := convertFilesIntoVolumes(
+		state, "my-workload", "my-container",
+		func(s string) (string, error) { return "", nil },
+	)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "must be set together")
+}
+
+// TestConvertFilesIntoVolumes_customDelimiters_emptyValue: empty-string annotation values are
+// rejected up front rather than passed down to the score-go constructor.
+func TestConvertFilesIntoVolumes_customDelimiters_emptyValue(t *testing.T) {
+	td := t.TempDir()
+	state := buildPlaceholderState(t, td,
+		map[string]interface{}{
+			"compose.score.dev/experiment-placeholder-start": "%{",
+			"compose.score.dev/experiment-placeholder-end":   "",
+		},
+		map[string]score.ContainerFile{
+			"/a.txt": {Content: util.Ref("anything")},
+		},
+	)
+	_, err := convertFilesIntoVolumes(
+		state, "my-workload", "my-container",
+		func(s string) (string, error) { return "", nil },
+	)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "must be a non-empty string")
+}
