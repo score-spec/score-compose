@@ -44,8 +44,7 @@ jobs:
       - name: Check licenses
         run: addlicense -l apache -check -v -ignore '**/*.yaml' -c 'The Score Authors' ./cmd ./internal/
   test-multi-arch-build:
-    uses: docker/github-builder/.github/workflows/build.yml@58cb9f5b71b1836d6f690c1e95effdeb9b98cb8a # main
-    if: ${{ !github.event.pull_request.head.repo.fork }}
+    uses: docker/github-builder/.github/workflows/build.yml@58cb9f5b71b1836d6f690c1e95effdeb9b98cb8a # v1.17.0
     permissions:
       id-token: write # required to request the GitHub OIDC token
     with:
@@ -71,7 +70,6 @@ jobs:
     permissions:
       pull-requests: write
       id-token: write # required to request the GitHub OIDC token
-    if: ${{ !github.event.pull_request.head.repo.fork }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
