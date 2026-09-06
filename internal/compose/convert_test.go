@@ -747,23 +747,23 @@ func TestConvertFilesIntoVolumes_nominal(t *testing.T) {
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, []compose.ServiceVolumeConfig{
-		{Type: "bind", Target: "/ant.txt", Source: filepath.Join(td, "files", "my-workload-files-ant.txt")},
-		{Type: "bind", Target: "/bat.txt", Source: filepath.Join(td, "files", "my-workload-files-bat.txt")},
-		{Type: "bind", Target: "/cat.txt", Source: filepath.Join(td, "files", "my-workload-files-cat.txt")},
-		{Type: "bind", Target: "/dog.txt", Source: filepath.Join(td, "files", "my-workload-files-dog.txt")},
-		{Type: "bind", Target: "/eel.txt", Source: filepath.Join(td, "files", "my-workload-files-eel.txt")},
-		{Type: "bind", Target: "/fox.txt", Source: filepath.Join(td, "files", "my-workload-files-fox.txt")},
-		{Type: "bind", Target: "/goat.txt", Source: filepath.Join(td, "files", "my-workload-files-goat.txt")},
+		{Type: "bind", Target: "/ant.txt", Source: filepath.Join(td, "files", "my-workload-my-container-files-17cb75f5-ant.txt")},
+		{Type: "bind", Target: "/bat.txt", Source: filepath.Join(td, "files", "my-workload-my-container-files-1f801758-bat.txt")},
+		{Type: "bind", Target: "/cat.txt", Source: filepath.Join(td, "files", "my-workload-my-container-files-91881386-cat.txt")},
+		{Type: "bind", Target: "/dog.txt", Source: filepath.Join(td, "files", "my-workload-my-container-files-217ae5f1-dog.txt")},
+		{Type: "bind", Target: "/eel.txt", Source: filepath.Join(td, "files", "my-workload-my-container-files-739aba5f-eel.txt")},
+		{Type: "bind", Target: "/fox.txt", Source: filepath.Join(td, "files", "my-workload-my-container-files-f255eae5-fox.txt")},
+		{Type: "bind", Target: "/goat.txt", Source: filepath.Join(td, "files", "my-workload-my-container-files-5c6379d6-goat.txt")},
 	}, out)
 	for k, v := range map[string]string{
-		"my-workload-files-ant.txt": "first blah second",
-		"my-workload-files-bat.txt": "first ${metadata.name} second",
-		"my-workload-files-cat.txt": "first blah second",
-		"my-workload-files-dog.txt": "third blah fourth",
-		"my-workload-files-eel.txt": "third ${metadata.name} fourth",
-		"my-workload-files-fox.txt": "third blah fourth",
+		"my-workload-my-container-files-17cb75f5-ant.txt": "first blah second",
+		"my-workload-my-container-files-1f801758-bat.txt": "first ${metadata.name} second",
+		"my-workload-my-container-files-91881386-cat.txt": "first blah second",
+		"my-workload-my-container-files-217ae5f1-dog.txt": "third blah fourth",
+		"my-workload-my-container-files-739aba5f-eel.txt": "third ${metadata.name} fourth",
+		"my-workload-my-container-files-f255eae5-fox.txt": "third blah fourth",
 		// NOTE: binaryContent doesn't support placeholders
-		"my-workload-files-goat.txt": "fifth ${metadata.name} sixth",
+		"my-workload-my-container-files-5c6379d6-goat.txt": "fifth ${metadata.name} sixth",
 	} {
 		t.Run(k, func(t *testing.T) {
 			raw, err := os.ReadFile(filepath.Join(td, "files", k))
@@ -923,19 +923,19 @@ func TestConvertFiles_with_mode(t *testing.T) {
 		},
 	)
 	assert.NoError(t, err)
-	st, err := os.Stat(filepath.Join(td, "files/my-workload-files-ant.txt"))
+	st, err := os.Stat(filepath.Join(td, "files/my-workload-my-container-files-17cb75f5-ant.txt"))
 	assert.NoError(t, err)
 	assert.Equal(t, 0644, int(st.Mode()))
 	assert.False(t, out[0].ReadOnly)
-	st, err = os.Stat(filepath.Join(td, "files/my-workload-files-bat.txt"))
+	st, err = os.Stat(filepath.Join(td, "files/my-workload-my-container-files-1f801758-bat.txt"))
 	assert.NoError(t, err)
 	assert.Equal(t, 0600, int(st.Mode()))
 	assert.False(t, out[1].ReadOnly)
-	st, err = os.Stat(filepath.Join(td, "files/my-workload-files-cat.txt"))
+	st, err = os.Stat(filepath.Join(td, "files/my-workload-my-container-files-91881386-cat.txt"))
 	assert.NoError(t, err)
 	assert.Equal(t, 0754, int(st.Mode()))
 	assert.False(t, out[2].ReadOnly)
-	st, err = os.Stat(filepath.Join(td, "files/my-workload-files-dog.txt"))
+	st, err = os.Stat(filepath.Join(td, "files/my-workload-my-container-files-217ae5f1-dog.txt"))
 	assert.NoError(t, err)
 	assert.Equal(t, 0644, int(st.Mode()))
 	assert.True(t, out[3].ReadOnly)
