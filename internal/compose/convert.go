@@ -25,6 +25,7 @@ import (
 	"slices"
 	"maps"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -290,16 +291,92 @@ func convertProbeToExec(p *score.ContainerProbe) (*compose.HealthCheckConfig, er
 	return nil, fmt.Errorf("exec or httpGet must be specified")
 }
 
+// Annotation keys for opting into a custom pair of file-content placeholder delimiters.
+// Both annotations must be set together. When set, Score expands placeholders bounded by
+// the given start/end strings instead of the default "${" and "}". This is experimental and
+// compose-only; if it works out in practice it may later be promoted to a spec property.
+const (
+	annotationPlaceholderStart = "compose.score.dev/experiment-placeholder-start"
+	annotationPlaceholderEnd   = "compose.score.dev/experiment-placeholder-end"
+)
+
+// substituteWithDelimiters expands placeholders in src using a custom start/end pair instead of
+// the default ${...} syntax. Used by the experimental compose.score.dev/experiment-placeholder-*
+// annotations. There is no escape mechanism; if the chosen delimiters appear literally in the
+// file they will be matched and expanded.
+func substituteWithDelimiters(src, start, end string, replacer func(string) (string, error)) (string, error) {
+	pattern := regexp.QuoteMeta(start) + "(.*?)" + regexp.QuoteMeta(end)
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return "", fmt.Errorf("failed to build delimiter regex from start=%q end=%q: %w", start, end, err)
+	}
+	var subErr error
+	result := re.ReplaceAllStringFunc(src, func(match string) string {
+		groups := re.FindStringSubmatch(match)
+		if len(groups) < 2 {
+			return match
+		}
+		res, err := replacer(groups[1])
+		if err != nil {
+			subErr = errors.Join(subErr, err)
+			return match
+		}
+		return res
+	})
+	return result, subErr
+}
+
+// readPlaceholderDelimiters extracts the experiment-placeholder-{start,end} annotations from a
+// workload spec. It returns (start, end, true, nil) when both are set, ("", "", false, nil) when
+// neither is set, and an error when exactly one is set.
+func readPlaceholderDelimiters(spec score.Workload) (string, string, bool, error) {
+	annotations, ok := spec.Metadata["annotations"].(map[string]interface{})
+	if !ok {
+		annotations, ok = spec.Metadata["annotations"].(score.WorkloadMetadata)
+	}
+	if !ok {
+		return "", "", false, nil
+	}
+	startRaw, hasStart := annotations[annotationPlaceholderStart]
+	endRaw, hasEnd := annotations[annotationPlaceholderEnd]
+	if !hasStart && !hasEnd {
+		return "", "", false, nil
+	}
+	if !hasStart || !hasEnd {
+		return "", "", false, fmt.Errorf(
+			"annotations %q and %q must be set together (got start=%t, end=%t)",
+			annotationPlaceholderStart, annotationPlaceholderEnd, hasStart, hasEnd,
+		)
+	}
+	start, ok := startRaw.(string)
+	if !ok || start == "" {
+		return "", "", false, fmt.Errorf("annotation %q must be a non-empty string", annotationPlaceholderStart)
+	}
+	end, ok := endRaw.(string)
+	if !ok || end == "" {
+		return "", "", false, fmt.Errorf("annotation %q must be a non-empty string", annotationPlaceholderEnd)
+	}
+	return start, end, true, nil
+}
+
 // convertFilesIntoVolumes converts the lists of files into a list of bind mounts in the mounts directory.
 func convertFilesIntoVolumes(state *project.State, workloadName string, containerName string, substitutionFunction func(string) (string, error)) ([]compose.ServiceVolumeConfig, error) {
-	input := state.Workloads[workloadName].Spec.Containers[containerName].Files
+	spec := state.Workloads[workloadName].Spec
+	input := spec.Containers[containerName].Files
 	mountsDirectory := state.Extras.MountsDirectory
 	if mountsDirectory == "" || mountsDirectory == "/dev/null" {
 		return nil, fmt.Errorf("files are not supported")
 	}
 
+	// Check for the experimental custom-delimiter annotations on the workload. When set, file
+	// content is expanded using those delimiters instead of the default ${...} syntax.
+	// noExpand: true on a file still takes priority, and binaryContent is unaffected.
+	customStart, customEnd, useCustomDelimiters, err := readPlaceholderDelimiters(spec)
+	if err != nil {
+		return nil, fmt.Errorf("workload %q: %w", workloadName, err)
+	}
+
 	output := make([]compose.ServiceVolumeConfig, 0, len(input))
-	var err error
 
 	filesDir := filepath.Join(mountsDirectory, "files")
 	if err = os.MkdirAll(filesDir, 0755); err != nil && !errors.Is(err, os.ErrExist) {
@@ -331,9 +408,15 @@ func convertFilesIntoVolumes(state *project.State, workloadName string, containe
 			return nil, fmt.Errorf("containers.%s.files[%s]: missing 'content', 'binaryContent', or 'source'", containerName, target)
 		}
 		if (file.NoExpand == nil || !*file.NoExpand) && utf8.Valid(content) && file.BinaryContent == nil {
-			stringContent, err := framework.SubstituteString(string(content), substitutionFunction)
-			if err != nil {
-				return nil, fmt.Errorf("containers.%s.files[%s]: failed to substitute in content: %w", containerName, target, err)
+			var stringContent string
+			var subErr error
+			if useCustomDelimiters {
+				stringContent, subErr = substituteWithDelimiters(string(content), customStart, customEnd, substitutionFunction)
+			} else {
+				stringContent, subErr = framework.SubstituteString(string(content), substitutionFunction)
+			}
+			if subErr != nil {
+				return nil, fmt.Errorf("containers.%s.files[%s]: failed to substitute in content: %w", containerName, target, subErr)
 			}
 			content = []byte(stringContent)
 		}
