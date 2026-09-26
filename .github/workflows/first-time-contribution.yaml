@@ -1,0 +1,45 @@
+name: 'First time contributor'
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  welcome_first_contributor:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.author_association == 'NONE'
+    steps:
+      - name: Add label and welcome comment with DCO check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Add label
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['first-time contributor']
+            });
+
+            // Check DCO
+            const { data: commits } = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+
+            const hasDCO = commits.every(commit =>
+              commit.commit.message.includes('Signed-off-by:')
+            );
+
+            const dcoMessage = hasDCO 
+              ? ''
+              : '\n\n Please sign your commits or look the DCO.';
+
+            // Post comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `Welcome, New contributor! Thank you for submitting your PR on Score-Compose.${dcoMessage}\n\nPlease review our Contributing Guidelines [here](https://github.com/score-spec/score-compose/blob/main/CONTRIBUTING.md).\n\nA maintainer will review your pull request soon. Thank you for helping make Score better ♥️!`
+            });
