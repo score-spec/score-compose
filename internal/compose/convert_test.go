@@ -940,3 +940,37 @@ func TestConvertFiles_with_mode(t *testing.T) {
 	assert.Equal(t, 0644, int(st.Mode()))
 	assert.True(t, out[3].ReadOnly)
 }
+
+func TestConvertFilesIntoVolumes_modeAppliedOnRewrite(t *testing.T) {
+	td := t.TempDir()
+	buildState := func(mode string) *project.State {
+		return &project.State{
+			Workloads: map[string]framework.ScoreWorkloadState[project.WorkloadExtras]{"my-workload": {
+				Spec: score.Workload{
+					Containers: map[string]score.Container{
+						"my-container": {
+							Files: map[string]score.ContainerFile{
+								"/secret.txt": {Content: util.Ref("token"), Mode: util.Ref(mode)},
+							},
+						},
+					},
+				},
+				File: util.Ref(filepath.Join(td, "score.yaml")),
+			}},
+			Extras: project.StateExtras{MountsDirectory: td},
+		}
+	}
+	substitute := func(s string) (string, error) { return "", fmt.Errorf("unknown key") }
+
+	_, err := convertFilesIntoVolumes(buildState("0644"), "my-workload", "my-container", substitute)
+	assert.NoError(t, err)
+
+	// A second generate tightening the mode of a file that already exists
+	out, err := convertFilesIntoVolumes(buildState("0400"), "my-workload", "my-container", substitute)
+	assert.NoError(t, err)
+	assert.Len(t, out, 1)
+
+	st, err := os.Stat(out[0].Source)
+	assert.NoError(t, err)
+	assert.Equal(t, os.FileMode(0600), st.Mode().Perm())
+}

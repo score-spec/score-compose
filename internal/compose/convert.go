@@ -359,13 +359,19 @@ func convertFilesIntoVolumes(state *project.State, workloadName string, containe
 			fileMode = os.FileMode(newMode)
 		}
 
-		if err := os.WriteFile(filepath.Join(filesDir, newName), content, fileMode); err != nil {
+		outputFile := filepath.Join(filesDir, newName)
+		if err := os.WriteFile(outputFile, content, fileMode); err != nil {
 			return nil, fmt.Errorf("containers.%s.files[%s]: failed to write to disk: %w", containerName, target, err)
+		}
+		// WriteFile only applies the mode when it creates the file, so a file left behind by an
+		// earlier generate keeps whatever mode it had.
+		if err := os.Chmod(outputFile, fileMode); err != nil {
+			return nil, fmt.Errorf("containers.%s.files[%s]: failed to set mode: %w", containerName, target, err)
 		}
 
 		output = append(output, compose.ServiceVolumeConfig{
 			Type:     "bind",
-			Source:   filepath.Join(filesDir, newName),
+			Source:   outputFile,
 			Target:   target,
 			ReadOnly: readOnly,
 		})
