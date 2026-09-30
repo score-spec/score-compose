@@ -233,9 +233,9 @@ services:
   example-example:
     annotations:
       compose.score.dev/workload-name: example
+    hostname: example
     build:
       context: ./dir
-    hostname: example
 `
 		assert.Equal(t, expectedOutput, string(raw))
 		// generate again just for luck
@@ -260,11 +260,11 @@ services:
   example-example:
     annotations:
       compose.score.dev/workload-name: example
+    hostname: example
     build:
       context: ./dir
       args:
         DEBUG: "true"
-    hostname: example
 `
 		assert.Equal(t, expectedOutput, string(raw))
 	})
@@ -282,11 +282,11 @@ services:
   example-example:
     annotations:
       compose.score.dev/workload-name: example
+    hostname: example
     build:
       context: ./dir
       args:
         DEBUG: null
-    hostname: example
 `
 		assert.Equal(t, expectedOutput, string(raw))
 	})
@@ -304,9 +304,9 @@ services:
   example-example:
     annotations:
       compose.score.dev/workload-name: example
+    hostname: example
     build:
       context: ./dir
-    hostname: example
 `
 		assert.Equal(t, expectedOutput, string(raw))
 	})
@@ -657,12 +657,12 @@ services:
   example-example:
     annotations:
       compose.score.dev/workload-name: example
+    hostname: example
+    image: foo
     depends_on:
       wait-for-resources:
         condition: service_completed_successfully
         required: true
-    hostname: example
-    image: foo
   generic_service:
     image: other
   init_service:
@@ -670,14 +670,15 @@ services:
     labels:
       dev.score.compose.labels.is-init-container: "true"
   service_with_healthcheck:
+    image: something
     healthcheck:
       test:
         - CMD
         - boo
-    image: something
   wait-for-resources:
     command:
       - echo
+    image: alpine
     depends_on:
       generic_service:
         condition: service_started
@@ -688,7 +689,6 @@ services:
       service_with_healthcheck:
         condition: service_healthy
         required: true
-    image: alpine
 `, string(raw))
 
 	t.Run("validate compose spec", func(t *testing.T) {
@@ -758,17 +758,18 @@ services:
   example-example:
     annotations:
       compose.score.dev/workload-name: example
+    hostname: example
+    image: busybox
     depends_on:
       wait-for-resources:
         condition: service_completed_successfully
         required: true
-    hostname: example
-    image: busybox
   foo-service:
     image: foo-image
   wait-for-resources:
     command:
       - echo
+    image: alpine
     depends_on:
       bar-service:
         condition: service_started
@@ -776,7 +777,6 @@ services:
       foo-service:
         condition: service_started
         required: true
-    image: alpine
 `, string(raw))
 }
 

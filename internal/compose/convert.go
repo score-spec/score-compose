@@ -153,13 +153,15 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 		}
 
 		var svc = compose.ServiceConfig{
-			Name:        workloadName + "-" + containerName,
-			Annotations: buildWorkloadAnnotations(workloadName, spec),
-			Image:       cSpec.Image,
-			Entrypoint:  cSpec.Command,
-			Command:     cSpec.Args,
-			Environment: env,
-			Volumes:     volumes,
+			Name: workloadName + "-" + containerName,
+			ContainerSpec: compose.ContainerSpec{
+				Annotations: buildWorkloadAnnotations(workloadName, spec),
+				Image:       cSpec.Image,
+				Entrypoint:  cSpec.Command,
+				Command:     cSpec.Args,
+				Environment: env,
+				Volumes:     volumes,
+			},
 		}
 
 		if cSpec.ReadinessProbe != nil {

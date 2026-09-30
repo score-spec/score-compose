@@ -87,21 +87,23 @@ func TestScoreConvert(t *testing.T) {
 				Services: compose.Services{
 					"test-backend": {
 						Name: "test-backend",
-						Annotations: map[string]string{
-							"compose.score.dev/workload-name": "test",
-							"extra.name/annotation":           "foo",
-						},
-						Hostname: "test",
-						Image:    "busybox",
-						Entrypoint: compose.ShellCommand{
-							"/bin/sh",
-						},
-						Command: compose.ShellCommand{
-							"-c",
-							"while true; echo ...sleeping 10 sec...; sleep 10; done",
-						},
-						Environment: compose.MappingWithEquals{
-							"CONNECTION_STRING": stringPtr("test connection string"),
+						ContainerSpec: compose.ContainerSpec{
+							Annotations: map[string]string{
+								"compose.score.dev/workload-name": "test",
+								"extra.name/annotation":           "foo",
+							},
+							Hostname: "test",
+							Image:    "busybox",
+							Entrypoint: compose.ShellCommand{
+								"/bin/sh",
+							},
+							Command: compose.ShellCommand{
+								"-c",
+								"while true; echo ...sleeping 10 sec...; sleep 10; done",
+							},
+							Environment: compose.MappingWithEquals{
+								"CONNECTION_STRING": stringPtr("test connection string"),
+							},
 						},
 					},
 				},
@@ -127,16 +129,20 @@ func TestScoreConvert(t *testing.T) {
 				Services: compose.Services{
 					"test-backend": {
 						Name: "test-backend",
-						Annotations: map[string]string{
-							"compose.score.dev/workload-name": "test",
+						ContainerSpec: compose.ContainerSpec{
+							Annotations: map[string]string{
+								"compose.score.dev/workload-name": "test",
+							},
+							Hostname: "test",
+							Image:    "busybox",
+							Environment: compose.MappingWithEquals{},
 						},
-						Hostname: "test",
-						Image:    "busybox",
-						Environment: compose.MappingWithEquals{},
-						HealthCheck: &compose.HealthCheckConfig{
-							Test:     compose.HealthCheckTest{"CMD", "true"},
-							Interval: util.Ref(compose.Duration(5 * time.Second)),
-							Timeout:  util.Ref(compose.Duration(5 * time.Second)),
+						WorkloadSpec: compose.WorkloadSpec{
+							HealthCheck: &compose.HealthCheckConfig{
+								Test:     compose.HealthCheckTest{"CMD", "true"},
+								Interval: util.Ref(compose.Duration(5 * time.Second)),
+								Timeout:  util.Ref(compose.Duration(5 * time.Second)),
+							},
 						},
 					},
 				},
@@ -184,23 +190,25 @@ func TestScoreConvert(t *testing.T) {
 				Services: compose.Services{
 					"test-backend": {
 						Name: "test-backend",
-						Annotations: map[string]string{
-							"compose.score.dev/workload-name": "test",
-						},
-						Hostname: "test",
-						Image:    "busybox",
-						Environment: compose.MappingWithEquals{
-							"DEBUG":             stringPtr("${DEBUG}"),
-							"LOGS_LEVEL":        stringPtr("$${LOGS_LEVEL}"),
-							"DOMAIN_NAME":       stringPtr("${SOME_DNS_DOMAIN_NAME?required}"),
-							"CONNECTION_STRING": stringPtr("postgresql://${APP_DB_HOST?required}:${APP_DB_PORT?required}/${APP_DB_NAME?required}"),
-						},
-						Volumes: []compose.ServiceVolumeConfig{
-							{
-								Type:     "volume",
-								Source:   "example",
-								Target:   "/mnt/data",
-								ReadOnly: true,
+						ContainerSpec: compose.ContainerSpec{
+							Annotations: map[string]string{
+								"compose.score.dev/workload-name": "test",
+							},
+							Hostname: "test",
+							Image:    "busybox",
+							Environment: compose.MappingWithEquals{
+								"DEBUG":             stringPtr("${DEBUG}"),
+								"LOGS_LEVEL":        stringPtr("$${LOGS_LEVEL}"),
+								"DOMAIN_NAME":       stringPtr("${SOME_DNS_DOMAIN_NAME?required}"),
+								"CONNECTION_STRING": stringPtr("postgresql://${APP_DB_HOST?required}:${APP_DB_PORT?required}/${APP_DB_NAME?required}"),
+							},
+							Volumes: []compose.ServiceVolumeConfig{
+								{
+									Type:     "volume",
+									Source:   "example",
+									Target:   "/mnt/data",
+									ReadOnly: true,
+								},
 							},
 						},
 					},
@@ -256,23 +264,25 @@ func TestScoreConvert(t *testing.T) {
 				Services: compose.Services{
 					"test-backend": {
 						Name: "test-backend",
-						Annotations: map[string]string{
-							"compose.score.dev/workload-name": "test",
-						},
-						Hostname: "test",
-						Image:    "busybox",
-						Environment: compose.MappingWithEquals{
-							"DEBUG":             stringPtr("${DEBUG}"),
-							"LOGS_LEVEL":        stringPtr("$${LOGS_LEVEL}"),
-							"DOMAIN_NAME":       stringPtr("${SOME_DNS_DOMAIN_NAME?required}"),
-							"CONNECTION_STRING": stringPtr("mysql://${APP_DB_HOST?required}:${APP_DB_PORT?required}/${APP_DB_NAME?required}"),
-						},
-						Volumes: []compose.ServiceVolumeConfig{
-							{
-								Type:     "volume",
-								Source:   "example",
-								Target:   "/mnt/data",
-								ReadOnly: true,
+						ContainerSpec: compose.ContainerSpec{
+							Annotations: map[string]string{
+								"compose.score.dev/workload-name": "test",
+							},
+							Hostname: "test",
+							Image:    "busybox",
+							Environment: compose.MappingWithEquals{
+								"DEBUG":             stringPtr("${DEBUG}"),
+								"LOGS_LEVEL":        stringPtr("$${LOGS_LEVEL}"),
+								"DOMAIN_NAME":       stringPtr("${SOME_DNS_DOMAIN_NAME?required}"),
+								"CONNECTION_STRING": stringPtr("mysql://${APP_DB_HOST?required}:${APP_DB_PORT?required}/${APP_DB_NAME?required}"),
+							},
+							Volumes: []compose.ServiceVolumeConfig{
+								{
+									Type:     "volume",
+									Source:   "example",
+									Target:   "/mnt/data",
+									ReadOnly: true,
+								},
 							},
 						},
 					},
@@ -316,26 +326,30 @@ func TestScoreConvert(t *testing.T) {
 			Project: &compose.Project{
 				Services: compose.Services{
 					"test-backend": {
-						Annotations: map[string]string{
-							"compose.score.dev/workload-name": "test",
-						},
 						Name:     "test-backend",
-						Hostname: "test",
-						Image:    "busybox",
-						Environment: compose.MappingWithEquals{
-							"PORT": stringPtr("81"),
+						ContainerSpec: compose.ContainerSpec{
+							Annotations: map[string]string{
+								"compose.score.dev/workload-name": "test",
+							},
+							Hostname: "test",
+							Image:    "busybox",
+							Environment: compose.MappingWithEquals{
+								"PORT": stringPtr("81"),
+							},
 						},
 					},
 					"test-frontend": {
-						Annotations: map[string]string{
-							"compose.score.dev/workload-name": "test",
-						},
 						Name:  "test-frontend",
-						Image: "busybox",
-						Environment: compose.MappingWithEquals{
-							"PORT": stringPtr("80"),
+						ContainerSpec: compose.ContainerSpec{
+							Annotations: map[string]string{
+								"compose.score.dev/workload-name": "test",
+							},
+							Image: "busybox",
+							Environment: compose.MappingWithEquals{
+								"PORT": stringPtr("80"),
+							},
+							NetworkMode: "service:test-backend",
 						},
-						NetworkMode: "service:test-backend",
 					},
 				},
 			},
@@ -367,21 +381,23 @@ func TestScoreConvert(t *testing.T) {
 				Services: compose.Services{
 					"test-backend": {
 						Name: "test-backend",
-						Annotations: map[string]string{
-							"compose.score.dev/workload-name": "test",
-						},
-						Image:    "busybox",
-						Hostname: "test",
-						Entrypoint: compose.ShellCommand{
-							"/bin/sh",
-							"-c",
-						},
-						Command: compose.ShellCommand{
-							"echo hello $$A $${B} $$C world",
-						},
-						Environment: compose.MappingWithEquals{
-							"A": stringPtr("cat"),
-							"B": stringPtr("dog"),
+						ContainerSpec: compose.ContainerSpec{
+							Annotations: map[string]string{
+								"compose.score.dev/workload-name": "test",
+							},
+							Image:    "busybox",
+							Hostname: "test",
+							Entrypoint: compose.ShellCommand{
+								"/bin/sh",
+								"-c",
+							},
+							Command: compose.ShellCommand{
+								"echo hello $$A $${B} $$C world",
+							},
+							Environment: compose.MappingWithEquals{
+								"A": stringPtr("cat"),
+								"B": stringPtr("dog"),
+							},
 						},
 					},
 				},
@@ -416,20 +432,22 @@ func TestScoreConvert(t *testing.T) {
 				Services: compose.Services{
 					"test-backend": {
 						Name: "test-backend",
-						Annotations: map[string]string{
-							"compose.score.dev/workload-name": "test",
-						},
-						Image:       "busybox",
-						Hostname:    "test",
-						Environment: compose.MappingWithEquals{},
-						Volumes: []compose.ServiceVolumeConfig{
-							{
-								Type:     "volume",
-								Source:   "example",
-								Target:   "/mnt/data",
-								ReadOnly: true,
-								Volume: &compose.ServiceVolumeVolume{
-									Subpath: "sub/path",
+						ContainerSpec: compose.ContainerSpec{
+							Annotations: map[string]string{
+								"compose.score.dev/workload-name": "test",
+							},
+							Image:       "busybox",
+							Hostname:    "test",
+							Environment: compose.MappingWithEquals{},
+							Volumes: []compose.ServiceVolumeConfig{
+								{
+									Type:     "volume",
+									Source:   "example",
+									Target:   "/mnt/data",
+									ReadOnly: true,
+									Volume: &compose.ServiceVolumeVolume{
+										Subpath: "sub/path",
+									},
 								},
 							},
 						},
@@ -495,22 +513,28 @@ func TestScoreConvert(t *testing.T) {
 				Services: compose.Services{
 					"test-init": {
 						Name: "test-init",
-						Annotations: map[string]string{
-							"compose.score.dev/workload-name": "test",
+						ContainerSpec: compose.ContainerSpec{
+							Annotations: map[string]string{
+								"compose.score.dev/workload-name": "test",
+							},
+							Image:       "busybox",
+							Environment: compose.MappingWithEquals{},
 						},
-						Image:       "busybox",
-						Environment: compose.MappingWithEquals{},
 					},
 					"test-main": {
 						Name: "test-main",
-						Annotations: map[string]string{
-							"compose.score.dev/workload-name": "test",
+						ContainerSpec: compose.ContainerSpec{
+							Annotations: map[string]string{
+								"compose.score.dev/workload-name": "test",
+							},
+							Hostname:    "test",
+							Image:       "nginx",
+							Environment: compose.MappingWithEquals{},
 						},
-						Hostname:    "test",
-						Image:       "nginx",
-						Environment: compose.MappingWithEquals{},
-						DependsOn: compose.DependsOnConfig{
-							"test-init": {Condition: "service_completed_successfully", Required: true},
+						WorkloadSpec: compose.WorkloadSpec{
+							DependsOn: compose.DependsOnConfig{
+								"test-init": {Condition: "service_completed_successfully", Required: true},
+							},
 						},
 					},
 				},
@@ -548,35 +572,45 @@ func TestScoreConvert(t *testing.T) {
 				Services: compose.Services{
 					"test-init-one": {
 						Name: "test-init-one",
-						Annotations: map[string]string{
-							"compose.score.dev/workload-name": "test",
+						ContainerSpec: compose.ContainerSpec{
+							Annotations: map[string]string{
+								"compose.score.dev/workload-name": "test",
+							},
+							Image:       "busybox",
+							NetworkMode: "service:test-main",
+							Environment: compose.MappingWithEquals{},
 						},
-						Image:       "busybox",
-						NetworkMode: "service:test-main",
-						Environment: compose.MappingWithEquals{},
 					},
 					"test-init-two": {
 						Name: "test-init-two",
-						Annotations: map[string]string{
-							"compose.score.dev/workload-name": "test",
+						ContainerSpec: compose.ContainerSpec{
+							Annotations: map[string]string{
+								"compose.score.dev/workload-name": "test",
+							},
+							Image:       "busybox",
+							NetworkMode: "service:test-main",
+							Environment: compose.MappingWithEquals{},
 						},
-						Image:       "busybox",
-						NetworkMode: "service:test-main",
-						Environment: compose.MappingWithEquals{},
-						DependsOn: compose.DependsOnConfig{
-							"test-init-one": {Condition: "service_started", Required: true},
+						WorkloadSpec: compose.WorkloadSpec{
+							DependsOn: compose.DependsOnConfig{
+								"test-init-one": {Condition: "service_started", Required: true},
+							},
 						},
 					},
 					"test-main": {
 						Name: "test-main",
-						Annotations: map[string]string{
-							"compose.score.dev/workload-name": "test",
+						ContainerSpec: compose.ContainerSpec{
+							Annotations: map[string]string{
+								"compose.score.dev/workload-name": "test",
+							},
+							Hostname:    "test",
+							Image:       "nginx",
+							Environment: compose.MappingWithEquals{},
 						},
-						Hostname:    "test",
-						Image:       "nginx",
-						Environment: compose.MappingWithEquals{},
-						DependsOn: compose.DependsOnConfig{
-							"test-init-two": {Condition: "service_started", Required: true},
+						WorkloadSpec: compose.WorkloadSpec{
+							DependsOn: compose.DependsOnConfig{
+								"test-init-two": {Condition: "service_started", Required: true},
+							},
 						},
 					},
 				},
@@ -614,33 +648,41 @@ func TestScoreConvert(t *testing.T) {
 				Services: compose.Services{
 					"test-init": {
 						Name: "test-init",
-						Annotations: map[string]string{
-							"compose.score.dev/workload-name": "test",
+						ContainerSpec: compose.ContainerSpec{
+							Annotations: map[string]string{
+								"compose.score.dev/workload-name": "test",
+							},
+							Image:       "busybox",
+							Environment: compose.MappingWithEquals{},
 						},
-						Image:       "busybox",
-						Environment: compose.MappingWithEquals{},
 					},
 					"test-main": {
 						Name: "test-main",
-						Annotations: map[string]string{
-							"compose.score.dev/workload-name": "test",
+						ContainerSpec: compose.ContainerSpec{
+							Annotations: map[string]string{
+								"compose.score.dev/workload-name": "test",
+							},
+							Hostname:    "test",
+							Image:       "nginx",
+							Environment: compose.MappingWithEquals{},
 						},
-						Hostname:    "test",
-						Image:       "nginx",
-						Environment: compose.MappingWithEquals{},
-						DependsOn: compose.DependsOnConfig{
-							"test-init":    {Condition: "service_completed_successfully", Required: true},
-							"test-sidecar": {Condition: "service_started", Required: true},
+						WorkloadSpec: compose.WorkloadSpec{
+							DependsOn: compose.DependsOnConfig{
+								"test-init":    {Condition: "service_completed_successfully", Required: true},
+								"test-sidecar": {Condition: "service_started", Required: true},
+							},
 						},
 					},
 					"test-sidecar": {
 						Name: "test-sidecar",
-						Annotations: map[string]string{
-							"compose.score.dev/workload-name": "test",
+						ContainerSpec: compose.ContainerSpec{
+							Annotations: map[string]string{
+								"compose.score.dev/workload-name": "test",
+							},
+							Image:       "envoy",
+							NetworkMode: "service:test-main",
+							Environment: compose.MappingWithEquals{},
 						},
-						Image:       "envoy",
-						NetworkMode: "service:test-main",
-						Environment: compose.MappingWithEquals{},
 					},
 				},
 			},
