@@ -550,10 +550,14 @@ func injectWaitService(p *types.Project) (string, bool) {
 		return "", false
 	}
 	newService := types.ServiceConfig{
-		Name:      "wait-for-resources",
-		Image:     "alpine",
-		Command:   types.ShellCommand{"echo"},
-		DependsOn: make(types.DependsOnConfig),
+		Name: "wait-for-resources",
+		ContainerSpec: types.ContainerSpec{
+			Image:   "alpine",
+			Command: types.ShellCommand{"echo"},
+		},
+		WorkloadSpec: types.WorkloadSpec{
+			DependsOn: make(types.DependsOnConfig),
+		},
 	}
 	for otherServiceName, otherService := range p.Services {
 		condition := "service_started"

@@ -189,6 +189,7 @@ services:
     annotations:
       compose.score.dev/workload-name: workload-a
     hostname: workload-a
+    image: nginx
     healthcheck:
       test:
         - CMD
@@ -199,7 +200,6 @@ services:
         - http://localhost
       timeout: 5s
       interval: 5s
-    image: nginx
     ports:
       - target: 80
         published: "8080"

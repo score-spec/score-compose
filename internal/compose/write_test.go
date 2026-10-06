@@ -35,12 +35,14 @@ func TestYamlEncode(t *testing.T) {
 			Source: &compose.Project{
 				Services: compose.Services{
 					"test": {
-						Name:  "test",
-						Image: "busybox",
-						Command: compose.ShellCommand{
-							"/bin/sh",
-							"-c",
-							"while true; echo ...sleeping 10 sec...; sleep 10; done",
+						Name: "test",
+						ContainerSpec: compose.ContainerSpec{
+							Image: "busybox",
+							Command: compose.ShellCommand{
+								"/bin/sh",
+								"-c",
+								"while true; echo ...sleeping 10 sec...; sleep 10; done",
+							},
 						},
 					},
 				},
