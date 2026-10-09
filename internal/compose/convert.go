@@ -21,10 +21,10 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
-	"slices"
 	"maps"
+	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -118,7 +118,7 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 		if len(cSpec.Volumes) > 0 {
 			volumes = make([]compose.ServiceVolumeConfig, 0, len(cSpec.Volumes))
 			for _, target := range slices.Sorted(maps.Keys(cSpec.Volumes)) {
-			    vol := cSpec.Volumes[target]
+				vol := cSpec.Volumes[target]
 				cfg, err := convertVolumeSourceIntoVolume(state, deferredSubstitutionFunction, workloadName, target, vol)
 				if err != nil {
 					return nil, fmt.Errorf("containers.%s.volumes[%s]: %w", containerName, target, err)
@@ -207,18 +207,18 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 			// Determine the compose condition from the ready field
 			var condition string
 			switch entry.Ready {
-			case score.ContainerBeforeReadyComplete:
+			case score.ReadyComplete:
 				condition = "service_completed_successfully"
-			case score.ContainerBeforeReadyHealthy:
+			case score.ReadyHealthy:
 				condition = "service_healthy"
-			case score.ContainerBeforeReadyStarted:
+			case score.ReadyStarted:
 				condition = "service_started"
 			default:
 				return nil, fmt.Errorf("containers.%s.before.%s: unknown ready condition %q", containerName, targetContainerName, entry.Ready)
 			}
 
-			if entry.Ready == score.ContainerBeforeReadyHealthy && cSpec.ReadinessProbe == nil && cSpec.LivenessProbe == nil {
-				return nil, fmt.Errorf("containers.%s.before: ready '%s' requires a readiness or liveness probe to be defined", containerName, score.ContainerBeforeReadyHealthy)
+			if entry.Ready == score.ReadyHealthy && cSpec.ReadinessProbe == nil && cSpec.LivenessProbe == nil {
+				return nil, fmt.Errorf("containers.%s.before: ready '%s' requires a readiness or liveness probe to be defined", containerName, score.ReadyHealthy)
 			}
 
 			sourceServiceName := workloadName + "-" + containerName
@@ -247,7 +247,7 @@ func isInitContainer(c score.Container) bool {
 		return false
 	}
 	for _, entry := range c.Before {
-		if entry.Ready != score.ContainerBeforeReadyComplete {
+		if entry.Ready != score.ReadyComplete {
 			return false
 		}
 	}
@@ -308,7 +308,7 @@ func convertFilesIntoVolumes(state *project.State, workloadName string, containe
 		return nil, fmt.Errorf("failed to ensure the files directory exists")
 	}
 	for _, target := range slices.Sorted(maps.Keys(input)) {
-	    file := input[target]
+		file := input[target]
 		var content []byte
 		if file.Content != nil {
 			content = []byte(*file.Content)
