@@ -43,6 +43,50 @@ brews:
     commit_author:
       name: rachfop
       email: prachford@icloud.com
+scoops:
+  - name: score-compose
+    homepage: "https://score.dev"
+    description: "score-compose is a reference implementation of the Score specification for Docker compose, primarily used for local development."
+    license: Apache-2.0
+    skip_upload: auto
+    commit_msg_template: "Scoop update for {{ .ProjectName }} version {{ .Tag }}"
+    commit_author:
+      name: rachfop
+      email: prachford@icloud.com
+    repository:
+      owner: score-spec
+      name: scoop-bucket
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+winget:
+  - name: score-compose
+    publisher: score-spec
+    short_description: "Reference Score implementation for Docker compose."
+    license: "Apache-2.0"
+    license_url: "https://github.com/score-spec/score-compose/blob/main/LICENSE"
+    publisher_url: "https://score.dev"
+    publisher_support_url: "https://github.com/score-spec/score-compose/issues"
+    package_identifier: score-spec.score-compose
+    homepage: "https://score.dev"
+    skip_upload: auto
+    release_notes_url: "https://github.com/score-spec/score-compose/releases/tag/{{ .Tag }}"
+    tags:
+      - score
+      - docker-compose
+      - devops
+      - cli
+    commit_author:
+      name: rachfop
+      email: prachford@icloud.com
+    repository:
+      owner: score-spec
+      name: winget-pkgs
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+      pull_request:
+        enabled: true
+        base:
+          owner: microsoft
+          name: winget-pkgs
+          branch: master
 signs:
   - cmd: cosign
     signature: "${artifact}.sigstore.json"
