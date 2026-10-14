@@ -50,3 +50,38 @@ hello-world-hello-1  | hello worldThis is fileA.
 ```
 
 `files[*].noExpand` is supported to disable placeholder interpolation in inline content. `files[*].mode` is not yet supported, see [#88](https://github.com/score-spec/score-compose/issues/88).
+
+## Custom placeholder delimiters (experimental)
+
+Score's default `${...}` placeholder syntax can clash with config formats that use the same notation themselves, such as Spring Boot properties, shell scripts, or Docker Compose env vars. When you need literal `${...}` to survive in the rendered file, you can ask Score to look for a different delimiter pair by setting two annotations on the workload metadata:
+
+- `compose.score.dev/experiment-placeholder-start`
+- `compose.score.dev/experiment-placeholder-end`
+
+Both must be set together. When set, file content is expanded using those delimiters instead of `${` and `}`; any literal `${...}` in the file is left alone. `noExpand: true` on a file still takes priority, and `binaryContent` is never expanded.
+
+```yaml
+apiVersion: score.dev/v1b1
+
+metadata:
+  name: spring-app
+  annotations:
+    compose.score.dev/experiment-placeholder-start: "<%{"
+    compose.score.dev/experiment-placeholder-end: "}%>"
+
+containers:
+  app:
+    image: my-spring-app
+    files:
+      - target: /app/application.properties
+        content: |
+          # left alone (Spring Boot will resolve these at runtime)
+          spring.datasource.url=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+
+          # expanded by Score
+          app.name=<%{metadata.name}%>
+```
+
+There is no escape syntax for the custom delimiters in this experimental version. If your file legitimately contains the chosen start/end strings, pick a different pair.
+
+This is a `compose.score.dev/experiment-*` annotation, meaning it is opt-in and may change before becoming a stable part of the spec. See [score-spec/spec#108](https://github.com/score-spec/spec/issues/108) for background.
