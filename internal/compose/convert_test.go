@@ -133,8 +133,8 @@ func TestScoreConvert(t *testing.T) {
 							Annotations: map[string]string{
 								"compose.score.dev/workload-name": "test",
 							},
-							Hostname: "test",
-							Image:    "busybox",
+							Hostname:    "test",
+							Image:       "busybox",
 							Environment: compose.MappingWithEquals{},
 						},
 						WorkloadSpec: compose.WorkloadSpec{
@@ -326,7 +326,7 @@ func TestScoreConvert(t *testing.T) {
 			Project: &compose.Project{
 				Services: compose.Services{
 					"test-backend": {
-						Name:     "test-backend",
+						Name: "test-backend",
 						ContainerSpec: compose.ContainerSpec{
 							Annotations: map[string]string{
 								"compose.score.dev/workload-name": "test",
@@ -339,7 +339,7 @@ func TestScoreConvert(t *testing.T) {
 						},
 					},
 					"test-frontend": {
-						Name:  "test-frontend",
+						Name: "test-frontend",
 						ContainerSpec: compose.ContainerSpec{
 							Annotations: map[string]string{
 								"compose.score.dev/workload-name": "test",
@@ -499,8 +499,8 @@ func TestScoreConvert(t *testing.T) {
 					"init": score.Container{
 						Image: "busybox",
 						Before: score.ContainerBefore{
-							"main": score.ContainerBeforeEntry{
-								Ready: score.ContainerBeforeReadyComplete,
+							"main": {
+								Ready: score.ReadyComplete,
 							},
 						},
 					},
@@ -550,16 +550,16 @@ func TestScoreConvert(t *testing.T) {
 					"init-one": score.Container{
 						Image: "busybox",
 						Before: score.ContainerBefore{
-							"init-two": score.ContainerBeforeEntry{
-								Ready: score.ContainerBeforeReadyStarted,
+							"init-two": {
+								Ready: score.ReadyStarted,
 							},
 						},
 					},
 					"init-two": score.Container{
 						Image: "busybox",
 						Before: score.ContainerBefore{
-							"main": score.ContainerBeforeEntry{
-								Ready: score.ContainerBeforeReadyStarted,
+							"main": {
+								Ready: score.ReadyStarted,
 							},
 						},
 					},
@@ -626,8 +626,8 @@ func TestScoreConvert(t *testing.T) {
 					"init": score.Container{
 						Image: "busybox",
 						Before: score.ContainerBefore{
-							"main": score.ContainerBeforeEntry{
-								Ready: score.ContainerBeforeReadyComplete,
+							"main": {
+								Ready: score.ReadyComplete,
 							},
 						},
 					},
@@ -637,8 +637,8 @@ func TestScoreConvert(t *testing.T) {
 					"sidecar": score.Container{
 						Image: "envoy",
 						Before: score.ContainerBefore{
-							"main": score.ContainerBeforeEntry{
-								Ready: score.ContainerBeforeReadyStarted,
+							"main": {
+								Ready: score.ReadyStarted,
 							},
 						},
 					},
@@ -697,8 +697,8 @@ func TestScoreConvert(t *testing.T) {
 					"init": score.Container{
 						Image: "busybox",
 						Before: score.ContainerBefore{
-							"main": score.ContainerBeforeEntry{
-								Ready: score.ContainerBeforeReadyHealthy,
+							"main": {
+								Ready: score.ReadyHealthy,
 							},
 						},
 					},
@@ -759,12 +759,12 @@ func TestConvertFilesIntoVolumes_nominal(t *testing.T) {
 				Containers: map[string]score.Container{
 					"my-container": {
 						Files: map[string]score.ContainerFile{
-							"/ant.txt": {Source: util.Ref("original.txt")},
-							"/bat.txt": {Source: util.Ref("original.txt"), NoExpand: util.Ref(true)},
-							"/cat.txt": {Source: util.Ref("original.txt"), NoExpand: util.Ref(false)},
-							"/dog.txt": {Content: util.Ref("third ${metadata.name} fourth")},
-							"/eel.txt": {Content: util.Ref("third ${metadata.name} fourth"), NoExpand: util.Ref(true)},
-							"/fox.txt": {Content: util.Ref("third ${metadata.name} fourth"), NoExpand: util.Ref(false)},
+							"/ant.txt":  {Source: util.Ref("original.txt")},
+							"/bat.txt":  {Source: util.Ref("original.txt"), NoExpand: util.Ref(true)},
+							"/cat.txt":  {Source: util.Ref("original.txt"), NoExpand: util.Ref(false)},
+							"/dog.txt":  {Content: util.Ref("third ${metadata.name} fourth")},
+							"/eel.txt":  {Content: util.Ref("third ${metadata.name} fourth"), NoExpand: util.Ref(true)},
+							"/fox.txt":  {Content: util.Ref("third ${metadata.name} fourth"), NoExpand: util.Ref(false)},
 							"/goat.txt": {BinaryContent: util.Ref("ZmlmdGggJHttZXRhZGF0YS5uYW1lfSBzaXh0aA==")},
 						},
 					},
