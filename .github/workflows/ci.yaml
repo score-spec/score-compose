@@ -144,7 +144,7 @@ jobs:
           to: local://score-compose:main
           write-comment: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          organization: ${{ secrets.DOCKER_HUB_ORG }}
+          #organization: ${{ secrets.DOCKER_HUB_ORG }}
       - name: Test docker image built in PR branch
         run: |
           mkdir test
