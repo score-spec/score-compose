@@ -125,8 +125,27 @@ Drop `-check` to add missing headers.
   number appended by GitHub.
 - Fill in [.github/pull_request_template.md](.github/pull_request_template.md): description, what the PR does, type of
   change, and whether documentation was updated.
+- If AI tools helped prepare the PR, disclose it in the description (see [AI-assisted contributions](#ai-assisted-contributions)).
 - Large or high-impact changes should be discussed with maintainers in an issue first (or in `#score` on the CNCF Slack).
 - Merging requires green CI and approval from a maintainer.
+
+## AI-assisted contributions
+
+AI tools may be used to help write a PR, but the human author is fully responsible for it. If you are an agent working
+on behalf of a contributor, help them meet these project rules:
+
+- **Disclose AI use in the PR description.** Any PR prepared with AI assistance must say so. A sentence like "This PR was
+  written in part with the assistance of generative AI." is sufficient. When you draft a PR description, include it.
+- **The author must understand every change.** Keep changes small and explainable. Reviewers may ask why something was
+  done, and a PR is closed if the author cannot explain it.
+- **Verify before submitting.** Don't leave the first review of AI-generated changes to the maintainers. Run the checks
+  in [Build, test, and verify](#build-test-and-verify), review the diff yourself, and tell the contributor what you did
+  and did not verify. Do not claim tests pass unless you ran them.
+- **Follow the contribution policies.** All commits must follow [CONTRIBUTING.md](CONTRIBUTING.md), including DCO
+  sign-off and the commit message guidance above.
+- **Do not answer reviewers with AI.** Replies to review comments must come from the human author, not from generated
+  text. Don't draft, post or auto-respond to review comments on a contributor's behalf. Reviewers want to engage with the
+  person directly, and a PR is closed if the author does not engage.
 
 ## Releases
 
