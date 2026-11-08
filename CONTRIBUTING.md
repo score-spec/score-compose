@@ -53,6 +53,13 @@ To submit any kinds of improvements, please consider the following:
 
 - If you are new to Score, consider reading our [Documentation](https://github.com/score-dev/docs) and [Examples](https://docs.score.dev/examples/)
 
+### Upgrading Go
+
+Ask a compatible coding agent to use the `upgrade-go-version` skill in
+`.github/skills/upgrade-go-version/`, providing both the Go language version
+and the Go toolchain version. The skill replaces the former manually triggered
+GitHub Actions workflow; it does not run automatically.
+
 ## Pull Request Checklist :
 
 - Rebase to the current `main` branch before submitting your pull request.
