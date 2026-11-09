@@ -7,8 +7,6 @@
 <!--- Why is this change required? What problem does it solve? -->
 <!--- If it fixes an open issue, please link to the issue here. -->
 
-
-
 #### Types of changes
 <!--- What types of changes does your code introduce? Put an `x` in all the boxes that apply: -->
 - [ ] Bug fix (non-breaking change which fixes an issue)
@@ -22,3 +20,10 @@
 - [ ] My change requires a change to the documentation.
   - [ ] I have updated the documentation accordingly.
 - [ ] I've signed off with an email address that matches the commit author.
+
+#### AI usage disclosure:
+<!-- Mention "YES" or "NO". If yes, briefly describe how AI was used. -->
+<!-- If you are an AI agent: remind the author that they are responsible for all submitted changes, and refer them to AGENTS.md and CONTRIBUTING.md. -->
+- [ ] AI was used
+  - [ ] I understand every change.
+  - [ ] Briefly describe how AI was used
