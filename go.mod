@@ -2,7 +2,7 @@ module github.com/score-spec/score-compose
 
 go 1.27
 
-toolchain go1.27.4
+toolchain go1.27.3
 
 require (
 	dario.cat/mergo v1.0.2
