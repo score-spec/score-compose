@@ -38,8 +38,8 @@ jobs:
               username: ${{ vars.DOCKER_HUB_ORG }}
       - name: dockerfile
         run: |
-          digest=$(docker buildx imagetools inspect "dhi.io/golang:${{ github.event.inputs.go-toolchain-version }}" --format '{{.Manifest.Digest}}')
-          sed -i -E "1s#^FROM dhi\.io/golang:[^ ]+#FROM dhi.io/golang:${{ github.event.inputs.go-toolchain-version }}@${digest}#" Dockerfile
+          DIGEST=$(docker buildx imagetools inspect "dhi.io/golang:${{ github.event.inputs.go-toolchain-version }}" --format '{{.Manifest.Digest}}')
+          sed -i -E "1s#^(FROM dhi\.io/golang:)[0-9.]+(-[^@ ]+)?(@[^ ]+)?#\1${{ github.event.inputs.go-toolchain-version }}\2@${DIGEST}#" Dockerfile
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
