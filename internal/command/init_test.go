@@ -86,17 +86,17 @@ URI Retrieval:
     - Stdin       : - (read from standard input)
 
 Flags:
-  -f, --file string                   The score file to initialize (default "./score.yaml")
-  -h, --help                          help for init
-      --no-default-provisioners       Disable generation of the default provisioners file
-      --no-sample                     Disable generation of the sample score file
-      --patch-templates stringArray   Patching template files to include. May be specified multiple times. Supports URI retrieval.
-  -p, --project string                Set the name of the docker compose project (defaults to the current directory name)
-      --provisioners stringArray      Provisioner files to install. May be specified multiple times. Supports URI retrieval.
+  -f, --file string                            The score file to initialize (default "./score.yaml")
+  -h, --help[=true|false]                      help for init
+      --no-default-provisioners[=true|false]   Disable generation of the default provisioners file
+      --no-sample[=true|false]                 Disable generation of the sample score file
+      --patch-templates stringArray            Patching template files to include. May be specified multiple times. Supports URI retrieval.
+  -p, --project string                         Set the name of the docker compose project (defaults to the current directory name)
+      --provisioners stringArray               Provisioner files to install. May be specified multiple times. Supports URI retrieval.
 
 Global Flags:
-      --quiet           Mute any logging output
-  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
+      --quiet[=true|false]   Mute any logging output
+  -v, --verbose count        Increase log verbosity and detail by specifying this flag one or more times
 `, stdout)
 	assert.Equal(t, "", stderr)
 
