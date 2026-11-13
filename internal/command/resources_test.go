@@ -40,11 +40,11 @@ Available Commands:
   list        List the resource uids
 
 Flags:
-  -h, --help   help for resources
+  -h, --help[=true|false]   help for resources
 
 Global Flags:
-      --quiet           Mute any logging output
-  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
+      --quiet[=true|false]   Mute any logging output
+  -v, --verbose count        Increase log verbosity and detail by specifying this flag one or more times
 
 Use "score-compose resources [command] --help" for more information about a command.
 `, stdout)

@@ -43,11 +43,11 @@ Examples:
   score-compose check-version >=1.2.3
 
 Flags:
-  -h, --help   help for check-version
+  -h, --help[=true|false]   help for check-version
 
 Global Flags:
-      --quiet           Mute any logging output
-  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
+      --quiet[=true|false]   Mute any logging output
+  -v, --verbose count        Increase log verbosity and detail by specifying this flag one or more times
 `, stdout)
 	assert.Equal(t, "", stderr)
 

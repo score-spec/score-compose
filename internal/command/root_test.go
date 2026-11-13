@@ -82,10 +82,10 @@ Available Commands:
   version       Show the version for score-compose and new version to update if available.
 
 Flags:
-  -h, --help            help for score-compose
-      --quiet           Mute any logging output
-  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
-      --version         version for score-compose
+  -h, --help[=true|false]      help for score-compose
+      --quiet[=true|false]     Mute any logging output
+  -v, --verbose count          Increase log verbosity and detail by specifying this flag one or more times
+      --version[=true|false]   version for score-compose
 
 Use "score-compose [command] --help" for more information about a command.
 `, stdout)
@@ -116,11 +116,11 @@ Available Commands:
   zsh         Generate the autocompletion script for zsh
 
 Flags:
-  -h, --help   help for completion
+  -h, --help[=true|false]   help for completion
 
 Global Flags:
-      --quiet           Mute any logging output
-  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
+      --quiet[=true|false]   Mute any logging output
+  -v, --verbose count        Increase log verbosity and detail by specifying this flag one or more times
 
 Use "score-compose completion [command] --help" for more information about a command.
 `, stdout)
@@ -160,12 +160,12 @@ Usage:
   score-compose completion bash
 
 Flags:
-  -h, --help              help for bash
-      --no-descriptions   disable completion descriptions
+  -h, --help[=true|false]              help for bash
+      --no-descriptions[=true|false]   disable completion descriptions
 
 Global Flags:
-      --quiet           Mute any logging output
-  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
+      --quiet[=true|false]   Mute any logging output
+  -v, --verbose count        Increase log verbosity and detail by specifying this flag one or more times
 `, stdout)
 	assert.Equal(t, "", stderr)
 }
@@ -196,12 +196,12 @@ Usage:
   score-compose completion fish [flags]
 
 Flags:
-  -h, --help              help for fish
-      --no-descriptions   disable completion descriptions
+  -h, --help[=true|false]              help for fish
+      --no-descriptions[=true|false]   disable completion descriptions
 
 Global Flags:
-      --quiet           Mute any logging output
-  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
+      --quiet[=true|false]   Mute any logging output
+  -v, --verbose count        Increase log verbosity and detail by specifying this flag one or more times
 `, stdout)
 	assert.Equal(t, "", stderr)
 }
@@ -243,12 +243,12 @@ Usage:
   score-compose completion zsh [flags]
 
 Flags:
-  -h, --help              help for zsh
-      --no-descriptions   disable completion descriptions
+  -h, --help[=true|false]              help for zsh
+      --no-descriptions[=true|false]   disable completion descriptions
 
 Global Flags:
-      --quiet           Mute any logging output
-  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
+      --quiet[=true|false]   Mute any logging output
+  -v, --verbose count        Increase log verbosity and detail by specifying this flag one or more times
 `, stdout)
 	assert.Equal(t, "", stderr)
 }
@@ -276,12 +276,12 @@ Usage:
   score-compose completion powershell [flags]
 
 Flags:
-  -h, --help              help for powershell
-      --no-descriptions   disable completion descriptions
+  -h, --help[=true|false]              help for powershell
+      --no-descriptions[=true|false]   disable completion descriptions
 
 Global Flags:
-      --quiet           Mute any logging output
-  -v, --verbose count   Increase log verbosity and detail by specifying this flag one or more times
+      --quiet[=true|false]   Mute any logging output
+  -v, --verbose count        Increase log verbosity and detail by specifying this flag one or more times
 `, stdout)
 	assert.Equal(t, "", stderr)
 }
