@@ -2,7 +2,7 @@ module github.com/score-spec/score-compose
 
 go 1.27
 
-toolchain go1.27.3
+toolchain go1.27.4
 
 require (
 	dario.cat/mergo v1.0.2
@@ -48,7 +48,7 @@ require (
 	github.com/shopspring/decimal v1.6.0 // indirect
 	github.com/sirupsen/logrus v1.10.2 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
-	github.com/tidwall/gjson v1.20.2 // indirect
+	github.com/tidwall/gjson v1.20.3 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.3.0 // indirect
 	github.com/xhit/go-str2duration/v2 v2.2.0 // indirect
