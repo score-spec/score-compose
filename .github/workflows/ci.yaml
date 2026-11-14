@@ -12,6 +12,14 @@ on:
 permissions:
   contents: read
 jobs:
+  test-sbx:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test sbx
+        run: |
+          curl -fsSL https://get.docker.com | sudo REPO_ONLY=1 sh
+          sudo apt install docker-sbx
+          sbx version
   test-code:
     runs-on: ubuntu-latest
     steps:
