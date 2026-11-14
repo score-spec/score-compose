@@ -23,11 +23,11 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: ${GO_VERSION}
+          go-version: ${{ env.GO_VERSION }}
       - name: go get all
         run: |
           go mod edit -go ${{ github.event.inputs.go-version }}
-          go mod edit -toolchain go${GO_VERSION}
+          go mod edit -toolchain go${{ env.GO_VERSION }}
           go get -u all
           go mod tidy
       - name: docker login
@@ -42,17 +42,17 @@ jobs:
         run: |
           # Keep whatever suffix the Dockerfile already uses (e.g. -alpine3.24-dev, -dev, or none)
           SUFFIX=$(sed -n -E '1s#^FROM dhi\.io/golang:[0-9.]+(-[^@ ]+)?.*#\1#p' Dockerfile)
-          TAG="${GO_VERSION}${SUFFIX}"
+          TAG="${{ env.GO_VERSION }}${SUFFIX}"
           DIGEST=$(docker buildx imagetools inspect "dhi.io/golang:${TAG}" --format '{{.Manifest.Digest}}')
           sed -i -E "1s#^(FROM dhi\.io/golang:)[^ ]+#\1${TAG}@${DIGEST}#" Dockerfile
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: Upgrade Go version to ${GO_VERSION}
-          title: Upgrade Go version to ${GO_VERSION}
+          commit-message: Upgrade Go version to ${{ env.GO_VERSION }}
+          title: Upgrade Go version to ${{ env.GO_VERSION }}
           body: |
-            Upgrade Go version to ${GO_VERSION}:
+            Upgrade Go version to ${{ env.GO_VERSION }}:
             https://go.dev/doc/devel/release
             - [ ] Set PR as "Ready for review"
             - [ ] Check CI
