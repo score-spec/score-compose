@@ -3,8 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       go-version:
+        description: Language version for the go directive in go.mod (e.g. 1.27)
         required: true
       go-toolchain-version:
+        description: Full Go toolchain release, without the "go" prefix (e.g. 1.27.4)
         required: true
 permissions:
   contents: read
@@ -16,20 +18,60 @@ jobs:
       id-token: write
       pull-requests: write
     env:
+      GO_LANG_VERSION: ${{ github.event.inputs.go-version }}
       GO_VERSION: ${{ github.event.inputs.go-toolchain-version }}
+      SANDBOX: upgrade-go
     steps:
+      - name: validate inputs
+        run: |
+          echo "${GO_LANG_VERSION}" | grep -Eq '^[0-9]+\.[0-9]+$' || { echo "::error::invalid go-version: ${GO_LANG_VERSION}"; exit 1; }
+          echo "${GO_VERSION}" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error::invalid go-toolchain-version: ${GO_VERSION}"; exit 1; }
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version: ${{ env.GO_VERSION }}
-      - name: go get all
+      - name: install sbx
         run: |
-          go mod edit -go ${{ github.event.inputs.go-version }}
-          go mod edit -toolchain go${{ env.GO_VERSION }}
-          go get -u all
-          go mod tidy
+          # Local sandboxes are microVMs: give the runner user access to KVM.
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          curl -fsSL https://get.docker.com | sudo REPO_ONLY=1 sh
+          sudo apt-get install -y docker-sbx
+          sbx version
+      - name: sbx login
+        env:
+          DOCKER_HUB_USERNAME: ${{ vars.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+        run: |
+          echo "${DOCKER_HUB_TOKEN}" | sbx login --username "${DOCKER_HUB_USERNAME}" --password-stdin
+      - name: create sandbox
+        run: |
+          # Deny all egress, then allow only what the Go toolchain and module downloads need.
+          sbx policy init deny-all
+          sbx policy allow network go.dev,dl.google.com,proxy.golang.org,sum.golang.org
+          sbx create --no-input --name "${SANDBOX}" shell "${GITHUB_WORKSPACE}"
+      - name: go get all (in sandbox)
+        run: |
+          sbx exec --no-input -w "${GITHUB_WORKSPACE}" \
+            -e "GO_LANG_VERSION=${GO_LANG_VERSION}" \
+            -e "GO_VERSION=${GO_VERSION}" \
+            -e NO_DOCKER=true \
+            "${SANDBOX}" sh -euc '
+              arch=$(dpkg --print-architecture)
+              curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${arch}.tar.gz" | sudo tar -C /usr/local -xz
+              go version
+              go mod edit -go "${GO_LANG_VERSION}"
+              go mod edit -toolchain "go${GO_VERSION}"
+              go get -u all
+              go mod tidy
+              go build ./...
+              go vet ./...
+              go test ./...
+            '
+          git status --short
+      - name: remove sandbox
+        if: always()
+        run: sbx rm --force "${SANDBOX}" || true
       - name: docker login
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         env:
@@ -42,7 +84,7 @@ jobs:
         run: |
           # Keep whatever suffix the Dockerfile already uses (e.g. -alpine3.24-dev, -dev, or none)
           SUFFIX=$(sed -n -E '1s#^FROM dhi\.io/golang:[0-9.]+(-[^@ ]+)?.*#\1#p' Dockerfile)
-          TAG="${{ env.GO_VERSION }}${SUFFIX}"
+          TAG="${GO_VERSION}${SUFFIX}"
           DIGEST=$(docker buildx imagetools inspect "dhi.io/golang:${TAG}" --format '{{.Manifest.Digest}}')
           sed -i -E "1s#^(FROM dhi\.io/golang:)[^ ]+#\1${TAG}@${DIGEST}#" Dockerfile
       - name: Create Pull Request
