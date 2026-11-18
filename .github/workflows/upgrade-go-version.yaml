@@ -39,17 +39,21 @@ jobs:
           curl -fsSL https://get.docker.com | sudo REPO_ONLY=1 sh
           sudo apt-get install -y docker-sbx
           sbx version
+          # Start sandboxd up front, so a daemon problem fails here instead of in a later step.
+          # Deny all egress by default; the go-upgrade Kit declares the hosts the sandbox may reach.
+          sbx daemon start --detach --policy deny-all
+          sbx daemon status
       - name: sbx login
         env:
-          DOCKER_HUB_USERNAME: ${{ vars.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
           DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
         run: |
+          [ -n "${DOCKER_HUB_USERNAME}" ] || { echo "::error::DOCKER_HUB_USERNAME secret is not set"; exit 1; }
+          [ -n "${DOCKER_HUB_TOKEN}" ] || { echo "::error::DOCKER_HUB_TOKEN secret is not set"; exit 1; }
           echo "${DOCKER_HUB_TOKEN}" | sbx login --username "${DOCKER_HUB_USERNAME}" --password-stdin
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: create sandbox
         run: |
-          # Deny all egress by default; the go-upgrade Kit declares the hosts the sandbox may reach.
-          sbx policy init deny-all
           # The Kit (.github/kits/go-upgrade) is built on the host with buildx: it bakes the
           # Go toolchain from dhi.io/golang into an overlay on the shell workload.
           sbx kit validate ./.github/kits/go-upgrade --kit-arg "goVersion=${GO_VERSION}"
@@ -98,6 +102,8 @@ jobs:
           sbx inspect "${SANDBOX}" --format json > inspect.json 2>&1 || true
           sbx ls > ls.txt 2>&1 || true
           sbx daemon status > daemon-status.txt 2>&1 || true
+          # sandboxd's own logs, from its state directory.
+          find "${HOME}/.local/state/sandboxes" -name '*.log' -exec cp --parents {} . \; 2>/dev/null || true
           sbx diagnose > diagnose.txt 2>&1 || true
           sbx kit inspect "${GITHUB_WORKSPACE}/.github/kits/go-upgrade" --kit-arg "goVersion=${GO_VERSION}" > kit-inspect.txt 2>&1 || true
           sbx diagnose --format json > diagnose.json 2>&1 || true
