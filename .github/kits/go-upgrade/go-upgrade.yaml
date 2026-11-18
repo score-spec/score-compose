@@ -3,7 +3,7 @@
 #
 # Sandbox Kit used by .github/workflows/upgrade-go-version.yaml.
 # Overlays a pinned Go toolchain onto the `shell` workload and declares the
-# egress and registry auth the Go upgrade needs:
+# egress the Go upgrade needs:
 #
 #   sbx create shell --kit ./.github/kits/go-upgrade --kit-arg goVersion=1.27.4 .
 schemaVersion: "3"
@@ -41,18 +41,10 @@ capabilities:
           # The module proxy may redirect archive downloads here.
           - storage.googleapis.com
           # docker buildx imagetools inspect dhi.io/golang:<tag>; the image
-          # index blob is served from Docker's CDN.
+          # index blob is served from Docker's CDN. sbx authenticates dhi.io
+          # requests with the signed-in Docker account.
           - dhi.io
           - production.cloudfront.docker.com
-
-  # Registry login for dhi.io, injected by the sandbox proxy. The real
-  # credential never enters the sandbox. Optional: sbx v0.54.0 does not
-  # support docker-auth@1 yet and skips it; there, the workflow provides
-  # dhi.io credentials with `sbx secret set --registry dhi.io` instead.
-  - type: com.docker.sandbox/docker-auth@1
-    optional: true
-    config:
-      registries: [dhi.io]
 
   - type: com.docker.sandbox/agent-context@2
     optional: true

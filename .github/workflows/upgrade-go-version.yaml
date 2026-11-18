@@ -56,16 +56,7 @@ jobs:
               username: ${{ vars.DOCKER_HUB_ORG }}
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: create sandbox
-        env:
-          DOCKER_HUB_ORG: ${{ vars.DOCKER_HUB_ORG }}
         run: |
-          # Hand the dhi.io credentials from the OIDC login to the sandbox proxy.
-          # The proxy injects them into the sandbox's registry login; they never enter the sandbox.
-          DHI_AUTH=$(jq -r '.auths["dhi.io"].auth // empty' ~/.docker/config.json)
-          [ -n "${DHI_AUTH}" ] || { echo "::error::no dhi.io credentials in ~/.docker/config.json after docker login"; exit 1; }
-          DHI_PASSWORD=$(echo "${DHI_AUTH}" | base64 -d | cut -d: -f2-)
-          echo "::add-mask::${DHI_PASSWORD}"
-          echo "${DHI_PASSWORD}" | sbx secret set --all-sandboxes --registry dhi.io --username "${DOCKER_HUB_ORG}" --password-stdin
           # Deny all egress by default; the go-upgrade Kit declares the hosts the sandbox may reach.
           sbx policy init deny-all
           # The Kit (.github/kits/go-upgrade) is built on the host with buildx: it bakes the
