@@ -45,12 +45,12 @@ jobs:
           sbx daemon status
       - name: sbx login
         env:
-          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+          SBX_USERNAME: ${{ secrets.SBX_USERNAME }}
+          SBX_TOKEN: ${{ secrets.SBX_TOKEN }}
         run: |
-          [ -n "${DOCKER_HUB_USERNAME}" ] || { echo "::error::DOCKER_HUB_USERNAME secret is not set"; exit 1; }
-          [ -n "${DOCKER_HUB_TOKEN}" ] || { echo "::error::DOCKER_HUB_TOKEN secret is not set"; exit 1; }
-          echo "${DOCKER_HUB_TOKEN}" | sbx login --username "${DOCKER_HUB_USERNAME}" --password-stdin
+          [ -n "${SBX_USERNAME}" ] || { echo "::error::SBX_USERNAME secret is not set"; exit 1; }
+          [ -n "${SBX_TOKEN}" ] || { echo "::error::SBX_TOKEN secret is not set"; exit 1; }
+          echo "${SBX_TOKEN}" | sbx login --username "${SBX_USERNAME}" --password-stdin
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: create sandbox
         run: |
