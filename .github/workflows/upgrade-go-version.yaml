@@ -54,6 +54,7 @@ jobs:
           registry-auth: |
             - registry: dhi.io
               username: ${{ vars.DOCKER_HUB_ORG }}
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: create sandbox
         env:
           DOCKER_HUB_ORG: ${{ vars.DOCKER_HUB_ORG }}
@@ -65,20 +66,22 @@ jobs:
           DHI_PASSWORD=$(echo "${DHI_AUTH}" | base64 -d | cut -d: -f2-)
           echo "::add-mask::${DHI_PASSWORD}"
           echo "${DHI_PASSWORD}" | sbx secret set --all-sandboxes --registry dhi.io --username "${DOCKER_HUB_ORG}" --password-stdin
-          # Deny all egress, then allow only what the Go toolchain, Go modules and dhi.io need.
+          # Deny all egress by default; the go-upgrade Kit declares the hosts the sandbox may reach.
           sbx policy init deny-all
-          sbx policy allow network go.dev,dl.google.com,proxy.golang.org,sum.golang.org
-          sbx policy allow network dhi.io,production.cloudfront.docker.com
-          sbx create --no-input --name "${SANDBOX}" shell "${GITHUB_WORKSPACE}"
+          # The Kit (.github/kits/go-upgrade) is built on the host with buildx: it bakes the
+          # checksum-verified Go toolchain into an overlay on the shell workload.
+          sbx kit validate ./.github/kits/go-upgrade --kit-arg "goVersion=${GO_VERSION}"
+          sbx create --no-input --name "${SANDBOX}" shell \
+            --kit ./.github/kits/go-upgrade --kit-arg "goVersion=${GO_VERSION}" \
+            "${GITHUB_WORKSPACE}" 2>&1 | tee "${SBX_DEBUG_DIR}/create.log"
       - name: go get all (in sandbox)
         run: |
           sbx exec --no-input -w "${GITHUB_WORKSPACE}" \
             -e "GO_LANG_VERSION=${GO_LANG_VERSION}" \
             -e "GO_VERSION=${GO_VERSION}" \
             -e NO_DOCKER=true \
+            -e GOTOOLCHAIN=local \
             "${SANDBOX}" sh -euc '
-              arch=$(dpkg --print-architecture)
-              curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${arch}.tar.gz" | sudo tar -C /usr/local -xz
               go version
               go mod edit -go "${GO_LANG_VERSION}"
               go mod edit -toolchain "go${GO_VERSION}"
@@ -114,6 +117,7 @@ jobs:
           sbx ls > ls.txt 2>&1 || true
           sbx daemon status > daemon-status.txt 2>&1 || true
           sbx diagnose > diagnose.txt 2>&1 || true
+          sbx kit inspect "${GITHUB_WORKSPACE}/.github/kits/go-upgrade" --kit-arg "goVersion=${GO_VERSION}" > kit-inspect.txt 2>&1 || true
           sbx diagnose --format json > diagnose.json 2>&1 || true
           ls -l /dev/kvm > kvm.txt 2>&1 || true
           git -C "${GITHUB_WORKSPACE}" status --short > git-status.txt 2>&1 || true
