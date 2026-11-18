@@ -1,0 +1,62 @@
+# syntax=docker/sandbox-kit:3
+# yaml-language-server: $schema=https://raw.githubusercontent.com/docker/sandbox-kit-spec/main/schema/kit.schema.json
+#
+# Sandbox Kit used by .github/workflows/upgrade-go-version.yaml.
+# Overlays a pinned Go toolchain onto the `shell` workload and declares the
+# egress the Go upgrade needs:
+#
+#   sbx create shell --kit ./.github/kits/go-upgrade --kit-arg goVersion=1.27.4 .
+schemaVersion: "3"
+displayName: score-compose Go upgrade
+description: >-
+  Go toolchain at the requested version, plus egress to the Go module proxy
+  and dhi.io, for upgrading Go and the Go dependencies of score-compose and
+  resolving the dhi.io/golang base image digest for its Dockerfile.
+sourceUrl: https://github.com/score-spec/score-compose
+licenses: [BSD-3-Clause]
+
+kind: mixin
+version: "1.0.0"
+
+args:
+  goVersion:
+    default: "1.27.4"
+    pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
+    description: Go toolchain release to install, without the "go" prefix
+    buildArg: GO_VERSION
+
+provides:
+  - "go@${{ kit.args.goVersion }}"
+
+capabilities:
+  # Runtime egress only: the toolchain comes from dhi.io/golang when the Kit
+  # is built on the host, so go.dev / dl.google.com are not reachable from
+  # the sandbox.
+  - type: com.docker.sandbox/network-policy@2
+    config:
+      runtime:
+        allow:
+          # go get, go mod tidy, go test: module proxy and checksum database.
+          - proxy.golang.org
+          - sum.golang.org
+          # The module proxy may redirect archive downloads here.
+          - storage.googleapis.com
+          # docker buildx imagetools inspect dhi.io/golang:<tag>; the image
+          # index blob is served from Docker's CDN. sbx authenticates dhi.io
+          # requests with the signed-in Docker account.
+          - dhi.io
+          - production.cloudfront.docker.com
+
+  - type: com.docker.sandbox/agent-context@2
+    optional: true
+    config:
+      content: |
+        ## score-compose Go upgrade
+
+        Go ${{ kit.args.goVersion }} is installed in /usr/local/go. Run with
+        GOTOOLCHAIN=local so Go never tries to download another toolchain
+        (go.dev is not reachable from this sandbox).
+
+        Egress is limited to the Go module proxy (proxy.golang.org,
+        sum.golang.org, storage.googleapis.com) and dhi.io. A network refusal
+        is the policy doing its job: check `sbx policy log` on the host.
