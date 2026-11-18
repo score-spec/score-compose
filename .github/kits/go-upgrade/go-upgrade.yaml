@@ -29,8 +29,9 @@ provides:
   - "go@${{ kit.args.goVersion }}"
 
 capabilities:
-  # Runtime egress only: the toolchain is downloaded when the Kit is built on
-  # the host, so go.dev / dl.google.com are not reachable from the sandbox.
+  # Runtime egress only: the toolchain comes from dhi.io/golang when the Kit
+  # is built on the host, so go.dev / dl.google.com are not reachable from
+  # the sandbox.
   - type: com.docker.sandbox/network-policy@2
     config:
       runtime:

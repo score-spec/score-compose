@@ -60,7 +60,7 @@ jobs:
           # Deny all egress by default; the go-upgrade Kit declares the hosts the sandbox may reach.
           sbx policy init deny-all
           # The Kit (.github/kits/go-upgrade) is built on the host with buildx: it bakes the
-          # checksum-verified Go toolchain into an overlay on the shell workload.
+          # Go toolchain from dhi.io/golang into an overlay on the shell workload.
           sbx kit validate ./.github/kits/go-upgrade --kit-arg "goVersion=${GO_VERSION}"
           sbx create --no-input --name "${SANDBOX}" shell \
             --kit ./.github/kits/go-upgrade --kit-arg "goVersion=${GO_VERSION}" \

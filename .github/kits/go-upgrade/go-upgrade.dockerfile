@@ -1,24 +1,12 @@
 # syntax=docker/dockerfile:1
-# The Go release tarball, checksum-verified, staged under /out and copied
-# onto scratch so the overlay lands on any base.
-FROM dhi.io/debian-base:trixie-dev AS build
-ARG TARGETARCH
+# The Go toolchain from the Docker Hardened Image for Go, the same image
+# family the score-compose Dockerfile builds with, copied onto scratch so
+# the overlay lands on any base. dhi.io/golang keeps Go in /usr/lib/go; the
+# shell workload already has /usr/local/go/bin on its PATH.
 ARG GO_VERSION
-RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates curl \
- && rm -rf /var/lib/apt/lists/*
-
-RUN set -eux; \
-    tarball="go${GO_VERSION}.linux-${TARGETARCH}.tar.gz"; \
-    curl -fsSL -o "/tmp/${tarball}" "https://dl.google.com/go/${tarball}"; \
-    sha256=$(curl -fsSL "https://dl.google.com/go/${tarball}.sha256"); \
-    echo "${sha256}  /tmp/${tarball}" | sha256sum -c -; \
-    mkdir -p /out/usr/local; \
-    tar -xzf "/tmp/${tarball}" -C /out/usr/local; \
-    /out/usr/local/go/bin/go version | grep -q "go${GO_VERSION} "; \
-    chown -R 0:0 /out
+FROM dhi.io/golang:${GO_VERSION} AS go
 
 FROM scratch
-COPY --from=build /out /
+COPY --from=go /usr/lib/go /usr/local/go
 ENTRYPOINT ["/usr/local/go/bin/go"]
 CMD ["version"]
