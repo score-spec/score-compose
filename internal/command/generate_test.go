@@ -344,7 +344,7 @@ services:
     image: foo
     volumes:
       - type: bind
-        source: .score-compose/mounts/files/example-files-blah.txt
+        source: .score-compose/mounts/files/example-example-files-2a1b69fd-blah.txt
         target: /blah.txt
 `, string(raw))
 }
@@ -380,7 +380,7 @@ services:
     image: foo
     volumes:
       - type: bind
-        source: .score-compose/mounts/files/example-files-blah.txt
+        source: .score-compose/mounts/files/example-example-files-2a1b69fd-blah.txt
         target: /blah.txt
 `, string(raw))
 }
