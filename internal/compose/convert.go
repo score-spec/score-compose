@@ -95,6 +95,11 @@ func ConvertSpec(state *project.State, spec *score.Workload) (*compose.Project, 
 	for _, containerName := range containerNames {
 		cSpec := spec.Containers[containerName]
 
+		// cSpec is a copy of the map entry, so resolving in-place here is safe.
+		if cSpec.Image, err = variablesSubstitutor.SubstituteString(cSpec.Image); err != nil {
+			return nil, fmt.Errorf("containers.%s.image: %w", containerName, err)
+		}
+
 		var env = make(compose.MappingWithEquals, len(cSpec.Variables))
 		for key, val := range cSpec.Variables {
 			resolved, err := variablesSubstitutor.SubstituteString(val)
